@@ -47,6 +47,12 @@ jobs:
         run: |
           yes | "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
 
+      - name: Generate local.properties for runner SDK
+        run: |
+          sdk_dir="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          echo "sdk.dir=$sdk_dir" | sed 's#\\#/#g' > local.properties
+          echo "wrote: $(cat local.properties)"
+
       - name: Compile Nuvio full debug Kotlin
         id: compile
         run: |
