@@ -20,8 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Init MPVKit submodule (shallow, no recursive libass)
+        run: |
+          git submodule sync -- MPVKit || true
+          git -c protocol.version=2 submodule update --init --depth=1 MPVKit || true
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
