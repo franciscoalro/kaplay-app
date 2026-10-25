@@ -191,3 +191,32 @@ jobs:
           path: |
             androidApp/build/outputs/apk/full/release/*.apk
           if-no-files-found: error
+
+  pages:
+    name: publish-plugin-pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Stage plugin at repo root
+        run: |
+          mkdir -p _site
+          cp -r plugins/tomato/. _site/
+          find _site -type f | sort
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
