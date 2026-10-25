@@ -10,6 +10,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.DialogButton
 import com.nuvio.app.core.ui.DialogButtonStyle
@@ -80,7 +82,12 @@ fun PluginSettingsDialog(
                             NuvioInputField(
                                 value = value,
                                 onValueChange = { currentSettings[key] = JsonPrimitive(it) },
-                                placeholder = field["placeholder"]?.jsonPrimitive?.content ?: ""
+                                placeholder = field["placeholder"]?.jsonPrimitive?.content ?: "",
+                                visualTransformation = if (isPassword) {
+                                    PasswordVisualTransformation()
+                                } else {
+                                    VisualTransformation.None
+                                },
                             )
                             description?.let {
                                 Text(

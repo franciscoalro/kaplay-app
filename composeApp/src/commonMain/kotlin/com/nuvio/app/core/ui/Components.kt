@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -339,6 +340,7 @@ fun NuvioInputField(
     placeholder: String,
     modifier: Modifier = Modifier,
     trailingContent: (@Composable (() -> Unit))? = null,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
 ) {
     val tokens = MaterialTheme.nuvio
     OutlinedTextField(
@@ -356,6 +358,7 @@ fun NuvioInputField(
         },
         textStyle = MaterialTheme.typography.bodyLarge.copy(color = tokens.colors.textPrimary),
         trailingIcon = trailingContent,
+        visualTransformation = visualTransformation,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = tokens.colors.borderFocus,
             unfocusedBorderColor = tokens.colors.borderDefault,

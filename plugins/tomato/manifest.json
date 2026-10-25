@@ -1,0 +1,20 @@
+{
+  "name": "Tomato for Nuvio",
+  "version": "1.0.0",
+  "description": "Nuvio QuickJS port of the Tomato anime stream provider.",
+  "author": "KA Play / Nuvio port",
+  "scrapers": [
+    {
+      "id": "tomato",
+      "name": "Tomato",
+      "description": "Resolves Tomato anime streams from TMDB titles.",
+      "version": "1.0.0",
+      "filename": "tomato.js",
+      "supportedTypes": ["movie", "tv"],
+      "contentLanguage": ["pt-BR"],
+      "formats": ["hls"],
+      "enabled": true,
+      "hasSettings": true
+    }
+  ]
+}
