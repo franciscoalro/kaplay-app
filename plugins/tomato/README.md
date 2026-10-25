@@ -15,6 +15,14 @@ QuickJS port of the KA Play/CloudStream Tomato provider. It implements Nuvio's `
 
 No Tomato credential is committed. Configure the Bearer token through the scraper Settings screen. The Nuvio settings field is password-masked by the accompanying UI change.
 
+## Install from the published repository
+
+In Nuvio, open **Settings → Plugins → Add repository** and install:
+
+`https://franciscoalro.github.io/nuvio-build-ci/`
+
+The custom build pre-fills this address in the repository field; the user still confirms installation so removing the repository remains respected.
+
 ## Install from a local checkout
 
 Nuvio repositories are loaded over HTTP(S), not from device filesystem paths. Serve this directory:

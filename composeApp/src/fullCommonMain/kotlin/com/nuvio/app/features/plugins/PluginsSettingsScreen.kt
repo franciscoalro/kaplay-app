@@ -78,6 +78,9 @@ import nuvio.composeapp.generated.resources.plugins_test_failed
 import nuvio.composeapp.generated.resources.plugins_test_results_count
 import org.jetbrains.compose.resources.stringResource
 
+private const val DEFAULT_TOMATO_REPOSITORY_URL =
+    "https://franciscoalro.github.io/nuvio-build-ci/"
+
 @Composable
 fun PluginsSettingsPageContent(
     modifier: Modifier = Modifier,
@@ -89,7 +92,9 @@ fun PluginsSettingsPageContent(
     val uiState by PluginRepository.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
 
-    var repositoryUrl by rememberSaveable { mutableStateOf("") }
+    var repositoryUrl by rememberSaveable {
+        mutableStateOf(DEFAULT_TOMATO_REPOSITORY_URL)
+    }
     var message by rememberSaveable { mutableStateOf<String?>(null) }
     var isAdding by remember { mutableStateOf(false) }
 
