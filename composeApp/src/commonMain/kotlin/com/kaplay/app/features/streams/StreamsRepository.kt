@@ -164,37 +164,6 @@ object StreamsRepository {
             )
             return
         }
-        if (videoId.startsWith(com.kaplay.app.features.tomato.TomatoProvider.ANIME_ID_PREFIX)) {
-            val animeId = com.kaplay.app.features.tomato.TomatoProvider.parseAnimeId(videoId)
-            val episodeId = com.kaplay.app.features.tomato.TomatoProvider.parseEpisodeId(videoId)
-            if (animeId != null && episodeId != null) {
-                val tomatoStreams = try {
-                    com.kaplay.app.features.tomato.TomatoProvider.episodeStreams(animeId, episodeId)
-                } catch (e: Throwable) {
-                    emptyList()
-                }
-                if (tomatoStreams.isNotEmpty()) {
-                    val group = AddonStreamGroup(
-                        addonName = com.kaplay.app.features.tomato.TomatoProvider.PROVIDER_NAME,
-                        addonId = "tomato",
-                        streams = tomatoStreams,
-                        isLoading = false,
-                    )
-                    val presentedGroup = StreamBadgePresentation.apply(
-                        groups = listOf(group),
-                        rules = streamBadgeRules,
-                    ).firstOrNull() ?: group
-                    _uiState.value = StreamsUiState(
-                        requestToken = requestToken,
-                        groups = listOf(presentedGroup),
-                        autoPlayDecided = true,
-                        activeAddonIds = setOf("tomato"),
-                        isAnyLoading = false,
-                    )
-                    return
-                }
-            }
-        }
 
         val isNativeServerRequest = ServerStreams.isNativeRequest(videoId)
         val serverSources = ServerStreams.sources(type, videoId, season, episode, forceRefresh)

@@ -68,9 +68,7 @@ fun buildHomeCatalogDefinitions(addons: List<ManagedAddon>): List<HomeCatalogDef
                     descriptorSignature = buildHomeCatalogDescriptorSignature(addon, manifest, catalog),
                 )
             }
-    }.distinctBy(HomeCatalogDefinition::key) +
-        ServerCatalog.homeDefinitions() +
-        com.kaplay.app.features.tomato.TomatoCatalog.homeDefinitions()
+    }.distinctBy(HomeCatalogDefinition::key) + ServerCatalog.homeDefinitions()
 
 private fun buildHomeCatalogDescriptorSignature(
     addon: ManagedAddon,

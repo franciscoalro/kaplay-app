@@ -231,9 +231,6 @@ object HomeRepository {
     }
 
     private suspend fun HomeCatalogDefinition.toSection(forceRefresh: Boolean): HomeCatalogSection {
-        if (manifestUrl == com.kaplay.app.features.tomato.TomatoCatalog.MANIFEST_URL) {
-            return toTomatoSection()
-        }
         serverConnectionId?.let { connectionId -> return toServerSection(connectionId) }
         CustomPosterUrlRepository.ensureLoaded()
         val pattern = CustomPosterUrlRepository.patternForScreen(com.kaplay.app.core.poster.CustomPosterScreen.HOME)
@@ -282,34 +279,6 @@ object HomeRepository {
             availableItemCount = page.rawItemCount,
             hasMore = supportsPagination && page.nextSkip != null,
         )
-    }
-
-    private suspend fun HomeCatalogDefinition.toTomatoSection(): HomeCatalogSection {
-        val target = CatalogTarget.Tomato(query = null)
-        return try {
-            val page = com.kaplay.app.features.tomato.TomatoCatalog.feedPage()
-            HomeCatalogSection(
-                key = key,
-                title = defaultTitle,
-                subtitle = addonName,
-                addonName = addonName,
-                target = target,
-                items = page.items,
-                availableItemCount = page.rawItemCount,
-                hasMore = false,
-            )
-        } catch (_: Throwable) {
-            HomeCatalogSection(
-                key = key,
-                title = defaultTitle,
-                subtitle = addonName,
-                addonName = addonName,
-                target = target,
-                items = emptyList(),
-                availableItemCount = 0,
-                hasMore = false,
-            )
-        }
     }
 
     private suspend fun HomeCatalogDefinition.toServerSection(connectionId: String): HomeCatalogSection {

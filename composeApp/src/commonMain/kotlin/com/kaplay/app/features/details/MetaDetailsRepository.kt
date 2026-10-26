@@ -62,10 +62,6 @@ object MetaDetailsRepository {
             loadServerMeta(requestKey, ref)
             return
         }
-        if (id.startsWith(com.kaplay.app.features.tomato.TomatoProvider.ANIME_ID_PREFIX)) {
-            loadTomatoMeta(requestKey, id)
-            return
-        }
         val currentState = _uiState.value
         val mdbListSettings = MdbListSettingsRepository.snapshot()
         val metaScreenSettingsFingerprint = buildMetaScreenSettingsFingerprint(mdbListSettings)
@@ -187,60 +183,6 @@ object MetaDetailsRepository {
             _uiState.value = MetaDetailsUiState(
                 errorMessage = getString(Res.string.details_load_failed_all_addons),
             )
-            activeRequestKey = null
-        }
-    }
-
-    private fun loadTomatoMeta(requestKey: String, metaId: String) {
-        val animeId = com.kaplay.app.features.tomato.TomatoProvider.parseAnimeId(metaId)
-        if (animeId == null) {
-            _uiState.value = MetaDetailsUiState(errorMessage = getString(Res.string.details_load_failed_all_addons))
-            activeRequestKey = null
-            return
-        }
-        activeRequestKey = requestKey
-        _uiState.value = MetaDetailsUiState(isLoading = true)
-        scope.launch {
-            val meta = withContext(Dispatchers.Default) {
-                runCatching {
-                    val provider = com.kaplay.app.features.tomato.TomatoProvider
-                    val details = provider.animeDetails(animeId)
-                    val videos = details.seasons.flatMap { season ->
-                        kotlinx.coroutines.runBlocking {
-                            provider.seasonEpisodes(season)
-                        }.map { episode ->
-                            MetaVideo(
-                                id = provider.videoId(animeId, episode.episodeId),
-                                title = "E$\{episode.number.orEmpty().padStart(2, '0')\}$\{episode.name?.let { " · $it" } ?: ""\}",
-                                thumbnail = episode.thumbnail,
-                                season = season.number,
-                                episode = episode.number,
-                            )
-                        }
-                    }
-                    MetaDetails(
-                        id = metaId,
-                        type = "tv",
-                        name = details.name,
-                        poster = details.poster,
-                        background = details.banner ?: details.poster,
-                        description = details.description,
-                        genres = details.tags,
-                        videos = videos,
-                    )
-                }.getOrElse { error ->
-                    if (error is kotlinx.coroutines.CancellationException) throw error
-                    null
-                }
-            }
-            if (activeRequestKey != requestKey) return@launch
-            if (meta != null) {
-                _uiState.value = MetaDetailsUiState(meta = meta.withUnreleasedFilter())
-            } else {
-                _uiState.value = MetaDetailsUiState(
-                    errorMessage = getString(Res.string.details_load_failed_all_addons),
-                )
-            }
             activeRequestKey = null
         }
     }

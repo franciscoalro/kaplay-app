@@ -449,9 +449,7 @@ object SearchRepository {
                         supportsPagination = catalog.supportsPagination(),
                     )
                 }
-        } + listOfNotNull(
-            if (type == "tv") SearchCatalogRequest.TOMATO(query) else null
-        )
+        }
 
     private fun buildDiscoverSources(addons: List<ManagedAddon>): List<DiscoverCatalogOption> =
         addons.mapNotNull { addon ->
@@ -477,7 +475,6 @@ object SearchRepository {
         }
 
     private suspend fun SearchCatalogRequest.toSection(forceRefresh: Boolean): HomeCatalogSection {
-        if (isTomato) return tomatoSection()
         val manifest = requireNotNull(addon.manifest)
         val page = fetchCatalogPage(
             manifestUrl = manifest.transportUrl,
@@ -510,28 +507,6 @@ object SearchRepository {
             availableItemCount = page.rawItemCount,
             hasMore = supportsPagination && page.nextSkip != null,
         )
-    }
-
-    private suspend fun SearchCatalogRequest.tomatoSection(): HomeCatalogSection = try {
-        val page = com.kaplay.app.features.tomato.TomatoCatalog.searchPage(query)
-        require(page.items.isNotEmpty()) {
-            getString(Res.string.search_error_no_results_for_catalog, catalogName)
-        }
-        HomeCatalogSection(
-            key = "tomato:search:tv:${query.lowercase()}",
-            title = getString(Res.string.discover_catalog_context, "Tomato Animes", "TV"),
-            subtitle = com.kaplay.app.features.tomato.TomatoProvider.PROVIDER_NAME,
-            addonName = com.kaplay.app.features.tomato.TomatoProvider.PROVIDER_NAME,
-            target = CatalogTarget.Tomato(query = query),
-            items = page.items,
-            availableItemCount = page.rawItemCount,
-            hasMore = false,
-        )
-    } catch (error: kotlinx.coroutines.CancellationException) {
-        throw error
-    } catch (_: Throwable) {
-        // Tomato stays silent in search when offline/token missing.
-        throw error
     }
 
     private fun loadDiscoverFeed(
@@ -673,26 +648,13 @@ private fun CatalogPage.withUnreleasedFilter(): CatalogPage {
 }
 
 private data class SearchCatalogRequest(
-    val addon: ManagedAddon?,
+    val addon: ManagedAddon,
     val catalogId: String,
     val catalogName: String,
     val type: String,
     val query: String,
     val supportsPagination: Boolean,
-) {
-    private val isTomato: Boolean get() = addon == null
-
-    companion object {
-        fun TOMATO(query: String) = SearchCatalogRequest(
-            addon = null,
-            catalogId = com.kaplay.app.features.tomato.TomatoCatalog.CATALOG_ID,
-            catalogName = "Animes",
-            type = "tv",
-            query = query,
-            supportsPagination = false,
-        )
-    }
-}
+)
 
 private fun AddonCatalog.supportsSearch(): Boolean =
     extra.any { property -> property.name == "search" } &&
