@@ -34,6 +34,10 @@ object TomatoProvider {
     internal const val SETTINGS_SCRAPER_ID = "builtin:tomato"
     internal const val SETTINGS_TOKEN_KEY = "bearerToken"
 
+    // Same public session token shipped by the original CloudStream Tomato provider.
+    // User settings still take precedence and can replace it when the session rotates.
+    private const val DEFAULT_BEARER_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NDg0NjcyOSwidXVpZCI6ImQ0ODk1NjZjLTI0NDMtNDU3OS1iMzkwLWI1YjQxOTgzMTA5MCIsImlhdCI6MTc5MDUwNjI4MH0.3MP87IJav4bhPJzt5YUUv1mEeOdWp2zxo5_hc6w51YU"
+
     private const val HOST_EDGE = "https://edge.betomato.com"
     private const val HOST_PROD = "https://prod-api.tomatoanimes.com"
 
@@ -50,7 +54,7 @@ object TomatoProvider {
     // ---------- token ----------
 
     fun configuredToken(): String {
-        val raw = PluginStorage.loadScraperSettings(SETTINGS_SCRAPER_ID) ?: return ""
+        val raw = PluginStorage.loadScraperSettings(SETTINGS_SCRAPER_ID) ?: return DEFAULT_BEARER_TOKEN
         val payload = runCatching {
             json.decodeFromString<Map<String, String>>(raw)
         }.getOrNull() ?: return ""
@@ -59,6 +63,7 @@ object TomatoProvider {
             .removePrefix("Bearer ")
             .removePrefix("bearer ")
             .trim()
+            .ifBlank { DEFAULT_BEARER_TOKEN }
     }
 
     fun hasToken(): Boolean = configuredToken().isNotBlank()
