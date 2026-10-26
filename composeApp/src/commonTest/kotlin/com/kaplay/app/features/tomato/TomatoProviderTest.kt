@@ -34,6 +34,14 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun exposesMultipleBuiltinHomeCategories() {
+        val definitions = TomatoCatalog.homeDefinitions()
+        assertEquals(true, definitions.size > 1)
+        assertEquals(true, definitions.any { it.catalogName == "Com dublagem" })
+        assertEquals(true, definitions.any { it.catalogName == "Romance" })
+    }
+
+    @Test
     fun parsesTomatoIds() {
         assertEquals(6945L, TomatoProvider.parseAnimeId("tomato:6945"))
         assertEquals(123L, TomatoProvider.parseEpisodeId("tomato:6945:123"))

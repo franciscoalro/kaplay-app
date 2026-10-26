@@ -287,7 +287,7 @@ object HomeRepository {
     private suspend fun HomeCatalogDefinition.toTomatoSection(): HomeCatalogSection {
         val target = CatalogTarget.Tomato(query = null)
         return try {
-            val page = com.kaplay.app.features.tomato.TomatoCatalog.feedPage()
+            val page = com.kaplay.app.features.tomato.TomatoCatalog.feedPage(catalogId)
             HomeCatalogSection(
                 key = key,
                 title = defaultTitle,

@@ -15,6 +15,8 @@ import io.ktor.http.HttpMethod
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -47,6 +49,15 @@ object TomatoProvider {
     internal val maxAttemptsPerRequest = 6
     internal val retryDelayMillis = 150L
     private const val FEED_ENRICH_LIMIT = 20
+
+    internal data class FeedSectionPayload(
+        val key: String,
+        val title: String,
+        val items: List<TomatoTitle>,
+    )
+
+    private val feedCacheMutex = Mutex()
+    private var feedCache: List<FeedSectionPayload>? = null
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -211,26 +222,54 @@ object TomatoProvider {
 
     // ---------- catalog: feed + search ----------
 
-    suspend fun feedAnimes(): List<TomatoTitle> {
-        val payload = requestJson("/v2/animes/feed", kind = "metadata", body = null, attempts = 3)
-        val items = feedItems(payload["data"], mutableListOf())
-            .distinctBy { animeIdOf(it) }
-            .take(FEED_ENRICH_LIMIT)
-        return coroutineScope {
-            items.map { item ->
-                async {
-                    val id = animeIdOf(item) ?: return@async null
-                    val fallback = if (titleOf(item).isBlank()) {
-                        runCatching { animeDetails(id).name }.getOrNull().orEmpty()
-                    } else {
-                        ""
-                    }
-                    TomatoTitle(id = id, name = titleOf(item).ifBlank { fallback }, image = imageOf(item))
+    suspend fun feedSections(): List<FeedSectionPayload> = feedCacheMutex.withLock {
+        feedCache?.let { return@withLock it }
+        val payload = requestJson("/v2/animes/feed", kind = "metadata", body = null, attempts = 6)
+        val rawSections = (payload["data"] as? kotlinx.serialization.json.JsonArray)
+            ?.mapNotNull { it as? JsonObject }
+            ?.filter { it["title"]?.jsonPrimitive?.contentOrNull.orEmpty().isNotBlank() }
+            ?: emptyList()
+        val allItems = rawSections.flatMap { section ->
+            val values = section["data"] ?: return@flatMap emptyList()
+            runCatching { values.jsonArray.mapNotNull { it as? JsonObject } }.getOrDefault(emptyList())
+        }
+        val ids = allItems.mapNotNull(::animeIdOf).distinct()
+        val namesById = coroutineScope {
+            ids.associateWith { id ->
+                async { runCatching { animeDetails(id).name }.getOrNull().orEmpty() }
+            }.mapValues { (_, deferred) -> deferred.await() }
+        }
+        val sections = rawSections.mapNotNull { section ->
+            val title = section["title"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+            val items = runCatching { section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject } }
+                .getOrDefault(emptyList())
+                .distinctBy(::animeIdOf)
+                .take(FEED_ENRICH_LIMIT)
+                .mapNotNull { item ->
+                    val id = animeIdOf(item) ?: return@mapNotNull null
+                    TomatoTitle(id, titleOf(item).ifBlank { namesById[id].orEmpty() }, imageOf(item))
                         .takeIf { it.name.isNotBlank() }
                 }
-            }.awaitAll().filterNotNull()
+            FeedSectionPayload(sectionKey(title), title, items).takeIf { it.items.isNotEmpty() }
         }
+        return@withLock sections.also { feedCache = it }
     }
+
+    suspend fun feedAnimes(): List<TomatoTitle> =
+        feedSections().flatMap { it.items }.distinctBy { it.id }
+
+    fun clearFeedCache() {
+        feedCache = null
+    }
+
+    private fun sectionKey(title: String): String =
+        title.lowercase()
+            .replace('á', 'a').replace('ã', 'a').replace('â', 'a')
+            .replace('é', 'e').replace('ê', 'e')
+            .replace('í', 'i').replace('ó', 'o').replace('ô', 'o')
+            .replace('ú', 'u').replace('ç', 'c')
+            .replace(Regex("[^a-z0-9]+"), "-")
+            .trim('-')
 
     suspend fun searchAnimes(query: String): List<TomatoTitle> {
         val payload = requestJson(
