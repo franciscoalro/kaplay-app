@@ -247,8 +247,11 @@ object TomatoProvider {
                 .take(FEED_ENRICH_LIMIT)
                 .mapNotNull { item ->
                     val id = animeIdOf(item) ?: return@mapNotNull null
-                    TomatoTitle(id, titleOf(item).ifBlank { namesById[id].orEmpty() }, imageOf(item))
-                        .takeIf { it.name.isNotBlank() }
+                    TomatoTitle(
+                        id = id,
+                        name = titleOf(item).ifBlank { namesById[id].orEmpty().ifBlank { "Tomato #$id" } },
+                        image = imageOf(item),
+                    )
                 }
             FeedSectionPayload(sectionKey(title), title, items).takeIf { it.items.isNotEmpty() }
         }
