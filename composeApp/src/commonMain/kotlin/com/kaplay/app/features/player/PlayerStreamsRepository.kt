@@ -236,7 +236,9 @@ object PlayerStreamsRepository {
             val episodeId = com.kaplay.app.features.tomato.TomatoProvider.parseEpisodeId(videoId)
             if (animeId != null && episodeId != null) {
                 val tomatoStreams = try {
-                    kotlinx.coroutines.runBlocking { com.kaplay.app.features.tomato.TomatoProvider.episodeStreams(animeId, episodeId)
+                    kotlinx.coroutines.runBlocking {
+                        com.kaplay.app.features.tomato.TomatoProvider.episodeStreams(animeId, episodeId)
+                    }
                 } catch (e: Throwable) {
                     emptyList()
                 }
