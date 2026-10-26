@@ -43,6 +43,7 @@ object TomatoProvider {
 
     internal val maxAttemptsPerRequest = 6
     internal val retryDelayMillis = 150L
+    private const val FEED_ENRICH_LIMIT = 20
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -166,7 +167,7 @@ object TomatoProvider {
         when (value) {
             is kotlinx.serialization.json.JsonArray -> value.forEach { feedItems(it, output) }
             is JsonObject -> {
-                if (animeIdOf(value) != null && titleOf(value).isNotBlank()) {
+                if (animeIdOf(value) != null) {
                     output.add(value)
                 }
                 value.forEach { (_, nested) -> feedItems(nested, output) }
@@ -201,10 +202,17 @@ object TomatoProvider {
     suspend fun feedAnimes(): List<TomatoTitle> {
         val payload = requestJson("/v2/animes/feed", kind = "metadata", body = null, attempts = 3)
         val items = feedItems(payload["data"], mutableListOf())
+            .distinctBy { animeIdOf(it) }
+            .take(FEED_ENRICH_LIMIT)
         return items.mapNotNull { item ->
-            animeIdOf(item)?.let { id ->
-                TomatoTitle(id = id, name = titleOf(item), image = imageOf(item))
+            val id = animeIdOf(item) ?: return@mapNotNull null
+            val fallback = if (titleOf(item).isBlank()) {
+                runCatching { animeDetails(id).name }.getOrNull().orEmpty()
+            } else {
+                ""
             }
+            TomatoTitle(id = id, name = titleOf(item).ifBlank { fallback }, image = imageOf(item))
+                .takeIf { it.name.isNotBlank() }
         }
     }
 
@@ -230,19 +238,20 @@ object TomatoProvider {
     suspend fun animeDetails(animeId: Long): TomatoDetails {
         val payload = requestJson("/v2/anime/$animeId", kind = "metadata", body = null, attempts = 3)
         val data = payloadData(payload)
-        val seasons = (data["anime_seasons"] ?: data["seasons"])
+        val details = (payload["anime_details"] as? JsonObject) ?: data
+        val seasons = (payload["anime_seasons"] ?: data["anime_seasons"] ?: data["seasons"])
             ?.let { runCatching { it.jsonArray.mapNotNull { entry -> entry as? JsonObject } }.getOrNull() }
             .orEmpty()
         return TomatoDetails(
             animeId = animeId,
-            name = (data["anime_name"] ?: data["name"] ?: data["title"])?.jsonPrimitive?.contentOrNull.orEmpty(),
-            description = (data["anime_description"] ?: data["description"] ?: data["sinopse"])
+            name = (details["anime_name"] ?: details["name"] ?: details["title"])?.jsonPrimitive?.contentOrNull.orEmpty(),
+            description = (details["anime_description"] ?: details["description"] ?: details["sinopse"])
                 ?.jsonPrimitive?.contentOrNull,
-            poster = (data["cape"] ?: data["thumbnail"] ?: data["poster"] ?: data["image"])
+            poster = (details["cape"] ?: details["thumbnail"] ?: details["poster"] ?: details["image"])
                 ?.jsonPrimitive?.contentOrNull,
-            banner = data["banner"]?.jsonPrimitive?.contentOrNull,
+            banner = details["banner"]?.jsonPrimitive?.contentOrNull,
             tags = listOf("genres", "tags", "categories").flatMap { key ->
-                data[key]?.let { value ->
+                details[key]?.let { value ->
                     runCatching { value.jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull } }.getOrDefault(emptyList())
                 }.orEmpty()
             }.distinct(),
