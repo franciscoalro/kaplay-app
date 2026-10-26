@@ -1,20 +1,264 @@
 {
-  "name": "Tomato for KAPlay",
-  "version": "1.0.0",
-  "description": "KAPlay QuickJS port of the Tomato anime stream provider.",
-  "author": "KA Play / KAPlay port",
+  "name": "KAPlay Provedores BR",
+  "version": "1.2.0",
+  "description": "Repositório completo com os 13 provedores nacionais integrados para KAPlay.",
+  "author": "KAPlay Team",
   "scrapers": [
     {
       "id": "tomato",
       "name": "Tomato",
-      "description": "Resolves Tomato anime streams from TMDB titles.",
+      "description": "Streams e episódios de animes Tomato.",
       "version": "1.0.0",
       "filename": "tomato.js",
-      "supportedTypes": ["movie", "tv"],
-      "contentLanguage": ["pt-BR"],
-      "formats": ["hls"],
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls"
+      ],
       "enabled": true,
       "hasSettings": true
+    },
+    {
+      "id": "animefire",
+      "name": "AnimeFire",
+      "description": "Animes dublados e legendados da API AnimeFire.",
+      "version": "1.0.0",
+      "filename": "animefire.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "supercine",
+      "name": "SuperCine",
+      "description": "Filmes e séries via API de embed SuperCine.",
+      "version": "1.0.0",
+      "filename": "supercine.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "animesorion",
+      "name": "AnimesOrion",
+      "description": "Acervo de animes do AnimesOrion.",
+      "version": "1.0.0",
+      "filename": "animesorion.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "veloplaytv",
+      "name": "VeloPlayTV",
+      "description": "Canais, séries e filmes VeloPlay com login automático.",
+      "version": "1.0.0",
+      "filename": "veloplaytv.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "cinegato",
+      "name": "CineGato",
+      "description": "Filmes e séries populares do CineGato.",
+      "version": "1.0.0",
+      "filename": "cinegato.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "pobreflix",
+      "name": "Pobreflix",
+      "description": "Filmes e séries atualizadas do Pobreflix.",
+      "version": "1.0.0",
+      "filename": "pobreflix.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "netcine",
+      "name": "NetCine",
+      "description": "Catálogo do NetCine de filmes e séries dubladas.",
+      "version": "1.0.0",
+      "filename": "netcine.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "redecanais",
+      "name": "RedeCanais",
+      "description": "Acervo tradicional do RedeCanais de filmes e animes.",
+      "version": "1.0.0",
+      "filename": "redecanais.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "topanimes",
+      "name": "TopAnimes",
+      "description": "Animes e lançamentos do TopAnimes.",
+      "version": "1.0.0",
+      "filename": "topanimes.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "megafilmeshd",
+      "name": "MegaFilmesHD",
+      "description": "Filmes clássicos e lançamentos do MegaFilmesHD.",
+      "version": "1.0.0",
+      "filename": "megafilmeshd.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "saraflix",
+      "name": "Saraflix",
+      "description": "Filmes e séries do Saraflix.",
+      "version": "1.0.0",
+      "filename": "saraflix.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "cinevision",
+      "name": "CineVision",
+      "description": "Catálogo do CineVision.",
+      "version": "1.0.0",
+      "filename": "cinevision.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls"
+      ],
+      "enabled": true,
+      "hasSettings": false
     }
   ]
 }

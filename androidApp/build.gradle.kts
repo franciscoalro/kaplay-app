@@ -50,7 +50,7 @@ val buildsReleaseApks = requestedTaskNames.any {
 }
 
 android {
-    namespace = "com.kaplay.android"
+    namespace = "com.kaplay.app"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     compileSdkMinor = libs.versions.android.compileSdkMinor.get().toInt()
 
@@ -145,7 +145,7 @@ android {
 
 androidComponents {
     onVariants(selector().withBuildType("debug")) { variant ->
-        variant.applicationId.set("com.kaplaydebug.com")
+        variant.applicationId.set("com.kaplay.app.debug")
     }
 }
 
