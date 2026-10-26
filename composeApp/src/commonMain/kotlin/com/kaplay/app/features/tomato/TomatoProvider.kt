@@ -49,6 +49,7 @@ object TomatoProvider {
     internal val maxAttemptsPerRequest = 6
     internal val retryDelayMillis = 150L
     private const val FEED_ENRICH_LIMIT = 20
+    private const val FEED_DETAIL_LOOKUP_LIMIT = 24
 
     internal data class FeedSectionPayload(
         val key: String,
@@ -233,7 +234,9 @@ object TomatoProvider {
             val values = section["data"] ?: return@flatMap emptyList()
             runCatching { values.jsonArray.mapNotNull { it as? JsonObject } }.getOrDefault(emptyList())
         }
-        val ids = allItems.mapNotNull(::animeIdOf).distinct()
+        // The feed exposes IDs only. Resolve a bounded sample to avoid flooding Tomato
+        // with one detail request for every card across every Home row.
+        val ids = allItems.mapNotNull(::animeIdOf).distinct().take(FEED_DETAIL_LOOKUP_LIMIT)
         val namesById = buildMap<Long, String> {
             ids.chunked(4).forEach { batch ->
                 val resolved = coroutineScope {
