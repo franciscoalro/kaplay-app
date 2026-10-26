@@ -88,7 +88,6 @@ import com.kaplay.app.core.ui.platformExitApp
 import com.kaplay.app.features.addons.AddAddonResult
 import com.kaplay.app.features.addons.AddonRepository
 import com.kaplay.app.features.addons.enabledAddons
-import com.kaplay.app.features.addons.isWaitingForFirstEnabledManifest
 import com.kaplay.app.features.catalog.CatalogTarget
 import com.kaplay.app.features.cloud.CloudLibraryContentType
 import com.kaplay.app.features.cloud.CloudLibraryFile
@@ -395,7 +394,6 @@ internal fun MainAppContent(
     LaunchedEffect(appContentGeneration, homeCatalogRefreshKey, serversUiState.revision) {
         if (!ownsAppRuntime) return@LaunchedEffect
         val enabledAddons = addonsUiState.addons.enabledAddons()
-        if (enabledAddons.isWaitingForFirstEnabledManifest()) return@LaunchedEffect
         HomeCatalogSettingsRepository.syncCatalogs(enabledAddons)
         HomeRepository.refresh(enabledAddons)
         ServerMatcher.warm()
