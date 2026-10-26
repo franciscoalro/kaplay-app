@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.kaplay.app.features.details.MetaDetailsRepository
+import com.kaplay.app.features.details.MetaVideo
 import com.kaplay.app.features.p2p.P2pSettingsRepository
 import com.kaplay.app.features.p2p.P2pStreamRequest
 import com.kaplay.app.features.p2p.P2pStreamingEngine
@@ -42,6 +43,9 @@ import kotlinx.coroutines.launch
 import kaplay.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 
+private fun List<MetaVideo>.hasEpisodeSequence(): Boolean =
+    count { it.season != null && it.episode != null } > 1
+
 @Composable
 internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
     val currentFeedback = liveGestureFeedback ?: gestureFeedback
@@ -54,17 +58,20 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
     LaunchedEffect(parentMetaType, parentMetaId) {
         playerMeta = MetaDetailsRepository.peek(parentMetaType, parentMetaId)
         playerMetaVideos = playerMeta?.videos.orEmpty()
-        if (playerMetaVideos.isEmpty()) {
-            MetaDetailsRepository.fetch(parentMetaType, parentMetaId)?.let { meta ->
-                playerMeta = meta
-                playerMetaVideos = meta.videos
-            }
+        if (playerMetaVideos.hasEpisodeSequence()) {
+            return@LaunchedEffect
+        }
+        MetaDetailsRepository.fetch(parentMetaType, parentMetaId)?.let { meta ->
+            playerMeta = meta
+            playerMetaVideos = meta.videos
         }
     }
 
     LaunchedEffect(metaUiState.meta, parentMetaType, parentMetaId) {
         val currentMeta = metaUiState.meta ?: return@LaunchedEffect
-        if (currentMeta.type == parentMetaType && currentMeta.id == parentMetaId) {
+        if (currentMeta.type == parentMetaType && currentMeta.id == parentMetaId &&
+            (!playerMetaVideos.hasEpisodeSequence() || currentMeta.videos.size >= playerMetaVideos.size)
+        ) {
             playerMeta = currentMeta
             playerMetaVideos = currentMeta.videos
         }
