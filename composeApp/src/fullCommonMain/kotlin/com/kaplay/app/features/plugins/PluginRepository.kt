@@ -601,7 +601,7 @@ actual object PluginRepository {
     private fun loadStateAsUiState(profileId: Int): LoadedPluginState {
         val stored = loadStoredState(profileId)
         var requiresMigration = false
-        val scrapers = stored?.scrapers
+        val loadedScrapers = stored?.scrapers
             ?.mapNotNull { storedScraper ->
                 storedScraper.restorePluginScraper { scraperId ->
                     PluginStorage.loadScraperCode(profileId, scraperId)
@@ -610,25 +610,41 @@ actual object PluginRepository {
                 }?.scraper
             }
             ?: emptyList()
+
+        val loadedRepos = stored?.repositories
+            ?.map {
+                PluginRepositoryItem(
+                    manifestUrl = it.manifestUrl,
+                    name = it.name,
+                    description = it.description,
+                    version = it.version,
+                    scraperCount = it.scraperCount,
+                    lastUpdated = it.lastUpdated,
+                    isRefreshing = false,
+                    errorMessage = null,
+                )
+            }
+            ?: emptyList()
+
+        val (finalRepos, finalScrapers) = if (loadedScrapers.none { it.id == EmbeddedTomatoPlugin.SCRAPER_ID }) {
+            PluginStorage.saveScraperCode(profileId, EmbeddedTomatoPlugin.SCRAPER_ID, EmbeddedTomatoPlugin.CODE, false)
+            requiresMigration = true
+            val reposWithDefault = if (loadedRepos.none { it.manifestUrl == EmbeddedTomatoPlugin.MANIFEST_URL }) {
+                loadedRepos + EmbeddedTomatoPlugin.defaultRepository
+            } else {
+                loadedRepos
+            }
+            reposWithDefault to (loadedScrapers + EmbeddedTomatoPlugin.createDefaultScraper())
+        } else {
+            loadedRepos to loadedScrapers
+        }
+
         return LoadedPluginState(
             state = PluginsUiState(
                 pluginsEnabled = stored?.pluginsEnabled ?: true,
                 groupStreamsByRepository = stored?.groupStreamsByRepository ?: false,
-                repositories = stored?.repositories
-                    ?.map {
-                        PluginRepositoryItem(
-                            manifestUrl = it.manifestUrl,
-                            name = it.name,
-                            description = it.description,
-                            version = it.version,
-                            scraperCount = it.scraperCount,
-                            lastUpdated = it.lastUpdated,
-                            isRefreshing = false,
-                            errorMessage = null,
-                        )
-                    }
-                    ?: emptyList(),
-                scrapers = scrapers,
+                repositories = finalRepos,
+                scrapers = finalScrapers,
             ),
             requiresMigration = requiresMigration,
         )

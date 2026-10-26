@@ -4,7 +4,6 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import androidx.media3.common.NuvioEngineConfig
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.upstream.DefaultAllocator

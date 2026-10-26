@@ -19,7 +19,7 @@ No Tomato credential is committed. Configure the Bearer token through the scrape
 
 In KAPlay, open **Settings → Plugins → Add repository** and install:
 
-`https://franciscoalro.github.io/kaplay-build-ci/`
+`https://franciscoalro.github.io/kaplay-app/`
 
 The custom build pre-fills this address in the repository field; the user still confirms installation so removing the repository remains respected.
 

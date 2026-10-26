@@ -79,7 +79,7 @@ import kaplay.composeapp.generated.resources.plugins_test_results_count
 import org.jetbrains.compose.resources.stringResource
 
 private const val DEFAULT_TOMATO_REPOSITORY_URL =
-    "https://franciscoalro.github.io/kaplay-build-ci/"
+    "https://franciscoalro.github.io/kaplay-app/"
 
 @Composable
 fun PluginsSettingsPageContent(

@@ -32,6 +32,13 @@ sealed interface CatalogTarget {
         override val supportsPagination: Boolean = true
     }
 
+    data class Tomato(
+        val query: String?,
+        override val contentType: String = "tv",
+    ) : CatalogTarget {
+        override val supportsPagination: Boolean = false
+    }
+
     data class CollectionSource(
         val collectionId: String,
         val folderId: String,
