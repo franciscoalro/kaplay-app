@@ -536,7 +536,7 @@ object SearchRepository {
         )
     } catch (error: kotlinx.coroutines.CancellationException) {
         throw error
-    } catch (_: Throwable) {
+    } catch (error: Throwable) {
         // Tomato stays silent in search when offline/token missing.
         throw error
     }

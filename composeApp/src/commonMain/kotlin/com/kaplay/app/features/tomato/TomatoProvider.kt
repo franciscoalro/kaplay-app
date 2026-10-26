@@ -161,8 +161,8 @@ object TomatoProvider {
         when (value) {
             is kotlinx.serialization.json.JsonArray -> value.forEach { feedItems(it, output) }
             is JsonObject -> {
-                animeIdOf(value) != null && titleOf(value).isNotBlank().let { valid ->
-                    if (valid) output.add(value)
+                if (animeIdOf(value) != null && titleOf(value).isNotBlank()) {
+                    output.add(value)
                 }
                 value.forEach { (_, nested) -> feedItems(nested, output) }
             }
