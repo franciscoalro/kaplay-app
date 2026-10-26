@@ -97,7 +97,7 @@ object TomatoProvider {
         )
         if (kind == "stream" || kind == "post") headers["Content-Type"] = "application/json"
         if (kind != "stream") headers["request-time"] = currentTimeMillis().toString()
-        if (kind == "metadata") headers["x-app"] = "1.4.3"
+        if (kind == "metadata" || kind == "stream") headers["x-app"] = "1.4.3"
         return headers
     }
 
@@ -263,13 +263,19 @@ object TomatoProvider {
             name = (details["anime_name"] ?: details["name"] ?: details["title"])?.jsonPrimitive?.contentOrNull.orEmpty(),
             description = (details["anime_description"] ?: details["description"] ?: details["sinopse"])
                 ?.jsonPrimitive?.contentOrNull,
-            poster = (details["cape"] ?: details["thumbnail"] ?: details["poster"] ?: details["image"])
+            poster = (details["anime_cape_url"] ?: details["anime_cover_url"] ?: details["cape"]
+                ?: details["thumbnail"] ?: details["poster"] ?: details["image"])
                 ?.jsonPrimitive?.contentOrNull,
-            banner = details["banner"]?.jsonPrimitive?.contentOrNull,
-            tags = listOf("genres", "tags", "categories").flatMap { key ->
-                details[key]?.let { value ->
-                    runCatching { value.jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull } }.getOrDefault(emptyList())
-                }.orEmpty()
+            banner = (details["anime_banner_url"] ?: details["banner"])?.jsonPrimitive?.contentOrNull,
+            tags = buildList {
+                val genre = details["anime_genre"]?.jsonPrimitive?.contentOrNull
+                if (!genre.isNullOrBlank()) addAll(genre.split(',').map(String::trim).filter(String::isNotBlank))
+                listOf("genres", "tags", "categories").forEach { key ->
+                    details[key]?.let { value ->
+                        addAll(runCatching { value.jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull } }
+                            .getOrDefault(emptyList()))
+                    }
+                }
             }.distinct(),
             seasons = seasons.mapIndexed { index, season ->
                 val explicit = season["season_number"]?.jsonPrimitive?.intOrNull

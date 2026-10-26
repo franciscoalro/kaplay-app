@@ -375,8 +375,8 @@ internal fun MainAppContent(
     } else {
         0
     }
-    var initialHomeReady by rememberSaveable(ownsAppRuntime, appContentGeneration) {
-        mutableStateOf(!ownsAppRuntime)
+    var initialHomeReady by rememberSaveable(ownsAppRuntime, appContentGeneration, appGateController == null) {
+        mutableStateOf(!ownsAppRuntime || appGateController == null)
     }
     var offlineLaunchRouteHandled by rememberSaveable { mutableStateOf(false) }
     var networkToastBaselineReady by rememberSaveable { mutableStateOf(false) }
@@ -529,7 +529,7 @@ internal fun MainAppContent(
     }
 
     LaunchedEffect(appContentGeneration) {
-        if (!ownsAppRuntime) return@LaunchedEffect
+        if (!ownsAppRuntime || appGateController == null) return@LaunchedEffect
         NetworkStatusRepository.ensureStarted()
         EpisodeReleaseNotificationsRepository.refreshAsync()
         kotlinx.coroutines.delay(5_000)
@@ -537,7 +537,7 @@ internal fun MainAppContent(
     }
 
     LaunchedEffect(networkStatusUiState.condition) {
-        if (!ownsAppRuntime) return@LaunchedEffect
+        if (!ownsAppRuntime || appGateController == null) return@LaunchedEffect
         val condition = networkStatusUiState.condition
         if (!networkToastBaselineReady) {
             networkToastBaselineReady = true

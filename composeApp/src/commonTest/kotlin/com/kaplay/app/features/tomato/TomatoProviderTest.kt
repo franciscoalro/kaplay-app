@@ -29,6 +29,11 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun streamRequestsIncludeRequiredAppHeader() {
+        assertEquals("1.4.3", TomatoProvider.apiHeaders("token", "stream")["x-app"])
+    }
+
+    @Test
     fun parsesTomatoIds() {
         assertEquals(6945L, TomatoProvider.parseAnimeId("tomato:6945"))
         assertEquals(123L, TomatoProvider.parseEpisodeId("tomato:6945:123"))
