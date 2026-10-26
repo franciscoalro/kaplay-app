@@ -626,17 +626,29 @@ actual object PluginRepository {
             }
             ?: emptyList()
 
-        val (finalRepos, finalScrapers) = if (loadedScrapers.none { it.id == EmbeddedTomatoPlugin.SCRAPER_ID }) {
-            PluginStorage.saveScraperCode(profileId, EmbeddedTomatoPlugin.SCRAPER_ID, EmbeddedTomatoPlugin.CODE, false)
-            requiresMigration = true
-            val reposWithDefault = if (loadedRepos.none { it.manifestUrl == EmbeddedTomatoPlugin.MANIFEST_URL }) {
-                loadedRepos + EmbeddedTomatoPlugin.defaultRepository
-            } else {
-                loadedRepos
+        val (finalRepos, finalScrapers) = run {
+            val currentScrapers = loadedScrapers.toMutableList()
+            val currentRepos = loadedRepos.toMutableList()
+            var changed = false
+
+            if (currentRepos.none { it.manifestUrl == EmbeddedTomatoPlugin.MANIFEST_URL }) {
+                currentRepos.add(EmbeddedTomatoPlugin.defaultRepository)
+                changed = true
             }
-            reposWithDefault to (loadedScrapers + EmbeddedTomatoPlugin.createDefaultScraper())
-        } else {
-            loadedRepos to loadedScrapers
+
+            EmbeddedTomatoPlugin.defaultScrapers.forEach { defaultScraper ->
+                if (currentScrapers.none { it.id == defaultScraper.id }) {
+                    PluginStorage.saveScraperCode(profileId, defaultScraper.id, defaultScraper.code, false)
+                    currentScrapers.add(defaultScraper)
+                    changed = true
+                }
+            }
+
+            if (changed) {
+                requiresMigration = true
+            }
+
+            currentRepos.toList() to currentScrapers.toList()
         }
 
         return LoadedPluginState(
