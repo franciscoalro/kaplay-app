@@ -39,6 +39,13 @@ sealed interface CatalogTarget {
         override val contentType: String,
         override val supportsPagination: Boolean = false,
     ) : CatalogTarget
+
+    data class Tomato(
+        val query: String?,
+        override val contentType: String = "tv",
+    ) : CatalogTarget {
+        override val supportsPagination: Boolean = false
+    }
 }
 
 @Serializable
