@@ -12,6 +12,9 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -147,6 +150,15 @@ object TomatoProvider {
         return runCatching { value.jsonArray.mapNotNull { it as? JsonObject } }.getOrDefault(emptyList())
     }
 
+    internal fun detailObject(payload: JsonObject): JsonObject =
+        (payload["anime_details"] as? JsonObject) ?: payloadData(payload)
+
+    internal fun detailName(payload: JsonObject): String =
+        (detailObject(payload)["anime_name"]
+            ?: detailObject(payload)["name"]
+            ?: detailObject(payload)["title"])
+            ?.jsonPrimitive?.contentOrNull.orEmpty()
+
     internal fun searchItems(payload: JsonObject): List<JsonObject> {
         val data = payload["data"]
         val candidates = buildList {
@@ -204,15 +216,19 @@ object TomatoProvider {
         val items = feedItems(payload["data"], mutableListOf())
             .distinctBy { animeIdOf(it) }
             .take(FEED_ENRICH_LIMIT)
-        return items.mapNotNull { item ->
-            val id = animeIdOf(item) ?: return@mapNotNull null
-            val fallback = if (titleOf(item).isBlank()) {
-                runCatching { animeDetails(id).name }.getOrNull().orEmpty()
-            } else {
-                ""
-            }
-            TomatoTitle(id = id, name = titleOf(item).ifBlank { fallback }, image = imageOf(item))
-                .takeIf { it.name.isNotBlank() }
+        return coroutineScope {
+            items.map { item ->
+                async {
+                    val id = animeIdOf(item) ?: return@async null
+                    val fallback = if (titleOf(item).isBlank()) {
+                        runCatching { animeDetails(id).name }.getOrNull().orEmpty()
+                    } else {
+                        ""
+                    }
+                    TomatoTitle(id = id, name = titleOf(item).ifBlank { fallback }, image = imageOf(item))
+                        .takeIf { it.name.isNotBlank() }
+                }
+            }.awaitAll().filterNotNull()
         }
     }
 
@@ -238,7 +254,7 @@ object TomatoProvider {
     suspend fun animeDetails(animeId: Long): TomatoDetails {
         val payload = requestJson("/v2/anime/$animeId", kind = "metadata", body = null, attempts = 3)
         val data = payloadData(payload)
-        val details = (payload["anime_details"] as? JsonObject) ?: data
+        val details = detailObject(payload)
         val seasons = (payload["anime_seasons"] ?: data["anime_seasons"] ?: data["seasons"])
             ?.let { runCatching { it.jsonArray.mapNotNull { entry -> entry as? JsonObject } }.getOrNull() }
             .orEmpty()

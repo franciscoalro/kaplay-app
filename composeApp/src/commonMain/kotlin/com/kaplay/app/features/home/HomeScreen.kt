@@ -1056,7 +1056,8 @@ fun HomeScreen(
                     }
                 }
 
-                !hasActiveAddons && !hasServerLibraries && !hasRenderableCollectionRows -> {
+                !hasActiveAddons && !hasServerLibraries && !hasRenderableCollectionRows &&
+                    homeUiState.sections.isEmpty() && homeUiState.heroItems.isEmpty() -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
                         continueWatchingItems = continueWatchingItems,
