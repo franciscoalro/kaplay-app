@@ -151,7 +151,7 @@ object TomatoProvider {
             }
         }
         candidates.forEach { value ->
-            val items = runCatching { value.jsonArray.mapNotNull { it as? JsonObject } }.getOrNull()
+            val items = runCatching { value?.jsonArray?.mapNotNull { it as? JsonObject }.orEmpty() }.getOrNull()
             if (!items.isNullOrEmpty()) return items
         }
         return emptyList()

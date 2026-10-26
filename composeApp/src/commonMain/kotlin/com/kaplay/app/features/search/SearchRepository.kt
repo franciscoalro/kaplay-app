@@ -129,7 +129,11 @@ object SearchRepository {
             append('|')
             append(
                 requests.joinToString(separator = "|") { request ->
-                    "${request.addon.manifestUrl}:${request.type}:${request.catalogId}"
+                    if (request.isTomato) {
+                        "tomato:${request.type}:${request.catalogId}"
+                    } else {
+                        "${request.addon!!.manifestUrl}:${request.type}:${request.catalogId}"
+                    }
                 },
             )
             serverSearches.forEach { ref ->
@@ -485,7 +489,7 @@ object SearchRepository {
 
     private suspend fun SearchCatalogRequest.toSection(forceRefresh: Boolean): HomeCatalogSection {
         if (isTomato) return tomatoSection()
-        val manifest = requireNotNull(addon.manifest)
+        val manifest = requireNotNull(addon?.manifest)
         val page = fetchCatalogPage(
             manifestUrl = manifest.transportUrl,
             type = type,
@@ -505,8 +509,8 @@ object SearchRepository {
         return HomeCatalogSection(
             key = "${manifest.id}:search:$type:$catalogId:${query.lowercase()}",
             title = getString(Res.string.discover_catalog_context, catalogName, type.displayLabel()),
-            subtitle = addon.displayTitle,
-            addonName = addon.displayTitle,
+            subtitle = addon!!.displayTitle,
+            addonName = addon!!.displayTitle,
             target = CatalogTarget.Addon(
                 manifestUrl = manifest.transportUrl,
                 contentType = type,
@@ -687,7 +691,7 @@ private data class SearchCatalogRequest(
     val query: String,
     val supportsPagination: Boolean,
 ) {
-    private val isTomato: Boolean get() = addon == null
+    internal val isTomato: Boolean get() = addon == null
 
     companion object {
         fun TOMATO(query: String) = SearchCatalogRequest(

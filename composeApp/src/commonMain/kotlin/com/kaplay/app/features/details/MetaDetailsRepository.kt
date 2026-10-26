@@ -194,7 +194,7 @@ object MetaDetailsRepository {
     private fun loadTomatoMeta(requestKey: String, metaId: String) {
         val animeId = com.kaplay.app.features.tomato.TomatoProvider.parseAnimeId(metaId)
         if (animeId == null) {
-            _uiState.value = MetaDetailsUiState(errorMessage = getString(Res.string.details_load_failed_all_addons))
+            _uiState.value = MetaDetailsUiState(errorMessage = kotlinx.coroutines.runBlocking { getString(Res.string.details_load_failed_all_addons) })
             activeRequestKey = null
             return
         }
