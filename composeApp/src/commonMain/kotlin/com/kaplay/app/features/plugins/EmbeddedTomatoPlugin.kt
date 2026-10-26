@@ -520,7 +520,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_SUPERCINE: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -653,7 +654,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_ANIMESORION: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -755,7 +757,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_VELOPLAYTV: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -916,7 +919,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_CINEGATO: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -1048,7 +1052,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_POBREFLIX: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -1160,7 +1165,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_NETCINE: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -1267,7 +1273,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_REDECANAIS: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -1392,7 +1399,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_TOPANIMES: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -1499,7 +1507,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_MEGAFILMESHD: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -1606,7 +1615,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_SARAFLIX: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -1713,7 +1723,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val CODE_CINEVISION: String = """function normalizeTitle(value) {
   return String(value || "")
@@ -1815,7 +1826,8 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n"""
+module.exports = { getStreams, onSettings };
+"""
 
     val defaultRepository = PluginRepositoryItem(
         manifestUrl = MANIFEST_URL,

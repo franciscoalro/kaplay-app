@@ -121,4 +121,4 @@ function onSettings() {
   ];
 }
 
-module.exports = { getStreams, onSettings };\n
+module.exports = { getStreams, onSettings };
