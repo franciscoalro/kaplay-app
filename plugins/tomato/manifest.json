@@ -1,8 +1,8 @@
 {
-  "name": "Tomato for Nuvio",
+  "name": "Tomato for KAPlay",
   "version": "1.0.0",
-  "description": "Nuvio QuickJS port of the Tomato anime stream provider.",
-  "author": "KA Play / Nuvio port",
+  "description": "KAPlay QuickJS port of the Tomato anime stream provider.",
+  "author": "KA Play / KAPlay port",
   "scrapers": [
     {
       "id": "tomato",

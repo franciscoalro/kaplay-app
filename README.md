@@ -1,28 +1,28 @@
 <div align="center">
 
-  <img src="https://nuvio.tv/assets/nuvio-app-logo-wordmark.webp" alt="Nuvio" width="320" />
+  <img src="https://kaplay.tv/assets/kaplay-app-logo-wordmark.webp" alt="KAPlay" width="320" />
 
   <p>
     A free, open-source media app for your phone, your desktop, and the TV you already own.
     <br />
-    Bring your own sources. Nuvio turns them into a library with artwork, ratings, subtitles, and your place saved on every screen.
+    Bring your own sources. KAPlay turns them into a library with artwork, ratings, subtitles, and your place saved on every screen.
   </p>
 
-  [Website](https://nuvio.tv) · [GitHub releases](https://github.com/NuvioMedia/NuvioMobile/releases/latest) · [Support Nuvio](https://nuvio.tv/support)
+  [Website](https://kaplay.tv) · [GitHub releases](https://github.com/KAPlayMedia/KAPlayMobile/releases/latest) · [Support KAPlay](https://kaplay.tv/support)
 
 </div>
 
-## Get Nuvio Mobile
+## Get KAPlay Mobile
 
-- [Android on Google Play](https://play.google.com/store/apps/details?id=com.nuvio.app)
-- [Android APK](https://github.com/NuvioMedia/NuvioMobile/releases/latest)
-- iOS via AltStore or SideStore: add [this source URL](https://raw.githubusercontent.com/NuvioMedia/NuvioMobile/cmp-rewrite/store.json) in the app's Sources section, then install Nuvio.
+- [Android on Google Play](https://play.google.com/store/apps/details?id=com.kaplay.app)
+- [Android APK](https://github.com/KAPlayMedia/KAPlayMobile/releases/latest)
+- iOS via AltStore or SideStore: add [this source URL](https://raw.githubusercontent.com/KAPlayMedia/KAPlayMobile/cmp-rewrite/store.json) in the app's Sources section, then install KAPlay.
 
 ## Build from source
 
 ```bash
-git clone https://github.com/NuvioMedia/NuvioMobile.git
-cd NuvioMobile
+git clone https://github.com/KAPlayMedia/KAPlayMobile.git
+cd KAPlayMobile
 ```
 
 ### Android
@@ -38,7 +38,7 @@ Android development requires Android Studio and the Android SDK.
 iOS development requires macOS and Xcode.
 
 ```bash
-env NUVIO_IOS_DISTRIBUTION=full xcodebuild \
+env KAPLAY_IOS_DISTRIBUTION=full xcodebuild \
   -project iosApp/iosApp.xcodeproj \
   -scheme iosApp \
   -configuration Debug \

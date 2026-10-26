@@ -133,7 +133,7 @@ function bestTitleMatch(titles, items) {
 }
 
 async function fetchTmdbTitles(tmdbId, mediaType) {
-  if (!TMDB_API_KEY) throw new Error("TMDB_API_KEY is not configured in Nuvio");
+  if (!TMDB_API_KEY) throw new Error("TMDB_API_KEY is not configured in KAPlay");
   const normalizedType = mediaType === "movie" ? "movie" : "tv";
   const response = await fetch(
     `https://api.themoviedb.org/3/${normalizedType}/${encodeURIComponent(tmdbId)}` +

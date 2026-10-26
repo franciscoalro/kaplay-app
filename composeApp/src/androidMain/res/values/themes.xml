@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Nuvio" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="android:windowBackground">@color/nuvio_background</item>
+    <style name="Theme.KAPlay" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/kaplay_background</item>
     </style>
 
-    <style name="Theme.Nuvio.Splash" parent="@style/Theme.Nuvio" />
-    <style name="Theme.Nuvio.Splash.ArcticBlue" parent="@style/Theme.Nuvio.Splash" />
-    <style name="Theme.Nuvio.Splash.Emerald" parent="@style/Theme.Nuvio.Splash" />
-    <style name="Theme.Nuvio.Splash.RoseGold" parent="@style/Theme.Nuvio.Splash" />
-    <style name="Theme.Nuvio.Splash.Copper" parent="@style/Theme.Nuvio.Splash" />
-    <style name="Theme.Nuvio.Splash.Graphite" parent="@style/Theme.Nuvio.Splash" />
+    <style name="Theme.KAPlay.Splash" parent="@style/Theme.KAPlay" />
+    <style name="Theme.KAPlay.Splash.ArcticBlue" parent="@style/Theme.KAPlay.Splash" />
+    <style name="Theme.KAPlay.Splash.Emerald" parent="@style/Theme.KAPlay.Splash" />
+    <style name="Theme.KAPlay.Splash.RoseGold" parent="@style/Theme.KAPlay.Splash" />
+    <style name="Theme.KAPlay.Splash.Copper" parent="@style/Theme.KAPlay.Splash" />
+    <style name="Theme.KAPlay.Splash.Graphite" parent="@style/Theme.KAPlay.Splash" />
 </resources>

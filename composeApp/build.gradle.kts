@@ -52,11 +52,11 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
         localPropertiesFile.asFile.orNull?.takeIf { it.exists() }?.inputStream()?.use { props.load(it) }
 
         val outDir = outputDir.get().asFile
-        outDir.resolve("com/nuvio/app/core/network").apply {
+        outDir.resolve("com/kaplay/app/core/network").apply {
             mkdirs()
             resolve("SupabaseConfig.kt").writeText(
                 """
-                |package com.nuvio.app.core.network
+                |package com.kaplay.app.core.network
                 |
                 |object SupabaseConfig {
                 |    const val URL = "${supabaseUrl.get()}"
@@ -67,11 +67,11 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
-        outDir.resolve("com/nuvio/app/core/diagnostics").apply {
+        outDir.resolve("com/kaplay/app/core/diagnostics").apply {
             mkdirs()
             resolve("SentryConfig.kt").writeText(
                 """
-                |package com.nuvio.app.core.diagnostics
+                |package com.kaplay.app.core.diagnostics
                 |
                 |object SentryConfig {
                 |    const val DSN = "${sentryDsn.get()}"
@@ -81,11 +81,11 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
-        outDir.resolve("com/nuvio/app/features/tmdb").apply {
+        outDir.resolve("com/kaplay/app/features/tmdb").apply {
             mkdirs()
             resolve("TmdbConfig.kt").writeText(
                 """
-                |package com.nuvio.app.features.tmdb
+                |package com.kaplay.app.features.tmdb
                 |
                 |object TmdbConfig {
                 |    const val API_KEY = "${tmdbApiKey.get()}"
@@ -94,41 +94,41 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
-        outDir.resolve("com/nuvio/app/features/trakt").apply {
+        outDir.resolve("com/kaplay/app/features/trakt").apply {
             mkdirs()
             resolve("TraktConfig.kt").writeText(
                 """
-                |package com.nuvio.app.features.trakt
+                |package com.kaplay.app.features.trakt
                 |
                 |object TraktConfig {
                 |    const val CLIENT_ID = "${props.getProperty("TRAKT_CLIENT_ID", "")}" 
                 |    const val CLIENT_SECRET = "${props.getProperty("TRAKT_CLIENT_SECRET", "")}" 
-                |    const val REDIRECT_URI = "${props.getProperty("TRAKT_REDIRECT_URI", "nuvio://auth/trakt")}" 
+                |    const val REDIRECT_URI = "${props.getProperty("TRAKT_REDIRECT_URI", "kaplay://auth/trakt")}" 
                 |}
                 """.trimMargin()
             )
         }
 
-        outDir.resolve("com/nuvio/app/features/simkl").apply {
+        outDir.resolve("com/kaplay/app/features/simkl").apply {
             mkdirs()
             resolve("SimklConfig.kt").writeText(
                 """
-                |package com.nuvio.app.features.simkl
+                |package com.kaplay.app.features.simkl
                 |
                 |object SimklConfig {
                 |    const val CLIENT_ID = "${props.getProperty("SIMKL_CLIENT_ID", "")}"
-                |    const val REDIRECT_URI = "${props.getProperty("SIMKL_REDIRECT_URI", "nuvio://auth/simkl")}"
-                |    const val APP_NAME = "${props.getProperty("SIMKL_APP_NAME", "nuvio")}"
+                |    const val REDIRECT_URI = "${props.getProperty("SIMKL_REDIRECT_URI", "kaplay://auth/simkl")}"
+                |    const val APP_NAME = "${props.getProperty("SIMKL_APP_NAME", "kaplay")}"
                 |}
                 """.trimMargin()
             )
         }
 
-        outDir.resolve("com/nuvio/app/features/mdblist").apply {
+        outDir.resolve("com/kaplay/app/features/mdblist").apply {
             mkdirs()
             resolve("MdbListConfig.kt").writeText(
                 """
-                |package com.nuvio.app.features.mdblist
+                |package com.kaplay.app.features.mdblist
                 |
                 |object MdbListConfig {
                 |    const val CLIENT_ID = "${props.getProperty("MDBLIST_CLIENT_ID", "")}"
@@ -137,11 +137,11 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
-        outDir.resolve("com/nuvio/app/features/player/skip").apply {
+        outDir.resolve("com/kaplay/app/features/player/skip").apply {
             mkdirs()
             resolve("IntroDbConfig.kt").writeText(
                 """
-                |package com.nuvio.app.features.player.skip
+                |package com.kaplay.app.features.player.skip
                 |
                 |object IntroDbConfig {
                 |    const val URL = "${props.getProperty("INTRODB_API_URL", "")}" 
@@ -150,11 +150,11 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
-        outDir.resolve("com/nuvio/app/features/details").apply {
+        outDir.resolve("com/kaplay/app/features/details").apply {
             mkdirs()
             resolve("ImdbEpisodeRatingsConfig.kt").writeText(
                 """
-                |package com.nuvio.app.features.details
+                |package com.kaplay.app.features.details
                 |
                 |object ImdbEpisodeRatingsConfig {
                 |    const val IMDB_RATINGS_API_BASE_URL = "${props.getProperty("IMDB_RATINGS_API_BASE_URL", "")}" 
@@ -164,11 +164,11 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
-        outDir.resolve("com/nuvio/app/features/debrid").apply {
+        outDir.resolve("com/kaplay/app/features/debrid").apply {
             mkdirs()
             resolve("PremiumizeConfig.kt").writeText(
                 """
-                |package com.nuvio.app.features.debrid
+                |package com.kaplay.app.features.debrid
                 |
                 |object PremiumizeConfig {
                 |    const val CLIENT_ID = "${props.getProperty("PREMIUMIZE_CLIENT_ID", "")}"
@@ -177,11 +177,11 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
-        outDir.resolve("com/nuvio/app/core/build").apply {
+        outDir.resolve("com/kaplay/app/core/build").apply {
             mkdirs()
             resolve("AppVersionConfig.kt").writeText(
                 """
-                |package com.nuvio.app.core.build
+                |package com.kaplay.app.core.build
                 |
                 |object AppVersionConfig {
                 |    const val VERSION_NAME = "${appVersionName.get()}"
@@ -191,15 +191,15 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
-        outDir.resolve("com/nuvio/app/features/settings").apply {
+        outDir.resolve("com/kaplay/app/features/settings").apply {
             mkdirs()
             resolve("CommunityConfig.kt").writeText(
                 """
-                |package com.nuvio.app.features.settings
+                |package com.kaplay.app.features.settings
                 |
                 |object CommunityConfig {
                 |    const val CONTRIBUTIONS_URL = "${props.getProperty("CONTRIBUTIONS_URL", "")}" 
-                |    const val SUPPORTERS_WALL_URL = "${props.getProperty("SUPPORTERS_WALL_URL", "https://nuvio.tv/api/supporters/wall")}"
+                |    const val SUPPORTERS_WALL_URL = "${props.getProperty("SUPPORTERS_WALL_URL", "https://kaplay.tv/api/supporters/wall")}"
                 |    const val DONATIONS_BASE_URL = "${props.getProperty("DONATIONS_BASE_URL", "")}" 
                 |    const val DONATIONS_DONATE_URL = "${props.getProperty("DONATIONS_DONATE_URL", "")}" 
                 |}
@@ -236,28 +236,28 @@ val supabaseProps = Properties().apply {
     if (propsFile.exists()) propsFile.inputStream().use { load(it) }
 }
 val appVersionConfigFile = rootProject.file("iosApp/Configuration/Version.xcconfig")
-val releaseAppVersionName = providers.gradleProperty("nuvio.app.versionName").orNull
+val releaseAppVersionName = providers.gradleProperty("kaplay.app.versionName").orNull
     ?: readXcconfigValue(appVersionConfigFile, "MARKETING_VERSION")
     ?: error("MARKETING_VERSION is missing from ${appVersionConfigFile.path}")
 val releaseAppVersionCode = readXcconfigValue(appVersionConfigFile, "CURRENT_PROJECT_VERSION")
     ?.toIntOrNull()
     ?: error("CURRENT_PROJECT_VERSION is missing or invalid in ${appVersionConfigFile.path}")
 val iosDistribution = (
-    providers.gradleProperty("nuvio.ios.distribution").orNull
-        ?: System.getenv("NUVIO_IOS_DISTRIBUTION")
-        ?: supabaseProps.getProperty("NUVIO_IOS_DISTRIBUTION")
+    providers.gradleProperty("kaplay.ios.distribution").orNull
+        ?: System.getenv("KAPLAY_IOS_DISTRIBUTION")
+        ?: supabaseProps.getProperty("KAPLAY_IOS_DISTRIBUTION")
         ?: "appstore"
     ).trim().lowercase()
 require(iosDistribution == "appstore" || iosDistribution == "full") {
-    "NUVIO_IOS_DISTRIBUTION must be 'appstore' or 'full'."
+    "KAPLAY_IOS_DISTRIBUTION must be 'appstore' or 'full'."
 }
 val iosDistributionSourceDir = if (iosDistribution == "full") {
     "src/iosFull/kotlin"
 } else {
     "src/iosAppStore/kotlin"
 }
-val iosFrameworkBundleId = "com.nuvio.media"
-val nuvioEngineAppleFramework = rootProject.file("../nuvio-engine/platform/apple/NuvioEngine.xcframework")
+val iosFrameworkBundleId = "com.kaplay.media"
+val kaplayEngineAppleFramework = rootProject.file("../kaplay-engine/platform/apple/KAPlayEngine.xcframework")
 val fullCommonSourceDir = project.file("src/fullCommonMain/kotlin")
 val generatedRuntimeConfigDir = layout.buildDirectory.dir("generated/runtime-config/kotlin")
 val requestedGradleTasks = gradle.startParameter.taskNames.map { taskName ->
@@ -271,17 +271,17 @@ val requestedAndroidDistributions = requestedGradleTasks.mapNotNull { taskName -
     }
 }.toSet()
 require(requestedAndroidDistributions.size <= 1) {
-    "Build Android full and playstore distributions separately, or set -Pnuvio.android.distribution=full|playstore."
+    "Build Android full and playstore distributions separately, or set -Pkaplay.android.distribution=full|playstore."
 }
-val configuredAndroidDistribution = providers.gradleProperty("nuvio.android.distribution").orNull
-    ?: supabaseProps.getProperty("NUVIO_ANDROID_DISTRIBUTION")
+val configuredAndroidDistribution = providers.gradleProperty("kaplay.android.distribution").orNull
+    ?: supabaseProps.getProperty("KAPLAY_ANDROID_DISTRIBUTION")
 val isAmbiguousAndroidPackageTask = requestedGradleTasks.any { taskName ->
     taskName == "build" ||
         taskName.startsWith("assemble") ||
         taskName.startsWith("bundle")
 } && requestedAndroidDistributions.isEmpty()
 require(configuredAndroidDistribution != null || !isAmbiguousAndroidPackageTask) {
-    "Set -Pnuvio.android.distribution=full|playstore for aggregate Android assemble/bundle tasks."
+    "Set -Pkaplay.android.distribution=full|playstore for aggregate Android assemble/bundle tasks."
 }
 val androidDistribution = (
     configuredAndroidDistribution
@@ -289,7 +289,7 @@ val androidDistribution = (
         ?: "playstore"
     ).trim().lowercase()
 require(androidDistribution == "playstore" || androidDistribution == "full") {
-    "nuvio.android.distribution must be 'playstore' or 'full'."
+    "kaplay.android.distribution must be 'playstore' or 'full'."
 }
 val androidDistributionSourceDir = if (androidDistribution == "full") {
     "src/androidFull/kotlin"
@@ -320,9 +320,9 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     localPropertiesFile.set(rootProject.layout.projectDirectory.file("local.properties"))
     appVersionName.set(releaseAppVersionName)
     appVersionCode.set(releaseAppVersionCode)
-    supabaseUrl.set(runtimeConfigValue("NUVIO_SUPABASE_URL"))
-    supabaseAnonKey.set(runtimeConfigValue("NUVIO_SUPABASE_ANON_KEY"))
-    supabaseFallbackUrl.set(runtimeConfigValue("NUVIO_SUPABASE_FALLBACK_URL"))
+    supabaseUrl.set(runtimeConfigValue("KAPLAY_SUPABASE_URL"))
+    supabaseAnonKey.set(runtimeConfigValue("KAPLAY_SUPABASE_ANON_KEY"))
+    supabaseFallbackUrl.set(runtimeConfigValue("KAPLAY_SUPABASE_FALLBACK_URL"))
     sentryDsn.set(runtimeConfigValue("SENTRY_DSN"))
     tmdbApiKey.set(runtimeConfigValue("TMDB_API_KEY"))
     sentryEnvironment.set(
@@ -340,7 +340,7 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
 
 kotlin {
     android {
-        namespace = "com.nuvio.app"
+        namespace = "com.kaplay.app"
         compileSdk {
             version = release(libs.versions.android.compileSdk.get().toInt()) {
                 minorApiLevel = libs.versions.android.compileSdkMinor.get().toInt()
@@ -361,12 +361,12 @@ kotlin {
     )
 
     iosTargets.forEach { iosTarget ->
-        val nuvioEngineSlice = if (iosTarget.name == "iosArm64") {
+        val kaplayEngineSlice = if (iosTarget.name == "iosArm64") {
             "ios-arm64"
         } else {
             "ios-arm64_x86_64-simulator"
         }
-        val nuvioEngineSliceDirectory = nuvioEngineAppleFramework.resolve(nuvioEngineSlice)
+        val kaplayEngineSliceDirectory = kaplayEngineAppleFramework.resolve(kaplayEngineSlice)
         iosTarget.compilations.getByName("main") {
             cinterops {
                 create("commoncrypto") {
@@ -378,13 +378,13 @@ kotlin {
                     compilerOpts("-I${project.projectDir}/src/nativeInterop/cinterop")
                 }
                 if (iosDistribution == "full") {
-                    check(nuvioEngineSliceDirectory.resolve("libCNuvioEngine.a").isFile) {
-                        "Build the local Nuvio Engine Apple XCFramework before compiling iOS Full."
+                    check(kaplayEngineSliceDirectory.resolve("libCKAPlayEngine.a").isFile) {
+                        "Build the local KAPlay Engine Apple XCFramework before compiling iOS Full."
                     }
-                    create("nuvioengine") {
-                        defFile(project.file("src/nativeInterop/cinterop/nuvioengine.def"))
-                        compilerOpts("-I${nuvioEngineSliceDirectory.resolve("Headers").absolutePath}")
-                        extraOpts("-libraryPath", nuvioEngineSliceDirectory.absolutePath)
+                    create("kaplayengine") {
+                        defFile(project.file("src/nativeInterop/cinterop/kaplayengine.def"))
+                        compilerOpts("-I${kaplayEngineSliceDirectory.resolve("Headers").absolutePath}")
+                        extraOpts("-libraryPath", kaplayEngineSliceDirectory.absolutePath)
                     }
                 }
                 configureEach {
@@ -448,8 +448,8 @@ kotlin {
                 implementation("androidx.recyclerview:recyclerview:1.4.0")
                 implementation("com.squareup.okhttp3:okhttp:4.12.0")
                 implementation("com.google.code.gson:gson:2.11.0")
-                // libass - atlas-based subtitle rendering (from NuvioMedia/nuvio-libass)
-                implementation(files("libs/nuvio-libass-release.aar"))
+                // libass - atlas-based subtitle rendering (from KAPlayMedia/kaplay-libass)
+                implementation(files("libs/kaplay-libass-release.aar"))
                 implementation(libs.ktor.client.okhttp)
                 implementation(libs.sentry.android)
                 implementation(libs.androidx.media3.exoplayer.hls)
@@ -469,7 +469,7 @@ kotlin {
                 implementation(libs.mpv.android.lib)
                 implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("lib-*.aar"))))
                 if (androidDistribution == "full") {
-                    implementation(files("libs/quickjs-kt-android-1.0.5-nuvio.aar"))
+                    implementation(files("libs/quickjs-kt-android-1.0.5-kaplay.aar"))
                     implementation(libs.ksoup)
                 }
             }

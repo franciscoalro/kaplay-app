@@ -1,13 +1,13 @@
 #import <UIKit/UIKit.h>
 #include <stdbool.h>
 
-typedef void (*NuvioAppIconCompletion)(bool);
+typedef void (*KAPlayAppIconCompletion)(bool);
 
-bool NuvioSupportsAlternateAppIcons(void) {
+bool KAPlaySupportsAlternateAppIcons(void) {
     return UIApplication.sharedApplication.supportsAlternateIcons;
 }
 
-bool NuvioIsCurrentAlternateAppIcon(const char *name) {
+bool KAPlayIsCurrentAlternateAppIcon(const char *name) {
     NSString *currentName = UIApplication.sharedApplication.alternateIconName;
     if (name == NULL) {
         return currentName == nil;
@@ -15,7 +15,7 @@ bool NuvioIsCurrentAlternateAppIcon(const char *name) {
     return [currentName isEqualToString:[NSString stringWithUTF8String:name]];
 }
 
-void NuvioSetAlternateAppIconName(const char *name, NuvioAppIconCompletion completion) {
+void KAPlaySetAlternateAppIconName(const char *name, KAPlayAppIconCompletion completion) {
     NSString *iconName = name == NULL ? nil : [NSString stringWithUTF8String:name];
     void (^changeIcon)(void) = ^{
         UIApplication *application = UIApplication.sharedApplication;

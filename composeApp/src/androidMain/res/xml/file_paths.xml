@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path
-        name="nuvio_updates"
+        name="kaplay_updates"
         path="updates/" />
     <cache-path
-        name="nuvio_subtitles"
+        name="kaplay_subtitles"
         path="subtitles/" />
     <files-path
-        name="nuvio_downloads"
+        name="kaplay_downloads"
         path="downloads/" />
 </paths>

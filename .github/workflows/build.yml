@@ -1,4 +1,4 @@
-name: nuvio-build
+name: kaplay-build
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: nuvio-build-${{ github.ref }}
+  group: kaplay-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -53,7 +53,7 @@ jobs:
           echo "sdk.dir=$sdk_dir" | sed 's#\\#/#g' > local.properties
           echo "sdk.dir=$sdk_dir" > local.properties
 
-      - name: Compile Nuvio full debug Kotlin
+      - name: Compile KAPlay full debug Kotlin
         id: compile
         run: |
           chmod +x ./gradlew
@@ -84,19 +84,19 @@ jobs:
     env:
       GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -XX:+UseG1GC -Dorg.gradle.workers.max=2
       KOTLIN_COMPILER_EXECUTION_STRATEGY: in-process
-      NUVIO_SUPABASE_URL: ${{ secrets.NUVIO_SUPABASE_URL }}
-      NUVIO_SUPABASE_ANON_KEY: ${{ secrets.NUVIO_SUPABASE_ANON_KEY }}
-      NUVIO_SUPABASE_FALLBACK_URL: ${{ secrets.NUVIO_SUPABASE_FALLBACK_URL }}
+      KAPLAY_SUPABASE_URL: ${{ secrets.KAPLAY_SUPABASE_URL }}
+      KAPLAY_SUPABASE_ANON_KEY: ${{ secrets.KAPLAY_SUPABASE_ANON_KEY }}
+      KAPLAY_SUPABASE_FALLBACK_URL: ${{ secrets.KAPLAY_SUPABASE_FALLBACK_URL }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-      NUVIO_RELEASE_STORE_FILE: ${{ secrets.NUVIO_RELEASE_STORE_FILE }}
-      NUVIO_RELEASE_STORE_PASSWORD: ${{ secrets.NUVIO_RELEASE_STORE_PASSWORD }}
-      NUVIO_RELEASE_KEY_ALIAS: ${{ secrets.NUVIO_RELEASE_KEY_ALIAS }}
-      NUVIO_RELEASE_KEY_PASSWORD: ${{ secrets.NUVIO_RELEASE_KEY_PASSWORD }}
-      NUVIO_RELEASE_KEYSTORE_B64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_B64 }}
+      KAPLAY_RELEASE_STORE_FILE: ${{ secrets.KAPLAY_RELEASE_STORE_FILE }}
+      KAPLAY_RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
+      KAPLAY_RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
+      KAPLAY_RELEASE_KEY_PASSWORD: ${{ secrets.KAPLAY_RELEASE_KEY_PASSWORD }}
+      KAPLAY_RELEASE_KEYSTORE_B64: ${{ secrets.KAPLAY_RELEASE_KEYSTORE_B64 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -134,19 +134,19 @@ jobs:
           key_alias=""
           key_pass=""
 
-          if [ -n "$NUVIO_RELEASE_KEYSTORE_B64" ]; then
+          if [ -n "$KAPLAY_RELEASE_KEYSTORE_B64" ]; then
             # Use the supplied keystore from repo secrets
-            store_file="${NUVIO_RELEASE_STORE_FILE:-release.jks}"
+            store_file="${KAPLAY_RELEASE_STORE_FILE:-release.jks}"
             mkdir -p "$(dirname "$store_file")"
-            echo "$NUVIO_RELEASE_KEYSTORE_B64" | base64 -d > "$store_file"
-            store_pass="${NUVIO_RELEASE_STORE_PASSWORD:-${NUVIO_RELEASE_STORE_PASSWORD:-}}"
-            key_alias="${NUVIO_RELEASE_KEY_ALIAS:-}"
-            key_pass="${NUVIO_RELEASE_KEY_PASSWORD:-}"
+            echo "$KAPLAY_RELEASE_KEYSTORE_B64" | base64 -d > "$store_file"
+            store_pass="${KAPLAY_RELEASE_STORE_PASSWORD:-${KAPLAY_RELEASE_STORE_PASSWORD:-}}"
+            key_alias="${KAPLAY_RELEASE_KEY_ALIAS:-}"
+            key_pass="${KAPLAY_RELEASE_KEY_PASSWORD:-}"
           else
             # No keystore secret -> generate a fresh one so the APK is signed
-            store_file="${HOME}/nuvio-release.jks"
-            store_pass="nuvio-$(date +%s)"
-            key_alias="nuvio"
+            store_file="${HOME}/kaplay-release.jks"
+            store_pass="kaplay-$(date +%s)"
+            key_alias="kaplay"
             key_pass="$store_pass"
             keytool -genkeypair -v \
               -keystore "$store_file" \
@@ -154,15 +154,15 @@ jobs:
               -alias "$key_alias" \
               -keypass "$key_pass" \
               -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Nuvio, OU=Build, O=Nuvio, L=Dev, S=Dev, C=BR" >/dev/null 2>&1 || true
+              -dname "CN=KAPlay, OU=Build, O=KAPlay, L=Dev, S=Dev, C=BR" >/dev/null 2>&1 || true
           fi
 
           {
             echo "sdk.dir=${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
-            echo "NUVIO_RELEASE_STORE_FILE=$store_file"
-            echo "NUVIO_RELEASE_STORE_PASSWORD=$store_pass"
-            echo "NUVIO_RELEASE_KEY_ALIAS=$key_alias"
-            echo "NUVIO_RELEASE_KEY_PASSWORD=$key_pass"
+            echo "KAPLAY_RELEASE_STORE_FILE=$store_file"
+            echo "KAPLAY_RELEASE_STORE_PASSWORD=$store_pass"
+            echo "KAPLAY_RELEASE_KEY_ALIAS=$key_alias"
+            echo "KAPLAY_RELEASE_KEY_PASSWORD=$key_pass"
           } > local.properties
           echo "local.properties generated; keystore=$store_file"
 
@@ -187,7 +187,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: nuvio-full-release-apk
+          name: kaplay-full-release-apk
           path: |
             androidApp/build/outputs/apk/full/release/*.apk
           if-no-files-found: error
