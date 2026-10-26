@@ -88,24 +88,8 @@ object SearchRepository {
 
         val enabledAddons = addons.enabledAddons()
         val hasPendingAddonManifests = enabledAddons.hasPendingEnabledManifests()
-        val addonManifestErrorMessage = enabledAddons.firstEnabledManifestError()
         val activeAddons = enabledAddons.filter { it.manifest != null }
         val serverSearches = ServerCatalog.searchTargets()
-        if (activeAddons.isEmpty() && serverSearches.isEmpty()) {
-            activeJob?.cancel()
-            lastRequestKey = null
-            _uiState.value = SearchUiState(
-                isLoading = hasPendingAddonManifests,
-                emptyStateReason = when {
-                    hasPendingAddonManifests -> null
-                    addonManifestErrorMessage != null -> SearchEmptyStateReason.RequestFailed
-                    else -> SearchEmptyStateReason.NoActiveAddons
-                },
-                errorMessage = addonManifestErrorMessage,
-            )
-            return
-        }
-
         val requests = buildSearchRequests(
             addons = activeAddons,
             query = normalizedQuery,
