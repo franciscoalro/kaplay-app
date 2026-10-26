@@ -151,7 +151,9 @@ open class MainActivity : AppCompatActivity() {
         handleIncomingAppIntent(intent)
 
         setContent {
-            App()
+            // Catalog and plugin playback are usable without a KA Play backend.
+            // Auth/profile/library remain optional screens instead of gating Home/Search.
+            App(bypassAppGate = true)
         }
     }
 
