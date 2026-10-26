@@ -222,7 +222,7 @@ object TomatoProvider {
 
     // ---------- catalog: feed + search ----------
 
-    suspend fun feedSections(): List<FeedSectionPayload> = feedCacheMutex.withLock {
+    internal suspend fun feedSections(): List<FeedSectionPayload> = feedCacheMutex.withLock {
         feedCache?.let { return@withLock it }
         val payload = requestJson("/v2/animes/feed", kind = "metadata", body = null, attempts = 6)
         val rawSections = (payload["data"] as? kotlinx.serialization.json.JsonArray)
