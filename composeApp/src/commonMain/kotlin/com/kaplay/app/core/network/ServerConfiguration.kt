@@ -24,6 +24,9 @@ data class ServerConfiguration(
 
     val isPublicHost: Boolean
         get() = isPublicServerHost(backendUrl)
+
+    val isConfigured: Boolean
+        get() = backendUrl.isNotBlank() && publishableKey.isNotBlank() && isPublicHost
 }
 
 object ServerConfigurationRepository {

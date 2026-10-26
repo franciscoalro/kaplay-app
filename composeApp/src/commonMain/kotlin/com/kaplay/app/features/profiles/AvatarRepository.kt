@@ -161,6 +161,7 @@ object AvatarRepository {
     }
 
     private suspend fun fetchStandardCatalog() {
+        if (!com.kaplay.app.core.network.ServerConfigurationRepository.active.value.isConfigured) return
         if (standardFetchInFlight) return
         standardFetchInFlight = true
         try {
@@ -183,6 +184,7 @@ object AvatarRepository {
     }
 
     private suspend fun fetchMemberCatalog() {
+        if (!com.kaplay.app.core.network.ServerConfigurationRepository.active.value.isConfigured) return
         if (memberFetchInFlight) return
         memberFetchInFlight = true
         try {
