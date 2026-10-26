@@ -1,7 +1,7 @@
 {
   "name": "KAPlay Provedores BR",
-  "version": "1.2.0",
-  "description": "Repositório completo com os 13 provedores nacionais integrados para KAPlay.",
+  "version": "1.3.0",
+  "description": "Repositório com 17 provedores nacionais portados do CloudStream para KAPlay.",
   "author": "KAPlay Team",
   "scrapers": [
     {
@@ -257,6 +257,54 @@
       "formats": [
         "hls"
       ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "ppcine",
+      "name": "PPCine",
+      "description": "Filmes, séries e animes do PPCine.",
+      "version": "1.0.0",
+      "filename": "ppcine.js",
+      "supportedTypes": ["movie", "tv"],
+      "contentLanguage": ["pt-BR"],
+      "formats": ["hls", "mp4"],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "filmefilms",
+      "name": "FilmeFilms",
+      "description": "Fontes do Servidor 14 / FilmeFilms.",
+      "version": "1.0.0",
+      "filename": "filmefilms.js",
+      "supportedTypes": ["movie", "tv"],
+      "contentLanguage": ["pt-BR"],
+      "formats": ["hls", "mp4"],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "planetafilmes",
+      "name": "PlanetaFilmes",
+      "description": "Fontes torrent do PlanetaFilmes.",
+      "version": "2.0.0",
+      "filename": "planetafilmes.js",
+      "supportedTypes": ["movie", "tv"],
+      "contentLanguage": ["pt-BR"],
+      "formats": ["torrent"],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "comandotorrents",
+      "name": "ComandoTorrents",
+      "description": "Fontes torrent do ComandoTorrents.",
+      "version": "1.0.0",
+      "filename": "comandotorrents.js",
+      "supportedTypes": ["movie", "tv"],
+      "contentLanguage": ["pt-BR"],
+      "formats": ["torrent"],
       "enabled": true,
       "hasSettings": false
     }

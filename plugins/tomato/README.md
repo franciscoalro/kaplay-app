@@ -1,8 +1,8 @@
-# Tomato for KAPlay
+# CloudStream providers for KAPlay
 
-QuickJS port of the KA Play/CloudStream Tomato provider. It implements KAPlay's `getStreams(tmdbId, mediaType, season, episode)` contract and returns HLS qualities exposed by the Tomato API.
+QuickJS ports of the KA Play/CloudStream providers. Every scraper implements KAPlay's `getStreams(tmdbId, mediaType, season, episode)` contract.
 
-## What was ported
+## Tomato behavior ported
 
 - TMDB title and alternative-title lookup.
 - Tomato search with feed fallback.
@@ -13,7 +13,7 @@ QuickJS port of the KA Play/CloudStream Tomato provider. It implements KAPlay's 
 - Expired signed-URL rejection.
 - Edge/production host retry behavior.
 
-No Tomato credential is committed. Configure the Bearer token through the scraper Settings screen. The KAPlay settings field is password-masked by the accompanying UI change.
+The original CloudStream Tomato provider ships a rotating public session token; the port keeps that compatibility fallback and lets the user override it through the password-masked Settings field. Rotate the setting when the backend invalidates the session.
 
 ## Install from the published repository
 
@@ -37,7 +37,7 @@ On the device/emulator, open **Settings → Plugins → Add repository** and ent
 - Physical device on the same LAN: `http://192.168.1.10:8000/`
 - Android emulator reaching the host: `http://10.0.2.2:8000/`
 
-KAPlay resolves that URL to `manifest.json`, downloads `tomato.js`, and exposes a Tomato settings action. Enter a Tomato Bearer JWT there before testing a title.
+KAPlay resolves that URL to `manifest.json`, downloads the provider JavaScript files, and exposes their stream actions. Tomato can use the compatibility fallback or an overridden Bearer JWT.
 
 For permanent distribution, publish `manifest.json` and `tomato.js` in the same HTTPS directory and add that directory URL to KAPlay.
 
@@ -45,6 +45,7 @@ For permanent distribution, publish `manifest.json` and `tomato.js` in the same 
 
 ```bash
 node test/tomato.test.cjs
+node test/provider_contract.test.cjs
 ```
 
 The test covers normalization, response variants, matching, season/episode aliases, quality parsing, settings, and a complete mocked `getStreams` request flow.
