@@ -449,8 +449,15 @@ object SearchRepository {
                         supportsPagination = catalog.supportsPagination(),
                     )
                 }
-        } + listOfNotNull(
-            if (type == "tv") SearchCatalogRequest.TOMATO(query) else null
+        } + listOf(
+            SearchCatalogRequest(
+                addon = null,
+                catalogId = "tomato-feed",
+                catalogName = "Tomato Animes",
+                type = "tv",
+                query = query,
+                supportsPagination = false,
+            ),
         )
 
     private fun buildDiscoverSources(addons: List<ManagedAddon>): List<DiscoverCatalogOption> =

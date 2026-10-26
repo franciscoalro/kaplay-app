@@ -21,29 +21,29 @@ import platform.posix.ftell
 import platform.posix.fwrite
 import platform.posix.rewind
 
-internal object PluginStorage {
+internal actual object PluginStorage {
     private const val pluginsStateKey = "plugins_state"
     private const val scraperCodeDirectoryName = "kaplay_plugin_scrapers"
     private val scraperCodeLock = SynchronizedObject()
 
-    fun loadState(profileId: Int): String? =
+    actual fun loadState(profileId: Int): String? =
         NSUserDefaults.standardUserDefaults.stringForKey("${pluginsStateKey}_$profileId")
 
-    fun saveState(profileId: Int, payload: String) {
+    actual fun saveState(profileId: Int, payload: String) {
         NSUserDefaults.standardUserDefaults.setObject(
             payload,
             forKey = "${pluginsStateKey}_$profileId",
         )
     }
 
-    fun hasScraperCode(profileId: Int, scraperId: String): Boolean =
+    actual fun hasScraperCode(profileId: Int, scraperId: String): Boolean =
         NSFileManager.defaultManager.fileExistsAtPath(scraperCodePath(profileId, scraperId))
 
-    fun loadScraperCode(profileId: Int, scraperId: String): String? = synchronized(scraperCodeLock) {
+    actual fun loadScraperCode(profileId: Int, scraperId: String): String? = synchronized(scraperCodeLock) {
         readUtf8File(scraperCodePath(profileId, scraperId))
     }
 
-    fun saveScraperCode(
+    actual fun saveScraperCode(
         profileId: Int,
         scraperId: String,
         code: String,
@@ -83,10 +83,10 @@ internal object PluginStorage {
         }
     }
 
-    fun loadScraperSettings(scraperId: String): String? =
+    actual fun loadScraperSettings(scraperId: String): String? =
         NSUserDefaults.standardUserDefaults.stringForKey("settings_${scraperId}")
 
-    fun saveScraperSettings(scraperId: String, payload: String) {
+    actual fun saveScraperSettings(scraperId: String, payload: String) {
         NSUserDefaults.standardUserDefaults.setObject(
             payload,
             forKey = "settings_${scraperId}",

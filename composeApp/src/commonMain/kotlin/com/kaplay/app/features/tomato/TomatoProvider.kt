@@ -4,6 +4,7 @@ import com.kaplay.app.core.network.createApiHttpClient
 import com.kaplay.app.features.plugins.PluginStorage
 import com.kaplay.app.features.streams.StreamItem
 import com.kaplay.app.features.streams.StreamProxyHeaders
+import com.kaplay.app.features.streams.StreamBehaviorHints
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -77,7 +78,7 @@ object TomatoProvider {
 
     private val http: HttpClient by lazy { createApiHttpClient() }
 
-    private fun currentTimeMillis(): Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+    private fun currentTimeMillis(): Long = kotlin.time.Clock.System.now().toEpochMilliseconds()
 
     internal fun apiHeaders(token: String, kind: String): Map<String, String> {
         val headers = linkedMapOf(

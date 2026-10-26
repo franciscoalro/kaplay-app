@@ -211,7 +211,7 @@ object MetaDetailsRepository {
                         }.map { episode ->
                             MetaVideo(
                                 id = provider.videoId(animeId, episode.episodeId),
-                                title = "E$\{episode.number.orEmpty().padStart(2, '0')\}$\{episode.name?.let { " · $it" } ?: ""\}",
+                                title = "E${episode.number.orEmpty().padStart(2, '0')}${episode.name?.let { " · $it" } ?: ""}",
                                 thumbnail = episode.thumbnail,
                                 season = season.number,
                                 episode = episode.number,
