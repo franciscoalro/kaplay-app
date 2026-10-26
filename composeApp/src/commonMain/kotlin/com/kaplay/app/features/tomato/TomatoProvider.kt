@@ -138,7 +138,7 @@ object TomatoProvider {
             } catch (error: Throwable) {
                 lastError = error
             }
-            kotlinx.coroutines.delay(retryDelayMillis)
+            kotlinx.coroutines.delay(retryDelayMillis * (attempt + 1))
         }
         throw (lastError ?: TomatoException.RequestFailed("Tomato request failed for $path"))
     }
@@ -234,10 +234,15 @@ object TomatoProvider {
             runCatching { values.jsonArray.mapNotNull { it as? JsonObject } }.getOrDefault(emptyList())
         }
         val ids = allItems.mapNotNull(::animeIdOf).distinct()
-        val namesById = coroutineScope {
-            ids.associateWith { id ->
-                async { runCatching { animeDetails(id).name }.getOrNull().orEmpty() }
-            }.mapValues { (_, deferred) -> deferred.await() }
+        val namesById = buildMap<Long, String> {
+            ids.chunked(4).forEach { batch ->
+                val resolved = coroutineScope {
+                    batch.map { id ->
+                        async { id to runCatching { animeDetails(id).name }.getOrNull().orEmpty() }
+                    }.awaitAll()
+                }
+                resolved.forEach { (id, name) -> put(id, name) }
+            }
         }
         val sections = rawSections.mapNotNull { section ->
             val title = section["title"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
