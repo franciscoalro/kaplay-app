@@ -96,8 +96,8 @@ object TomatoProvider {
             "Accept" to "application/json, text/plain, */*",
         )
         if (kind == "stream" || kind == "post") headers["Content-Type"] = "application/json"
-        if (kind != "stream") headers["request-time"] = currentTimeMillis().toString()
-        if (kind == "metadata" || kind == "stream") headers["x-app"] = "1.4.3"
+        headers["request-time"] = currentTimeMillis().toString()
+        headers["x-app"] = "1.4.3"
         return headers
     }
 

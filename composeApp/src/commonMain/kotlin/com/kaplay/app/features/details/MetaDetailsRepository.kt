@@ -230,6 +230,7 @@ object MetaDetailsRepository {
                     )
                 }.getOrElse { error ->
                     if (error is kotlinx.coroutines.CancellationException) throw error
+                    log.e(error) { "Tomato details failed for animeId=$animeId" }
                     null
                 }
             }
