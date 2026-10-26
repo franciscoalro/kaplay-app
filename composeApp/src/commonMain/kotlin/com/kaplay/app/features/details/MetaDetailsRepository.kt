@@ -58,6 +58,12 @@ object MetaDetailsRepository {
     fun load(type: String, id: String) {
         log.d { "load() called — type=$type id=$id" }
         val requestKey = "$type:$id"
+        cachedMetaByRequestKey[requestKey]?.let { cachedEntry ->
+            _uiState.value = MetaDetailsUiState(meta = cachedEntry.baseMeta.withUnreleasedFilter())
+            activeRequestKey = requestKey
+            return
+        }
+        if (activeRequestKey == requestKey && _uiState.value.isLoading) return
         ServerItemRef.parse(id)?.let { ref ->
             loadServerMeta(requestKey, ref)
             return
@@ -236,6 +242,7 @@ object MetaDetailsRepository {
             }
             if (activeRequestKey != requestKey) return@launch
             if (meta != null) {
+                cachedMetaByRequestKey[requestKey] = CachedMetaEntry(baseMeta = meta)
                 _uiState.value = MetaDetailsUiState(meta = meta.withUnreleasedFilter())
             } else {
                 _uiState.value = MetaDetailsUiState(

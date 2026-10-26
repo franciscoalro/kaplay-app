@@ -252,7 +252,7 @@ object TomatoProvider {
     // ---------- details ----------
 
     suspend fun animeDetails(animeId: Long): TomatoDetails {
-        val payload = requestJson("/v2/anime/$animeId", kind = "metadata", body = null, attempts = 3)
+        val payload = requestJson("/v2/anime/$animeId", kind = "metadata", body = null, attempts = 6)
         val data = payloadData(payload)
         val details = detailObject(payload)
         val seasons = (payload["anime_seasons"] ?: data["anime_seasons"] ?: data["seasons"])
