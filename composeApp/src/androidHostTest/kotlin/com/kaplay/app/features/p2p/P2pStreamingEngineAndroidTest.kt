@@ -16,14 +16,14 @@ class P2pStreamingEngineAndroidTest {
         val stateDirectory = File("state")
         val cacheDirectory = File("cache")
 
-        val uploading = buildKAPlayEngineConfig(
+        val uploading = buildTorrentEngineConfig(
             stateDirectory = stateDirectory,
             cacheDirectory = cacheDirectory,
             uploadEnabled = true,
             torrentProfile = P2pTorrentProfile.FAST,
             diskCacheCapacityBytes = P2pCacheSize.GB_5.bytes,
         )
-        val downloadOnly = buildKAPlayEngineConfig(
+        val downloadOnly = buildTorrentEngineConfig(
             stateDirectory = stateDirectory,
             cacheDirectory = cacheDirectory,
             uploadEnabled = false,
