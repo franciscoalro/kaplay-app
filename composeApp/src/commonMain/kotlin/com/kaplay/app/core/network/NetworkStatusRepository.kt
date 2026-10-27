@@ -167,8 +167,10 @@ object NetworkStatusRepository {
             }.getOrNull()
         } ?: return false
 
-        return response.status in 100..599
+        return isReachableHttpStatus(response.status)
     }
+
+    internal fun isReachableHttpStatus(status: Int): Boolean = status in 200..499
 
     private fun NetworkCondition.isOfflineLike(): Boolean =
         this == NetworkCondition.NoInternet || this == NetworkCondition.ServersUnreachable
