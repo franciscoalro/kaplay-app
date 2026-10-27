@@ -185,6 +185,7 @@ object StreamAutoPlaySelector {
             matchingStreams
                 .filter { it.isAutoPlayable(debridEnabled, activeResolverProviderId) }
                 .filterNot { it == preferredStream }
+                .sortedWith(compareByDescending<StreamItem> { it.qualityHeight() ?: -1 })
                 .forEach(::add)
         }
         val selected = readyStreams.firstOrNull()
@@ -201,6 +202,22 @@ object StreamAutoPlaySelector {
                 it.isPendingDebridAutoPlay(debridEnabled, activeResolverProviderId)
             },
         )
+    }
+
+    private fun StreamItem.qualityHeight(): Int? {
+        val parsed = clientResolve?.raw?.parsed
+        val qualityText = listOf(
+            parsed?.resolution,
+            parsed?.quality,
+            name,
+            title,
+            description,
+        ).filterNotNull().joinToString(" ")
+        if (Regex("\\b4k\\b", RegexOption.IGNORE_CASE).containsMatchIn(qualityText)) return 2160
+        return Regex("(?<!\\d)(\\d{3,4})\\s*[pP]\\b")
+            .find(qualityText)?.groupValues?.getOrNull(1)?.toIntOrNull()
+            ?: Regex("(?<!\\d)(2160|1440|1080|720|576|480|360)(?!\\d)")
+                .find(qualityText)?.groupValues?.getOrNull(1)?.toIntOrNull()
     }
 
     private fun StreamItem.isAutoPlayable(

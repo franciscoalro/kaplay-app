@@ -291,6 +291,42 @@ class StreamAutoPlaySelectorTest {
         assertEquals(stream, selected)
     }
 
+    @Test
+    fun `first stream mode prefers highest advertised quality`() {
+        val low = stream(addonName = "Tomato", url = "https://example.com/720.m3u8", name = "Tomato • 720p")
+        val high = stream(addonName = "Tomato", url = "https://example.com/1080.m3u8", name = "Tomato • 1080p")
+
+        val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(low, high),
+            mode = StreamAutoPlayMode.FIRST_STREAM,
+            regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            installedAddonNames = setOf("Tomato"),
+            selectedAddons = emptySet(),
+            selectedPlugins = emptySet(),
+        )
+
+        assertEquals(high, selected)
+    }
+
+    @Test
+    fun `unknown quality keeps stable input order after advertised quality`() {
+        val unknown = stream(addonName = "Addon", url = "https://example.com/direct.m3u8", name = "Direct")
+        val high = stream(addonName = "Addon", url = "https://example.com/1080.m3u8", name = "1080p")
+
+        val evaluation = StreamAutoPlaySelector.evaluateAutoPlayStream(
+            streams = listOf(unknown, high),
+            mode = StreamAutoPlayMode.FIRST_STREAM,
+            regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            installedAddonNames = setOf("Addon"),
+            selectedAddons = emptySet(),
+            selectedPlugins = emptySet(),
+        )
+
+        assertEquals(listOf(high, unknown), evaluation.readyStreams)
+    }
+
     private fun stream(
         addonName: String,
         url: String? = null,
