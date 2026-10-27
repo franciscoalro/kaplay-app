@@ -23,6 +23,7 @@ import com.kaplay.app.features.p2p.formatP2pMegabytes
 import com.kaplay.app.features.p2p.formatP2pSpeed
 import com.kaplay.app.features.player.skip.internalSkipAction
 import com.kaplay.app.features.servers.ServerStreams
+import com.kaplay.app.features.streams.detectedQualityHeight
 import com.kaplay.app.features.streams.streamAddonInstanceId
 import com.kaplay.app.isIos
 import kotlinx.coroutines.launch
@@ -277,6 +278,22 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
     val partyState by PartyRepository.state.collectAsStateWithLifecycle()
     val partyActive = partyState.party != null
     val playerBadges = rememberPlayerBadges()
+    val activeSourceQualityHeight = sourceStreamsState.allStreams
+        .firstOrNull { stream ->
+            stream.playableDirectUrl == activeSourceUrl || stream.url == activeSourceUrl
+        }
+        ?.detectedQualityHeight()
+    val sourceQualityStreams = sourceStreamsState.allStreams
+        .filter { activeProviderAddonId.isNullOrBlank() || it.addonId == activeProviderAddonId }
+        .filter { it.detectedQualityHeight() != null }
+    val sourceQualityOptions = sourceQualityStreams
+        .mapNotNull { stream -> stream.detectedQualityHeight() }
+        .distinct()
+        .sortedDescending()
+        .map { height -> VideoQuality(height, "${height}p") }
+    val qualityOptions = (videoQualities + sourceQualityOptions)
+        .distinctBy { it.height }
+        .let { options -> if (options.any { it.isAuto }) options else listOf(VideoQuality.AUTO) + options }
     AnimatedVisibility(
         visible = (controlsVisible || showParentalGuide) && !playerControlsLocked && !isInPip,
         enter = fadeIn(),
@@ -329,7 +346,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                 refreshTracks()
                 showSubtitleModal = true
             },
-            onQualityClick = if (!isIos && playerController?.supportsVideoQualitySelection == true && videoQualities.size > 1) {
+            onQualityClick = if (!isIos && (playerController?.supportsVideoQualitySelection == true || sourceQualityOptions.isNotEmpty()) && qualityOptions.size > 1) {
                 {
                     refreshTracks()
                     showQualityModal = true
@@ -542,10 +559,29 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         },
         onAudioModalDismissed = { showAudioModal = false },
         showQualityModal = showQualityModal,
-        videoQualities = videoQualities,
+        videoQualities = qualityOptions.map { quality ->
+            quality.copy(
+                isSelected = if (activeSourceQualityHeight != null) {
+                    quality.height == activeSourceQualityHeight
+                } else {
+                    quality.isSelected
+                },
+            )
+        },
         onQualitySelected = { quality ->
-            playerController?.selectVideoQuality(quality.height)
-            videoQualities = videoQualities.map { it.copy(isSelected = it.height == quality.height) }
+            val sourceStream = if (quality.isAuto) {
+                sourceQualityStreams.maxByOrNull { it.detectedQualityHeight() ?: -1 }
+            } else {
+                sourceQualityStreams.firstOrNull {
+                    it.detectedQualityHeight() == quality.height
+                }
+            }
+            if (sourceStream != null) {
+                switchToSource(sourceStream)
+            } else {
+                playerController?.selectVideoQuality(quality.height)
+            }
+            videoQualities = qualityOptions.map { it.copy(isSelected = it.height == quality.height) }
             showQualityModal = false
         },
         onQualityModalDismissed = { showQualityModal = false },
