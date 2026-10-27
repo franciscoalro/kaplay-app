@@ -10,7 +10,10 @@ internal fun StreamsUiState.shouldShowAutoPlayLoading(
     if (requestToken == expectedRequestToken && autoPlayDecided) {
         showDirectAutoPlayOverlay
     } else {
-        !manualSelection && StreamAutoPlayPolicy.isEffectivelyEnabled(settings)
+        !manualSelection && (
+            StreamAutoPlayPolicy.isEffectivelyEnabled(settings) ||
+                settings.streamAutoPlayMode == StreamAutoPlayMode.MANUAL
+            )
     }
 
 internal fun StreamsUiState.shouldUseLandscapeAutoPlayLoading(
@@ -19,7 +22,6 @@ internal fun StreamsUiState.shouldUseLandscapeAutoPlayLoading(
     manualSelection: Boolean,
 ): Boolean =
     !manualSelection &&
-        settings.streamAutoPlayMode != StreamAutoPlayMode.MANUAL &&
         requestToken == expectedRequestToken &&
         autoPlayDecided &&
         isDirectAutoPlayFlow &&
