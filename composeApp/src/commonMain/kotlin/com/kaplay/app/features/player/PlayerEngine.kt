@@ -9,6 +9,7 @@ interface PlayerEngineController {
     fun pause()
     fun seekTo(positionMs: Long)
     fun seekBy(offsetMs: Long)
+    fun getCurrentPositionMs(): Long? = null
     fun retry()
     fun setPlaybackSpeed(speed: Float)
     fun setMuted(muted: Boolean) {}

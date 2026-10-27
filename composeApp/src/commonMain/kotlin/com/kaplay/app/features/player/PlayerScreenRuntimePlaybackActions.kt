@@ -357,9 +357,15 @@ internal fun PlayerScreenRuntime.flushWatchProgress(
         TrackingScrobbleAction.STOP -> emitStopScrobbleForCurrentProgress()
         TrackingScrobbleAction.START -> Unit
     }
+    val livePositionMs = playerController?.getCurrentPositionMs()
+    val progressSnapshot = if (livePositionMs != null && livePositionMs > playbackSnapshot.positionMs) {
+        playbackSnapshot.copy(positionMs = livePositionMs)
+    } else {
+        playbackSnapshot
+    }
     WatchProgressRepository.flushPlaybackProgress(
         session = playbackSession,
-        snapshot = playbackSnapshot,
+        snapshot = progressSnapshot,
     )
 }
 

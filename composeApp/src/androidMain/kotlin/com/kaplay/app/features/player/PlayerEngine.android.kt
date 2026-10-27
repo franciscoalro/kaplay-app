@@ -832,6 +832,8 @@ private fun ExoPlayerSurface(
                     exoPlayer.seekTo((exoPlayer.currentPosition + offsetMs).coerceAtLeast(0L))
                 }
 
+                override fun getCurrentPositionMs(): Long = exoPlayer.currentPosition.coerceAtLeast(0L)
+
                 override fun retry() {
                     exoPlayer.prepare()
                     exoPlayer.playWhenReady = true
@@ -1636,6 +1638,8 @@ private class KAPlayLibmpvView(
             override fun seekTo(positionMs: Long) = this@KAPlayLibmpvView.seekToMs(positionMs)
 
             override fun seekBy(offsetMs: Long) = this@KAPlayLibmpvView.seekByMs(offsetMs)
+
+            override fun getCurrentPositionMs(): Long = mpv.getPropertyDouble("time-pos").toMillis().coerceAtLeast(0L)
 
             override fun retry() {
                 executeMpv { loadCurrentSourceNow(playWhenReady = true) }
