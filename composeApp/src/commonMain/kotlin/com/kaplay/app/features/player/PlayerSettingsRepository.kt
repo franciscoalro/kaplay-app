@@ -376,9 +376,17 @@ object PlayerSettingsRepository {
             ?: PlaybackBufferSettings.DEFAULT_BACK_BUFFER_MS
         targetBufferSizeMb = PlayerSettingsStorage.loadTargetBufferSizeMb()
             ?: PlaybackBufferSettings.DEFAULT_TARGET_BUFFER_MB
-        streamAutoPlayMode = PlayerSettingsStorage.loadStreamAutoPlayMode()
+        val storedStreamAutoPlayMode = PlayerSettingsStorage.loadStreamAutoPlayMode()
             ?.let { runCatching { StreamAutoPlayMode.valueOf(it) }.getOrNull() }
-            ?: StreamAutoPlayMode.FIRST_STREAM
+        val streamAutoPlayDefaultMigrated = PlayerSettingsStorage.loadStreamAutoPlayDefaultMigrated() == true
+        streamAutoPlayMode = storedStreamAutoPlayMode ?: StreamAutoPlayMode.FIRST_STREAM
+        if (!streamAutoPlayDefaultMigrated) {
+            if (storedStreamAutoPlayMode == null || storedStreamAutoPlayMode == StreamAutoPlayMode.MANUAL) {
+                streamAutoPlayMode = StreamAutoPlayMode.FIRST_STREAM
+                PlayerSettingsStorage.saveStreamAutoPlayMode(streamAutoPlayMode.name)
+            }
+            PlayerSettingsStorage.saveStreamAutoPlayDefaultMigrated(true)
+        }
         streamAutoPlaySource = PlayerSettingsStorage.loadStreamAutoPlaySource()
             ?.let { runCatching { StreamAutoPlaySource.valueOf(it) }.getOrNull() }
             ?: StreamAutoPlaySource.ALL_SOURCES

@@ -70,6 +70,7 @@ actual object PlayerSettingsStorage {
     private const val backBufferDurationMsKey = "back_buffer_duration_ms"
     private const val targetBufferSizeMbKey = "target_buffer_size_mb"
     private const val streamAutoPlayModeKey = "stream_auto_play_mode"
+    private const val streamAutoPlayDefaultMigratedKey = "stream_auto_play_default_migrated"
     private const val streamAutoPlaySourceKey = "stream_auto_play_source"
     private const val streamAutoPlaySelectedAddonsKey = "stream_auto_play_selected_addons"
     private const val streamAutoPlaySelectedPluginsKey = "stream_auto_play_selected_plugins"
@@ -871,6 +872,15 @@ actual object PlayerSettingsStorage {
             ?.edit()
             ?.putString(ProfileScopedKey.of(streamAutoPlayModeKey), mode)
             ?.apply()
+    }
+
+    actual fun loadStreamAutoPlayDefaultMigrated(): Boolean? = preferences?.let {
+        val key = ProfileScopedKey.of(streamAutoPlayDefaultMigratedKey)
+        if (it.contains(key)) it.getBoolean(key, false) else null
+    }
+
+    actual fun saveStreamAutoPlayDefaultMigrated(value: Boolean) {
+        preferences?.edit()?.putBoolean(ProfileScopedKey.of(streamAutoPlayDefaultMigratedKey), value)?.apply()
     }
 
     actual fun loadStreamAutoPlaySource(): String? =
