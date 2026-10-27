@@ -108,8 +108,15 @@ object StreamsRepository {
         val debridSettings = DebridSettingsRepository.snapshot()
         val streamBadgeRules = StreamBadgeSettingsRepository.snapshot()
         val autoPlayMode = playerSettings.streamAutoPlayMode
-        val isAutoPlayEnabled = !manualSelection && autoPlayMode != StreamAutoPlayMode.MANUAL &&
-            !(autoPlayMode == StreamAutoPlayMode.REGEX_MATCH &&
+        // The normal Play action is always automatic; the explicit manual action passes
+        // manualSelection=true and remains the escape hatch for choosing a source.
+        val effectiveAutoPlayMode = if (!manualSelection && autoPlayMode == StreamAutoPlayMode.MANUAL) {
+            StreamAutoPlayMode.FIRST_STREAM
+        } else {
+            autoPlayMode
+        }
+        val isAutoPlayEnabled = !manualSelection && effectiveAutoPlayMode != StreamAutoPlayMode.MANUAL &&
+            !(effectiveAutoPlayMode == StreamAutoPlayMode.REGEX_MATCH &&
                 !StreamAutoPlayPolicy.isRegexSelectionConfigured(playerSettings.streamAutoPlayRegex))
 
         // Look up persisted binge group when both settings are enabled
@@ -291,7 +298,7 @@ object StreamsRepository {
             fun evaluateAutoPlay(bingeGroupOnly: Boolean = false): StreamAutoPlayEvaluation =
                 StreamAutoPlaySelector.evaluateAutoPlayStream(
                     streams = _uiState.value.groups.flatMap { it.streams },
-                    mode = autoPlayMode,
+                    mode = effectiveAutoPlayMode,
                     regexPattern = playerSettings.streamAutoPlayRegex,
                     source = playerSettings.streamAutoPlaySource,
                     installedAddonNames = installedAddonNames,
