@@ -105,7 +105,7 @@ jobs:
       KAPLAY_RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
       KAPLAY_RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
       KAPLAY_RELEASE_KEY_PASSWORD: ${{ secrets.KAPLAY_RELEASE_KEY_PASSWORD }}
-      KAPLAY_RELEASE_KEYSTORE_BASE64: ${{ secrets.KAPLAY_RELEASE_KEYSTORE_BASE64 }}
+      KAPLAY_RELEASE_KEYSTORE_B64: ${{ secrets.KAPLAY_RELEASE_KEYSTORE_B64 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -139,8 +139,8 @@ jobs:
       - name: Resolve persistent release keystore
         run: |
           set -euo pipefail
-          if [[ -z "${KAPLAY_RELEASE_KEYSTORE_BASE64:-}" ]]; then
-            echo "KAPLAY_RELEASE_KEYSTORE_BASE64 is required; refusing ephemeral release signing." >&2
+          if [[ -z "${KAPLAY_RELEASE_KEYSTORE_B64:-}" ]]; then
+            echo "KAPLAY_RELEASE_KEYSTORE_B64 is required; refusing ephemeral release signing." >&2
             exit 1
           fi
           for required in KAPLAY_RELEASE_STORE_PASSWORD KAPLAY_RELEASE_KEY_ALIAS KAPLAY_RELEASE_KEY_PASSWORD; do
@@ -151,7 +151,7 @@ jobs:
           done
 
           store_file="${RUNNER_TEMP}/kaplay-release.jks"
-          printf '%s' "$KAPLAY_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$store_file"
+          printf '%s' "$KAPLAY_RELEASE_KEYSTORE_B64" | base64 --decode > "$store_file"
           test -s "$store_file"
           {
             echo "sdk.dir=${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
