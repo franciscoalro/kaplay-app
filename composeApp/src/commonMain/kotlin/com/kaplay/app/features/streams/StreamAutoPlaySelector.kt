@@ -205,7 +205,7 @@ object StreamAutoPlaySelector {
     }
 
     private fun StreamItem.qualityHeight(): Int? {
-        val parsed = clientResolve?.raw?.parsed
+        val parsed = clientResolve?.stream?.raw?.parsed
         val qualityText = listOf(
             parsed?.resolution,
             parsed?.quality,
