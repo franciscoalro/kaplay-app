@@ -752,6 +752,44 @@ internal fun StreamDestination(
         )
     }
 
+    LaunchedEffect(
+        streamsUiState.groups,
+        streamsUiState.autoPlayDecided,
+        streamsUiState.autoPlayStream,
+        launch.manualSelection,
+        reuseNavigated,
+    ) {
+        if (
+            launch.manualSelection ||
+            reuseNavigated ||
+            autoPlayNavigationStarted ||
+            streamsUiState.requestToken != expectedStreamsRequestToken ||
+            !streamsUiState.autoPlayDecided ||
+            streamsUiState.autoPlayStream != null
+        ) return@LaunchedEffect
+
+        // Last-resort normal-play fallback: never expose the source picker when a
+        // provider returned a playable stream but the selector rejected its shape.
+        val fallback = streamsUiState.groups
+            .asSequence()
+            .flatMap { it.streams.asSequence() }
+            .firstOrNull { stream ->
+                stream.playableDirectUrl != null ||
+                    stream.youTubeIdToResolve != null ||
+                    stream.serverTarget != null ||
+                    stream.needsLocalDebridResolve
+            }
+            ?: return@LaunchedEffect
+        autoPlayNavigationStarted = true
+        openSelectedStream(
+            stream = fallback,
+            resolvedResumePositionMs = launch.resumePositionMs,
+            resolvedResumeProgressFraction = launch.resumeProgressFraction,
+            forceExternal = false,
+            forceInternal = true,
+        )
+    }
+
     LaunchedEffect(reuseNavigated) {
         if (reuseNavigated) {
             StreamsRepository.setOverlayVisible(false)
