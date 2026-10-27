@@ -531,6 +531,20 @@ private fun BoxScope.RenderPlaybackOverlays(
 
 @Composable
 private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
+    val activeSourceQualityHeight = sourceStreamsState.allStreams
+        .firstOrNull { stream -> stream.playableDirectUrl == activeSourceUrl || stream.url == activeSourceUrl }
+        ?.detectedQualityHeight()
+    val sourceQualityStreams = sourceStreamsState.allStreams
+        .filter { activeProviderAddonId.isNullOrBlank() || it.addonId == activeProviderAddonId }
+        .filter { it.detectedQualityHeight() != null }
+    val sourceQualityOptions = sourceQualityStreams
+        .mapNotNull { it.detectedQualityHeight() }
+        .distinct()
+        .sortedDescending()
+        .map { height -> VideoQuality(height, "${height}p") }
+    val qualityOptions = (videoQualities + sourceQualityOptions)
+        .distinctBy { it.height }
+        .let { options -> if (options.any { it.isAuto }) options else listOf(VideoQuality.AUTO) + options }
     PlayerScreenModalHosts(
         pendingP2pSwitch = pendingP2pSwitch,
         onPendingP2pSwitchChanged = { pendingP2pSwitch = it },
