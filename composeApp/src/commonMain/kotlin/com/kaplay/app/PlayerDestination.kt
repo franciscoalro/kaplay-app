@@ -14,6 +14,7 @@ import com.kaplay.app.features.player.PlayerLaunch
 import com.kaplay.app.features.player.PlayerLaunchStore
 import com.kaplay.app.features.player.PlayerScreen
 import com.kaplay.app.features.watchprogress.ResumePromptRepository
+import com.kaplay.app.navigation.DetailRoute
 import com.kaplay.app.navigation.KAPlayNavigator
 import com.kaplay.app.navigation.PlayerRoute
 
@@ -29,8 +30,26 @@ internal fun PlayerDestination(
     openExternalStreamUrl: (String) -> Boolean,
     onOpenPartyMedia: (PartyMedia) -> Unit,
 ) {
-    val onBack = rememberGuardedPopBackStack(navController, route)
+    val guardedBack = rememberGuardedPopBackStack(navController, route)
     val launch = remember(route.launchId) { PlayerLaunchStore.get(route.launchId) }
+    val onBack = remember(route.launchId, launch, guardedBack) {
+        {
+            guardedBack()
+            if (navController.currentRoute == route && launch != null) {
+                val parentMetaId = launch.parentMetaId
+                val parentMetaType = launch.parentMetaType
+                if (!parentMetaId.isNullOrBlank() && !parentMetaType.isNullOrBlank()) {
+                    navController.navigate(
+                        DetailRoute(
+                            type = parentMetaType,
+                            id = parentMetaId,
+                            title = launch.title,
+                        ),
+                    )
+                }
+            }
+        }
+    }
     if (launch == null) {
         LaunchedEffect(route.launchId) {
             onBack()

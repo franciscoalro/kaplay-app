@@ -47,7 +47,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
 import com.kaplay.app.core.ui.LocalPosterClickAnchor
@@ -1313,10 +1312,7 @@ internal fun MainAppContent(
                         .fillMaxSize()
                         .padding(if (drawsUnderVerticalBar) PaddingValues() else verticalBarPadding),
                     onBack = { navController.popBackStack() },
-                    entryDecorators = listOf(
-                        rememberSaveableStateHolderNavEntryDecorator<NavKey>(),
-                        routeDisposalDecorator,
-                    ),
+                    entryDecorators = listOf(routeDisposalDecorator),
                     sharedTransitionScope = this@SharedTransitionLayout,
                     entryProvider = entryProvider<NavKey> {
                 entry<TabsRoute> {
