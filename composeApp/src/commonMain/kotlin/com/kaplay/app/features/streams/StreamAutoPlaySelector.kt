@@ -210,7 +210,6 @@ object StreamAutoPlaySelector {
     ): Boolean =
         playableDirectUrl != null ||
             youTubeIdToResolve != null ||
-            shouldOpenExternally ||
             serverTarget != null ||
             (
                 AppFeaturePolicy.p2pEnabled &&
