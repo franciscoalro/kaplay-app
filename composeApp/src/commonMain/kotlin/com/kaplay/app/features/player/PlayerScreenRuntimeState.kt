@@ -60,7 +60,7 @@ internal class PlayerScreenRuntime(
     val initialPositionMs: Long get() = args.initialPositionMs
     val initialProgressFraction: Float? get() = args.initialProgressFraction
     var externalSubtitles by mutableStateOf(args.externalSubtitles)
-    val isSeries: Boolean get() = parentMetaType == "series"
+    val isSeries: Boolean get() = parentMetaType == "series" || parentMetaType == "tv"
 
     lateinit var scope: CoroutineScope
     lateinit var hapticFeedback: HapticFeedback

@@ -1,6 +1,5 @@
 package com.kaplay.app.features.player
 
-import co.touchlab.kermit.Logger
 import com.kaplay.app.core.i18n.localizedSeasonEpisodeCode
 import com.kaplay.app.core.ui.KAPlayToastController
 import com.kaplay.app.features.party.PartyRepository
@@ -46,8 +45,6 @@ import org.jetbrains.compose.resources.getString
 
 private fun List<MetaVideo>.hasEpisodeSequence(): Boolean =
     count { it.season != null && it.episode != null } > 1
-
-private val nextEpisodeDiag = Logger.withTag("KAPlayNextDiag")
 
 @Composable
 internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
@@ -676,21 +673,9 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
                 } else null,
             )
         } else null
-        nextEpisodeDiag.i {
-            "resolved parent=$parentMetaId current=$curSeason/$curEpisode " +
-                "videos=${playerMetaVideos.count { it.season != null && it.episode != null }} " +
-                "next=${nextEpisodeInfo?.season}/${nextEpisodeInfo?.episode} " +
-                "aired=${nextEpisodeInfo?.hasAired} enabled=${playerSettingsUiState.streamAutoPlayNextEpisodeEnabled}"
-        }
     }
 
-    LaunchedEffect(playbackSnapshot.isEnded) {
-        nextEpisodeDiag.i {
-            "ended=$playbackSnapshot isEnded=${playbackSnapshot.isEnded} " +
-                "next=${nextEpisodeInfo?.season}/${nextEpisodeInfo?.episode} " +
-                "aired=${nextEpisodeInfo?.hasAired} enabled=${playerSettingsUiState.streamAutoPlayNextEpisodeEnabled}"
-        }
-        if (playbackSnapshot.isEnded && nextEpisodeCardDismissed &&
+    LaunchedEffect(playbackSnapshot.isEnded) {        if (playbackSnapshot.isEnded && nextEpisodeCardDismissed &&
             playerSettingsUiState.streamAutoPlayNextEpisodeEnabled &&
             nextEpisodeInfo?.hasAired == true
         ) {

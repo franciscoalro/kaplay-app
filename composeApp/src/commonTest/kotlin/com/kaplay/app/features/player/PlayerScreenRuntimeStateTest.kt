@@ -15,6 +15,12 @@ import kotlin.test.assertTrue
 class PlayerScreenRuntimeStateTest {
 
     @Test
+    fun tomatoTvContentIsTreatedAsSeries() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs().copy(parentMetaType = "tv"))
+        assertTrue(runtime.isSeries)
+    }
+
+    @Test
     fun controlsStartHidden() {
         assertFalse(PlayerScreenRuntime(testPlayerScreenArgs()).controlsVisible)
     }
