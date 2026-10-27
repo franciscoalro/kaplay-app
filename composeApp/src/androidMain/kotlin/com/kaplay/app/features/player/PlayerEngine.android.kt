@@ -813,6 +813,7 @@ private fun ExoPlayerSurface(
         onControllerReady(
             autoSyncCoordinator.wrap(object : PlayerEngineController { // AutoSync hook
                 override val playbackEngine = AndroidPlaybackEngine.ExoPlayer
+                override val supportsVideoQualitySelection = true
 
                 override fun play() {
                     exoPlayer.playWhenReady = true
@@ -850,6 +851,13 @@ private fun ExoPlayerSurface(
 
                 override fun getAudioTracks(): List<AudioTrack> =
                     exoPlayer.extractAudioTracks(context)
+
+                override fun getVideoQualities(): List<VideoQuality> =
+                    exoPlayer.extractVideoQualities()
+
+                override fun selectVideoQuality(height: Int?) {
+                    exoPlayer.selectVideoQuality(height)
+                }
 
                 override suspend fun getMediaInfo(): PlayerMediaInfo {
                     val video = exoPlayer.videoFormat
@@ -2211,6 +2219,54 @@ private fun ExoPlayer.extractAudioTracks(context: Context): List<AudioTrack> {
         idx++
     }
     return tracks
+}
+
+private fun ExoPlayer.extractVideoQualities(): List<VideoQuality> {
+    val heights = currentTracks.groups
+        .filter { it.type == C.TRACK_TYPE_VIDEO && it.isSupported }
+        .flatMap { group ->
+            (0 until group.mediaTrackGroup.length).mapNotNull { index ->
+                group.mediaTrackGroup.getFormat(index).height.takeIf { it > 0 }
+            }
+        }
+        .distinct()
+        .sortedDescending()
+    if (heights.isEmpty()) return listOf(VideoQuality.AUTO)
+    val fixedHeight = trackSelectionParameters.overrides.keys
+        .firstOrNull { overrideGroup ->
+            currentTracks.groups.any { it.type == C.TRACK_TYPE_VIDEO && it.mediaTrackGroup == overrideGroup }
+        }
+        ?.let { overrideGroup ->
+            val override = trackSelectionParameters.overrides[overrideGroup]
+            overrideGroup.getFormat(override?.trackIndices?.firstOrNull() ?: 0).height
+        }
+        ?.takeIf { it > 0 }
+    return buildList {
+        add(VideoQuality(null, "Auto", fixedHeight == null))
+        heights.forEach { height ->
+            add(VideoQuality(height, "${height}p", height == fixedHeight))
+        }
+    }
+}
+
+private fun ExoPlayer.selectVideoQuality(height: Int?) {
+    val builder = trackSelectionParameters.buildUpon()
+    if (height == null) {
+        builder.clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+    } else {
+        val match = currentTracks.groups
+            .filter { it.type == C.TRACK_TYPE_VIDEO && it.isSupported }
+            .asSequence()
+            .mapNotNull { group ->
+                val indices = (0 until group.mediaTrackGroup.length)
+                    .filter { group.mediaTrackGroup.getFormat(it).height == height }
+                indices.takeIf { it.isNotEmpty() }?.let { group.mediaTrackGroup to it }
+            }
+            .firstOrNull()
+        if (match == null) return
+        builder.setOverrideForType(TrackSelectionOverride(match.first, match.second))
+    }
+    trackSelectionParameters = builder.build()
 }
 
 private fun ExoPlayer.applySubtitleTrackPreferences(

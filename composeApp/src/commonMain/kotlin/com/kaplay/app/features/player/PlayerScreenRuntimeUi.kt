@@ -329,6 +329,12 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                 refreshTracks()
                 showSubtitleModal = true
             },
+            onQualityClick = if (!isIos && playerController?.supportsVideoQualitySelection == true && videoQualities.size > 1) {
+                {
+                    refreshTracks()
+                    showQualityModal = true
+                }
+            } else null,
             onAudioClick = {
                 refreshTracks()
                 showAudioModal = true
@@ -535,6 +541,14 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             }
         },
         onAudioModalDismissed = { showAudioModal = false },
+        showQualityModal = showQualityModal,
+        videoQualities = videoQualities,
+        onQualitySelected = { quality ->
+            playerController?.selectVideoQuality(quality.height)
+            videoQualities = videoQualities.map { it.copy(isSelected = it.height == quality.height) }
+            showQualityModal = false
+        },
+        onQualityModalDismissed = { showQualityModal = false },
         showSubtitleModal = showSubtitleModal,
         subtitleTracks = serverSubtitleTracks.ifEmpty { subtitleTracks },
         selectedSubtitleIndex = if (serverSubtitleTracks.isEmpty()) {

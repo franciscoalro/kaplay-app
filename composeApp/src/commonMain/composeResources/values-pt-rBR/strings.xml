@@ -465,6 +465,9 @@
     <string name="compose_player_seek_feedback_forward">+%1$ds</string>
     <string name="compose_player_seek_forward_10">Avançar 10 segundos</string>
     <string name="compose_player_sources">Fontes</string>
+    <string name="compose_player_quality">Qualidade</string>
+    <string name="compose_player_quality_auto">Automático</string>
+    <string name="compose_player_quality_title">Qualidade do vídeo</string>
     <string name="compose_player_style">Estilo</string>
     <string name="compose_player_select_addon_subtitle_first">Selecione primeiro uma legenda de um addon</string>
     <string name="compose_player_subs">Legendas</string>

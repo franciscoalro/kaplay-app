@@ -24,6 +24,10 @@ internal fun PlayerScreenModalHosts(
     selectedAudioIndex: Int,
     onAudioTrackSelected: (Int) -> Unit,
     onAudioModalDismissed: () -> Unit,
+    showQualityModal: Boolean,
+    videoQualities: List<VideoQuality>,
+    onQualitySelected: (VideoQuality) -> Unit,
+    onQualityModalDismissed: () -> Unit,
     showSubtitleModal: Boolean,
     subtitleTracks: List<SubtitleTrack>,
     selectedSubtitleIndex: Int,
@@ -120,6 +124,13 @@ internal fun PlayerScreenModalHosts(
         selectedIndex = selectedAudioIndex,
         onTrackSelected = onAudioTrackSelected,
         onDismiss = onAudioModalDismissed,
+    )
+
+    VideoQualityModal(
+        visible = showQualityModal,
+        qualities = videoQualities,
+        onQualitySelected = onQualitySelected,
+        onDismiss = onQualityModalDismissed,
     )
 
     SubtitleModal(

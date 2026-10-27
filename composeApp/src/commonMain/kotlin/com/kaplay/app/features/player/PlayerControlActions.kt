@@ -110,6 +110,7 @@ internal fun PlayerControlActions(
     resizeMode: PlayerResizeMode,
     onSubtitleClick: () -> Unit,
     onAudioClick: () -> Unit,
+    onQualityClick: (() -> Unit)? = null,
     onSourcesClick: (() -> Unit)?,
     onEpisodesClick: (() -> Unit)?,
     onNextEpisodeClick: (() -> Unit)?,
@@ -136,6 +137,9 @@ internal fun PlayerControlActions(
             stringResource(Res.string.compose_player_audio), onAudioClick,
             painter = appIconPainter(AppIconResource.PlayerAudioFilled),
         ),
+        onQualityClick?.let {
+            PlayerControlAction(stringResource(Res.string.compose_player_quality), it, icon = Icons.Rounded.Build)
+        },
         onSourcesClick?.let {
             PlayerControlAction(
                 stringResource(Res.string.compose_player_sources), it,

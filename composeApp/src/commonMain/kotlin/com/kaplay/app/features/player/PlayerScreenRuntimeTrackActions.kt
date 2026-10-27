@@ -160,6 +160,7 @@ internal fun PlayerScreenRuntime.refreshTracks() {
     val ctrl = playerController ?: return
     val previousAudioIndex = selectedAudioIndex
     audioTracks = ctrl.getAudioTracks()
+    videoQualities = ctrl.getVideoQualities()
     subtitleTracks = ctrl.getSubtitleTracks()
     val selectedAudio = audioTracks.firstOrNull { it.isSelected }
     if (selectedAudio != null) selectedAudioIndex = selectedAudio.index

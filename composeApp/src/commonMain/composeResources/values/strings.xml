@@ -465,6 +465,9 @@
     <string name="compose_player_seek_feedback_forward">+%1$ds</string>
     <string name="compose_player_seek_forward_10">Seek forward 10 seconds</string>
     <string name="compose_player_sources">Sources</string>
+    <string name="compose_player_quality">Quality</string>
+    <string name="compose_player_quality_auto">Auto</string>
+    <string name="compose_player_quality_title">Video quality</string>
     <string name="compose_player_style">Style</string>
     <string name="compose_player_select_addon_subtitle_first">Select an addon subtitle first</string>
     <string name="compose_player_subs">Subs</string>

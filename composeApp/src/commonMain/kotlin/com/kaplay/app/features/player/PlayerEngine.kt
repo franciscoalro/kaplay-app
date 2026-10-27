@@ -13,6 +13,9 @@ interface PlayerEngineController {
     fun setPlaybackSpeed(speed: Float)
     fun setMuted(muted: Boolean) {}
     fun getAudioTracks(): List<AudioTrack>
+    val supportsVideoQualitySelection: Boolean get() = false
+    fun getVideoQualities(): List<VideoQuality> = listOf(VideoQuality.AUTO)
+    fun selectVideoQuality(height: Int?) {}
     fun getSubtitleTracks(): List<SubtitleTrack>
     fun applyAudioLanguagePreferences(languages: List<String>)
     fun selectAudioTrack(index: Int)

@@ -112,6 +112,7 @@ internal fun PlayerControlsShell(
     onSpeedClick: () -> Unit,
     onSubtitleClick: () -> Unit,
     onAudioClick: () -> Unit,
+    onQualityClick: (() -> Unit)? = null,
     onVideoSettingsClick: (() -> Unit)? = null,
     onSourcesClick: (() -> Unit)? = null,
     onEpisodesClick: (() -> Unit)? = null,
@@ -263,6 +264,7 @@ internal fun PlayerControlsShell(
                     onSpeedClick = onSpeedClick,
                     onSubtitleClick = onSubtitleClick,
                     onAudioClick = onAudioClick,
+                    onQualityClick = onQualityClick,
                     onSourcesClick = onSourcesClick,
                     onEpisodesClick = onEpisodesClick,
                     modifier = Modifier
@@ -310,6 +312,7 @@ internal fun PlayerControlsShell(
                         resizeMode = resizeMode,
                         onSubtitleClick = onSubtitleClick,
                         onAudioClick = onAudioClick,
+                        onQualityClick = onQualityClick,
                         onSourcesClick = onSourcesClick,
                         onEpisodesClick = onEpisodesClick,
                         onNextEpisodeClick = onNextEpisodeClick,

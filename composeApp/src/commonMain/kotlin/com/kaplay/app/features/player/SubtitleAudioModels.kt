@@ -16,6 +16,18 @@ data class AudioTrack(
     val isSelected: Boolean = false,
 )
 
+data class VideoQuality(
+    val height: Int?,
+    val label: String,
+    val isSelected: Boolean = false,
+) {
+    val isAuto: Boolean get() = height == null
+
+    companion object {
+        val AUTO = VideoQuality(height = null, label = "Auto", isSelected = true)
+    }
+}
+
 data class SubtitleTrack(
     val index: Int,
     val id: String,

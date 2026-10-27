@@ -197,6 +197,7 @@ internal class PlayerScreenRuntime(
     var credentialRefreshAttemptedSourceUrl by mutableStateOf<String?>(null)
 
     var showAudioModal by mutableStateOf(false)
+    var showQualityModal by mutableStateOf(false)
     var showSubtitleModal by mutableStateOf(false)
     var showVideoSettingsModal by mutableStateOf(false)
     var showStreamInfo by mutableStateOf(false)
@@ -212,6 +213,7 @@ internal class PlayerScreenRuntime(
     var streamMediaInfo by mutableStateOf(PlayerMediaInfo())
     var playbackEngineOverride by mutableStateOf<AndroidPlaybackEngine?>(null)
     var audioTracks by mutableStateOf<List<AudioTrack>>(emptyList())
+    var videoQualities by mutableStateOf(listOf(VideoQuality.AUTO))
     var serverAudioTracks by mutableStateOf<List<AudioTrack>>(emptyList())
     var serverSubtitleTracks by mutableStateOf<List<SubtitleTrack>>(emptyList())
     var serverTrackSwitchJob by mutableStateOf<Job?>(null)
