@@ -28,7 +28,6 @@ internal data class AdRewardState(
 internal object AdRewardRepository {
     private const val TABLE = "ka_ad_reward_balances"
     private const val RPC = "ka_claim_ad_reward"
-    private const val REWARD_DURATION_MS = 60L * 60L * 1_000L
     private val log = Logger.withTag("AdRewardRepository")
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -43,15 +42,6 @@ internal object AdRewardRepository {
     fun remoteUserId(): String? = when (val auth = AuthRepository.state.value) {
         is AuthState.Authenticated -> auth.userId.takeIf { !auth.isAnonymous }
         else -> null
-    }
-
-    fun grantOptimisticHour(): Long {
-        val userId = remoteUserId() ?: return 0L
-        val now = nowMs()
-        val currentUntil = RewardStorage.loadUntil(userId).coerceAtLeast(now)
-        val until = currentUntil + REWARD_DURATION_MS
-        RewardStorage.saveUntil(userId, until)
-        return until
     }
 
     suspend fun refresh(): Result<Long> = withContext(Dispatchers.Default) {
@@ -74,7 +64,6 @@ internal object AdRewardRepository {
     suspend fun claimAfterAd(): Result<Long> = withContext(Dispatchers.Default) {
         val userId = remoteUserId()
             ?: return@withContext Result.failure(IllegalStateException("Faça login para salvar a recompensa"))
-        val optimisticUntil = grantOptimisticHour()
         runCatching {
             val response = SupabaseProvider.client.postgrest.rpc(
                 RPC,
@@ -85,11 +74,9 @@ internal object AdRewardRepository {
             )
             val expiresAt = json.decodeFromString<RewardClaimResponse>(response.data).expiresAt
             val authoritativeUntil = parseTimestamp(expiresAt)
-            val finalUntil = maxOf(optimisticUntil, authoritativeUntil)
-            RewardStorage.saveUntil(userId, finalUntil)
-            finalUntil
-        }.onFailure { log.w(it) { "Reward cloud sync failed; keeping optimistic local reward" } }
-            .recover { optimisticUntil }
+            RewardStorage.saveUntil(userId, authoritativeUntil)
+            authoritativeUntil
+        }.onFailure { log.w(it) { "Reward cloud sync failed; no reward granted" } }
     }
 
     private fun parseTimestamp(value: String): Long =
