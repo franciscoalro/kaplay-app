@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 internal object AdRewardController {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -62,6 +64,7 @@ internal object AdRewardController {
         RewardedAdsPlatform.showInterstitial(onDismissed = onContinue)
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     fun showRewarded() {
         if (AdRewardRepository.currentState().remainingMs > 0L) return
         if (AdRewardRepository.remoteUserId() == null) {
@@ -71,10 +74,11 @@ internal object AdRewardController {
             return
         }
         _state.value = _state.value.copy(syncing = true, error = null)
+        val eventId = Uuid.random().toString()
         RewardedAdsPlatform.show(
             onCompleted = {
                 scope.launch {
-                    val result = AdRewardRepository.claimAfterAd()
+                    val result = AdRewardRepository.claimAfterAd(eventId)
                     _state.value = AdRewardRepository.currentState().copy(
                         syncing = false,
                         error = result.exceptionOrNull()?.message,

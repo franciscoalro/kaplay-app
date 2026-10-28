@@ -16,8 +16,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.time.Clock
 import kotlin.time.Instant
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 internal data class AdRewardState(
     val remainingMs: Long = 0L,
@@ -60,8 +58,7 @@ internal object AdRewardRepository {
         }.onFailure { log.w(it) { "Reward refresh failed" } }
     }
 
-    @OptIn(ExperimentalUuidApi::class)
-    suspend fun claimAfterAd(): Result<Long> = withContext(Dispatchers.Default) {
+    suspend fun claimAfterAd(eventId: String): Result<Long> = withContext(Dispatchers.Default) {
         val userId = remoteUserId()
             ?: return@withContext Result.failure(IllegalStateException("Faça login para salvar a recompensa"))
         runCatching {
@@ -69,7 +66,7 @@ internal object AdRewardRepository {
                 RPC,
                 buildJsonObject {
                     put("p_profile_index", ProfileRepository.state.value.activeProfile?.profileIndex ?: 1)
-                    put("p_event_id", Uuid.random().toString())
+                    put("p_event_id", eventId)
                 },
             )
             val expiresAt = json.decodeFromString<RewardClaimResponse>(response.data).expiresAt
