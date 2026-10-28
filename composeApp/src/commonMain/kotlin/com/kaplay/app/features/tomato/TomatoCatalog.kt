@@ -34,7 +34,7 @@ object TomatoCatalog {
     fun homeDefinitions(): List<HomeCatalogDefinition> = HOME_SECTIONS.map { (sectionId, title) ->
         HomeCatalogDefinition(
             key = "tomato:$sectionId",
-            defaultTitle = "Tomato · $title",
+            defaultTitle = title,
             catalogName = title,
             addonName = TomatoProvider.PROVIDER_NAME,
             manifestUrl = MANIFEST_URL,

@@ -1094,7 +1094,7 @@ fun HomeScreen(
                     )
                     item(key = "home_empty", contentType = "empty") {
                         when {
-                            networkStatusUiState.isOfflineLike && addonManifestErrorMessage != null -> {
+                            networkStatusUiState.isOfflineLike -> {
                                 KAPlayNetworkOfflineCard(
                                     condition = networkStatusUiState.condition,
                                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -1134,7 +1134,7 @@ fun HomeScreen(
                     !hasRenderableCollectionRows -> {
                     item(key = "home_empty", contentType = "empty") {
                         val loadFailed = !homeUiState.errorMessage.isNullOrBlank()
-                        if (networkStatusUiState.isOfflineLike && loadFailed) {
+                        if (networkStatusUiState.isOfflineLike) {
                             KAPlayNetworkOfflineCard(
                                 condition = networkStatusUiState.condition,
                                 modifier = Modifier.padding(horizontal = 16.dp),

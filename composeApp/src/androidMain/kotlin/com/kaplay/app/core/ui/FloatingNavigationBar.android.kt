@@ -60,7 +60,7 @@ internal actual fun FloatingNavigationBar(
     glowEnabled: Boolean,
 ) {
     if (items.isEmpty()) return
-    val showGlow = !floatingNavigationGlowSupported || glowEnabled
+    val showGlow = floatingNavigationGlowSupported && glowEnabled
     val glowStrength by animateFloatAsState(
         targetValue = if (showGlow) 1f else 0f,
         animationSpec = tween(420, easing = KAPlayTokens.Motion.standard),

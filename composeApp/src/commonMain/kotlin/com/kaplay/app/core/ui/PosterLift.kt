@@ -3,6 +3,7 @@ package com.kaplay.app.core.ui
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.RememberObserver
 import androidx.compose.runtime.getValue
@@ -10,18 +11,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.GraphicsContext
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 internal val LocalPosterClickAnchor = staticCompositionLocalOf<((PosterZoomAnchor) -> Unit)?> { null }
 
@@ -75,6 +80,7 @@ internal fun Modifier.posterCardClickable(
     val graphicsContext = LocalGraphicsContext.current
     val source = remember(graphicsContext, zoomImageUrl) { PosterLiftSource(graphicsContext) }
     val onPosterClickAnchor = LocalPosterClickAnchor.current
+    var isFocused by remember { mutableStateOf(false) }
     val posterModifier = Modifier
         .drawWithContent {
             source.layer.record { this@drawWithContent.drawContent() }
@@ -92,6 +98,17 @@ internal fun Modifier.posterCardClickable(
         .then(this)
     if (onClick == null && onLongClick == null) return posterModifier
     return posterModifier
+        .focusable()
+        .onFocusChanged { isFocused = it.isFocused }
+        .drawWithContent {
+            drawContent()
+            if (isFocused) {
+                drawRoundRect(
+                    color = MaterialTheme.kaplay.colors.accent,
+                    style = Stroke(width = 2.dp.toPx()),
+                )
+            }
+        }
         .combinedClickable(
             interactionSource = null,
             indication = if (onPosterClickAnchor == null) LocalIndication.current else null,

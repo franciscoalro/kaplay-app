@@ -31,6 +31,7 @@ import com.kaplay.app.core.ui.FloatingNavigationBar
 import com.kaplay.app.core.ui.FloatingNavigationItem
 import com.kaplay.app.core.ui.PlatformBackHandler
 import com.kaplay.app.core.ui.rememberKAPlayNavBarScrollState
+import com.kaplay.app.core.ui.kaplayBottomNavigationBarInsets
 import com.kaplay.app.features.profiles.KAPlayProfile
 import com.kaplay.app.features.profiles.ProfileSwitcherTab
 import com.kaplay.app.features.settings.NavBarStyle
@@ -79,6 +80,14 @@ internal fun MainTabsDestination(
         val navBarHazeState = rememberHazeState()
         val navBarStyleSetting by remember { ThemeSettingsRepository.navBarStyle }.collectAsStateWithLifecycle()
         val navBarGlowEnabled by ThemeSettingsRepository.navBarGlowEnabled.collectAsStateWithLifecycle()
+        val bottomSystemInset = kaplayBottomNavigationBarInsets()
+            .asPaddingValues()
+            .calculateBottomPadding()
+        val overlayBottomPadding = when {
+            useNativeBottomTabs -> bottomSystemInset + 49.dp
+            !isTabletLayout && navBarStyleSetting != NavBarStyle.CLASSIC -> bottomSystemInset + 72.dp
+            else -> 0.dp
+        }
         val floatingNavigationItems = listOf(
             FloatingNavigationItem(
                 selected = selectedTab == AppScreenTab.Home,
@@ -159,7 +168,7 @@ internal fun MainTabsDestination(
         ) { innerPadding ->
             Box(modifier = Modifier.fillMaxSize()) {
                 CompositionLocalProvider(
-                    LocalKAPlayBottomNavigationOverlayPadding provides if (useNativeBottomTabs) 49.dp else if (!isTabletLayout && navBarStyleSetting != NavBarStyle.CLASSIC) 72.dp else 0.dp,
+                    LocalKAPlayBottomNavigationOverlayPadding provides overlayBottomPadding,
                     LocalKAPlayNavBarScrollState provides navBarScrollState,
                 ) {
                     AppTabHost(
