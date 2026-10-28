@@ -80,6 +80,7 @@ internal fun Modifier.posterCardClickable(
     val graphicsContext = LocalGraphicsContext.current
     val source = remember(graphicsContext, zoomImageUrl) { PosterLiftSource(graphicsContext) }
     val onPosterClickAnchor = LocalPosterClickAnchor.current
+    val focusColor = MaterialTheme.kaplay.colors.accent
     var isFocused by remember { mutableStateOf(false) }
     val posterModifier = Modifier
         .drawWithContent {
@@ -104,7 +105,7 @@ internal fun Modifier.posterCardClickable(
             drawContent()
             if (isFocused) {
                 drawRoundRect(
-                    color = MaterialTheme.kaplay.colors.accent,
+                    color = focusColor,
                     style = Stroke(width = 2.dp.toPx()),
                 )
             }
