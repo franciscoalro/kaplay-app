@@ -4,8 +4,9 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CardGiftcard
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.gestures.stopScroll
@@ -16,9 +17,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kaplay.app.core.auth.AuthRepository
@@ -1223,7 +1229,10 @@ fun HomeScreen(
                 onRequestAuthentication = onRequestAuthentication,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 14.dp, end = 14.dp)
+                    .padding(
+                        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 10.dp,
+                        end = 14.dp,
+                    )
                     .zIndex(5f),
             )
         }
@@ -1244,18 +1253,33 @@ private fun HomeRewardButton(
         rewardState.remainingMs > 0L -> "✨ ${((rewardState.remainingMs / 60_000L).coerceAtLeast(1L))}m sem anúncios"
         else -> "🎁 1h grátis"
     }
-    Button(
+    val enabled = !rewardState.syncing && rewardState.remainingMs <= 0L
+    Surface(
         modifier = modifier.height(38.dp),
-        enabled = !rewardState.syncing && rewardState.remainingMs <= 0L,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 11.dp, vertical = 0.dp),
+        enabled = enabled,
         onClick = if (requiresAuthentication) onRequestAuthentication else AdRewardController::showRewarded,
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 5.dp,
+        shadowElevation = 3.dp,
     ) {
-        Icon(
-            imageVector = Icons.Rounded.CardGiftcard,
-            contentDescription = null,
-            modifier = Modifier.size(17.dp),
-        )
-        Text(text = label)
+        Row(
+            modifier = Modifier.padding(horizontal = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.CardGiftcard,
+                contentDescription = null,
+                modifier = Modifier.size(17.dp),
+            )
+            Text(
+                text = label,
+                modifier = Modifier.padding(start = 6.dp),
+                fontSize = 12.sp,
+                maxLines = 1,
+            )
+        }
     }
 }
 
