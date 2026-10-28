@@ -210,7 +210,7 @@ fun KAPlayTheme(
     CompositionLocalProvider(
         LocalDensity provides Density(
             density = density.density,
-            fontScale = 1f,
+            fontScale = density.fontScale,
         ),
         LocalKAPlayThemeTokens provides tokens,
         LocalKAPlayTypeScale provides KAPlayTypeTokens,
