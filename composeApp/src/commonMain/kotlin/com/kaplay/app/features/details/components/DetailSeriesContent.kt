@@ -806,7 +806,9 @@ private fun EpisodeHorizontalCard(
             ?.let(::formatEpisodeRating)
     }
     val formattedDate = remember(video.released) { video.released?.let { formatReleaseDateForDisplay(it) } }
-    val runtimeLabel = remember(video.runtime) { video.runtime?.takeIf { it > 0 }?.let(::formatEpisodeRuntime) }
+    val runtimeLabel = video.runtime
+        ?.takeIf { it > 0 }
+        ?.let(::formatEpisodeRuntime)
     val imageUrl = video.thumbnail ?: fallbackImage
     val visibleProgressEntry = progressEntry?.takeIf { it.durationMs > 0L && !it.isCompleted }
     val progressBarHeight = 4.dp
