@@ -161,6 +161,7 @@ import com.kaplay.app.features.watching.application.WatchingActions
 import com.kaplay.app.features.watching.application.WatchingState
 import com.kmpalette.rememberDominantColorState
 import com.kmpalette.extensions.painter.rememberPainterDominantColorState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kaplay.composeapp.generated.resources.*
@@ -354,6 +355,8 @@ fun MetaDetailsScreen(
             comments = result.items
             commentsCurrentPage = result.currentPage
             commentsPageCount = result.pageCount
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             commentsError = e.message ?: getString(Res.string.details_comments_load_failed)
         }
@@ -1269,6 +1272,8 @@ fun MetaDetailsScreen(
                                                 comments = result.items
                                                 commentsCurrentPage = result.currentPage
                                                 commentsPageCount = result.pageCount
+                                            } catch (e: CancellationException) {
+                                                throw e
                                             } catch (e: Exception) {
                                                 commentsError = e.message ?: getString(Res.string.details_comments_load_failed)
                                             }
@@ -1286,6 +1291,8 @@ fun MetaDetailsScreen(
                                                 comments = comments + newComments
                                                 commentsCurrentPage = result.currentPage
                                                 commentsPageCount = result.pageCount
+                                            } catch (e: CancellationException) {
+                                                throw e
                                             } catch (_: Exception) { }
                                             isCommentsLoadingMore = false
                                         }
@@ -1601,6 +1608,8 @@ fun MetaDetailsScreen(
                                                 comments = comments + newComments
                                                 commentsCurrentPage = result.currentPage
                                                 commentsPageCount = result.pageCount
+                                            } catch (e: CancellationException) {
+                                                throw e
                                             } catch (_: Exception) { }
                                             isCommentsLoadingMore = false
                                         }
