@@ -99,6 +99,10 @@ object AuthRepository {
         }
     }
 
+    fun isOnboardingCompleted(): Boolean = AuthStorage.isOnboardingCompleted()
+
+    fun markOnboardingCompleted() = AuthStorage.markOnboardingCompleted()
+
     @OptIn(ExperimentalUuidApi::class)
     fun signInAnonymously() {
         _error.value = null
@@ -117,6 +121,7 @@ object AuthRepository {
             this.email = email
             this.password = password
         }
+        AuthStorage.markOnboardingCompleted()
         Unit
     }.onFailure { e ->
         log.e(e) { "Email sign-up failed" }
@@ -130,6 +135,7 @@ object AuthRepository {
             this.email = email
             this.password = password
         }
+        AuthStorage.markOnboardingCompleted()
     }.onFailure { e ->
         log.e(e) { "Email sign-in failed" }
         _error.value = e.safeAuthErrorDescription()

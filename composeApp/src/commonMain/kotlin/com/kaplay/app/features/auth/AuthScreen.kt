@@ -42,6 +42,7 @@ import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import com.kaplay.app.core.ui.KAPlayLoadingIndicator
+import com.kaplay.app.core.ui.KAPlayToastController
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -307,7 +308,11 @@ fun AuthScreen(
                         onContinueWithoutAccount = {
                             focusManager.clearFocus(force = true)
                             DeviceLinkAuthRepository.cancel()
-                            AuthRepository.signInAnonymously()
+                            if (AuthRepository.isOnboardingCompleted()) {
+                                AuthRepository.signInAnonymously()
+                            } else {
+                                KAPlayToastController.show("Crie uma conta KA Play para continuar na primeira utilização")
+                            }
                         },
                         onStartDeviceLink = ::startDeviceLink,
                         onCancelDeviceLink = DeviceLinkAuthRepository::cancel,
@@ -339,7 +344,11 @@ fun AuthScreen(
                         onContinueWithoutAccount = {
                             focusManager.clearFocus(force = true)
                             DeviceLinkAuthRepository.cancel()
-                            AuthRepository.signInAnonymously()
+                            if (AuthRepository.isOnboardingCompleted()) {
+                                AuthRepository.signInAnonymously()
+                            } else {
+                                KAPlayToastController.show("Crie uma conta KA Play para continuar na primeira utilização")
+                            }
                         },
                         onStartDeviceLink = ::startDeviceLink,
                         onCancelDeviceLink = DeviceLinkAuthRepository::cancel,

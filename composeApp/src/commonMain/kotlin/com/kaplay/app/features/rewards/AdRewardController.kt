@@ -2,6 +2,7 @@ package com.kaplay.app.features.rewards
 
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.AuthState
+import com.kaplay.app.core.ui.KAPlayToastController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -64,7 +65,9 @@ internal object AdRewardController {
     fun showRewarded() {
         if (AdRewardRepository.currentState().remainingMs > 0L) return
         if (AdRewardRepository.remoteUserId() == null) {
-            _state.value = _state.value.copy(error = "Entre na sua conta KA Play para ganhar 1 hora sem anúncios")
+            val message = "Entre na sua conta KA Play para ganhar 1 hora sem anúncios"
+            _state.value = _state.value.copy(error = message)
+            KAPlayToastController.show(message)
             return
         }
         _state.value = _state.value.copy(syncing = true, error = null)

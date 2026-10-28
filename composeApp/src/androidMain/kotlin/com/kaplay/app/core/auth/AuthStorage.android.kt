@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 actual object AuthStorage {
     private const val PREFS_NAME = "kaplay_auth"
     private const val KEY_ANONYMOUS_USER_ID = "anonymous_user_id"
+    private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
 
     private var preferences: SharedPreferences? = null
 
@@ -22,5 +23,12 @@ actual object AuthStorage {
 
     actual fun clearAnonymousUserId() {
         preferences?.edit()?.remove(KEY_ANONYMOUS_USER_ID)?.apply()
+    }
+
+    actual fun isOnboardingCompleted(): Boolean =
+        preferences?.getBoolean(KEY_ONBOARDING_COMPLETED, false) == true || loadAnonymousUserId() != null
+
+    actual fun markOnboardingCompleted() {
+        preferences?.edit()?.putBoolean(KEY_ONBOARDING_COMPLETED, true)?.apply()
     }
 }
