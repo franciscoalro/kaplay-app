@@ -998,6 +998,7 @@ fun HomeScreen(
             Modifier
         }
 
+        val homeViewportHeight = maxHeight
         Box(modifier = Modifier.fillMaxSize()) {
             KAPlayScreen(
                 modifier = Modifier.fillMaxSize().then(heroStretchModifier),
@@ -1016,14 +1017,14 @@ fun HomeScreen(
                         when {
                             isLoading -> HomeSkeletonHero(
                                 modifier = Modifier,
-                                viewportHeight = maxHeight,
+                                viewportHeight = homeViewportHeight,
                                 mobileBelowSectionHeightHint = mobileHeroBelowSectionHeightHint,
                             )
 
                             homeUiState.heroItems.isNotEmpty() -> HomeHeroSection(
                                 items = homeHeroState.items,
                                 modifier = Modifier,
-                                viewportHeight = maxHeight,
+                                viewportHeight = homeViewportHeight,
                                 mobileBelowSectionHeightHint = mobileHeroBelowSectionHeightHint,
                                 listState = homeListState,
                                 stretchPx = { heroStretchState.stretchPx },
@@ -1034,7 +1035,7 @@ fun HomeScreen(
 
                             else -> HomeHeroReservedSpace(
                                 modifier = Modifier,
-                                viewportHeight = maxHeight,
+                                viewportHeight = homeViewportHeight,
                                 mobileBelowSectionHeightHint = mobileHeroBelowSectionHeightHint,
                             )
                         }
@@ -1215,6 +1216,7 @@ fun HomeScreen(
                     }
                 }
             }
+            }
             HomeRewardButton(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -1223,7 +1225,6 @@ fun HomeScreen(
             )
         }
     }
-}
 }
 
 @Composable
