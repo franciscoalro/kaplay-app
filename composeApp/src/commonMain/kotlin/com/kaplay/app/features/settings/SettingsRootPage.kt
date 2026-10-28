@@ -4,6 +4,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.rounded.AccountCircle
@@ -28,10 +32,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import com.kaplay.app.core.build.AppVersionConfig
+import com.kaplay.app.features.rewards.AdRewardController
 import kaplay.composeapp.generated.resources.Res
 import kaplay.composeapp.generated.resources.compose_about_made_with
 import kaplay.composeapp.generated.resources.compose_about_version_format
 import kaplay.composeapp.generated.resources.compose_settings_page_account
+import kaplay.composeapp.generated.resources.rewards_ad_free_active
+import kaplay.composeapp.generated.resources.rewards_ad_free_description
+import kaplay.composeapp.generated.resources.rewards_ad_free_loading
+import kaplay.composeapp.generated.resources.rewards_ad_free_title
 import kaplay.composeapp.generated.resources.compose_settings_page_advanced
 import kaplay.composeapp.generated.resources.compose_settings_page_appearance
 import kaplay.composeapp.generated.resources.compose_settings_page_integrations
@@ -68,6 +77,27 @@ import kaplay.composeapp.generated.resources.about_licenses_attributions_subtitl
 import org.jetbrains.compose.resources.stringResource
 
 private const val PRIVACY_POLICY_URL = "https://kaplay.tv/privacy-policy"
+
+@Composable
+private fun AdRewardSettingsRow(isTablet: Boolean) {
+    val rewardState by AdRewardController.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { AdRewardController.initialize() }
+    val description = when {
+        rewardState.syncing -> stringResource(Res.string.rewards_ad_free_loading)
+        rewardState.remainingMs > 0L -> stringResource(
+            Res.string.rewards_ad_free_active,
+            (rewardState.remainingMs / 60_000L).coerceAtLeast(1L),
+        )
+        else -> stringResource(Res.string.rewards_ad_free_description)
+    }
+    SettingsNavigationRow(
+        title = stringResource(Res.string.rewards_ad_free_title),
+        description = description,
+        icon = Icons.Rounded.PlayArrow,
+        isTablet = isTablet,
+        onClick = AdRewardController::showRewarded,
+    )
+}
 
 internal fun LazyListScope.settingsRootContent(
     isTablet: Boolean,
@@ -115,6 +145,8 @@ internal fun LazyListScope.settingsRootContent(
                         isTablet = isTablet,
                         onClick = onAccountClick,
                     )
+                    SettingsGroupDivider(isTablet = isTablet)
+                    AdRewardSettingsRow(isTablet = isTablet)
                     if (onWatchPartyClick != null) {
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsNavigationRow(

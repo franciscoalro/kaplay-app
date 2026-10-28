@@ -72,8 +72,14 @@ import com.kaplay.app.features.watchprogress.ContinueWatchingEnrichmentStorage
 import com.kaplay.app.features.watchprogress.ContinueWatchingPreferencesStorage
 import com.kaplay.app.features.watchprogress.ResumePromptStorage
 import com.kaplay.app.features.watchprogress.WatchProgressStorage
+import com.kaplay.app.features.rewards.RewardStorage
+import com.kaplay.app.features.rewards.RewardedAdsPlatform
 
 open class MainActivity : AppCompatActivity() {
+    internal companion object {
+        var current: MainActivity? = null
+    }
+
     private var pipRemoteActionReceiver: PipRemoteActionReceiver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,6 +94,9 @@ open class MainActivity : AppCompatActivity() {
         SentrySettingsStorage.initialize(applicationContext)
         SentryInitializer.start(application)
         super.onCreate(savedInstanceState)
+        current = this
+        RewardStorage.initialize(applicationContext)
+        RewardedAdsPlatform.bind()
         AutoSyncPreferencesAndroid.initialize(applicationContext) // AutoSync hook
         window.setBackgroundDrawableResource(R.color.kaplay_background)
         pipRemoteActionReceiver = PipRemoteActionReceiver.register(this)
@@ -177,6 +186,8 @@ open class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        RewardedAdsPlatform.unbind()
+        if (current === this) current = null
         EpisodeReleaseNotificationPlatform.unbindActivity(this)
         val receiver = pipRemoteActionReceiver
         if (receiver != null) {

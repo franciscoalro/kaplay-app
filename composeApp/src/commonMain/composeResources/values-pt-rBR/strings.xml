@@ -501,6 +501,10 @@
     <string name="compose_settings_category_about">Sobre</string>
     <string name="compose_settings_category_general">Geral</string>
     <string name="compose_settings_page_account">Conta</string>
+    <string name="rewards_ad_free_title">Assista a um anúncio e fique 1 hora sem anúncios</string>
+    <string name="rewards_ad_free_description">Assista a um vídeo curto para navegar e assistir sem anúncios por 1 hora.</string>
+    <string name="rewards_ad_free_active">Sessão sem anúncios ativa · restam cerca de %1$d minutos.</string>
+    <string name="rewards_ad_free_loading">Preparando o vídeo recompensado…</string>
     <string name="compose_settings_page_addons">Addons</string>
     <string name="compose_settings_page_advanced">Avançadas</string>
     <string name="compose_settings_page_appearance">Layout</string>

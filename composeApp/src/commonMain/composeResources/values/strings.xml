@@ -501,6 +501,10 @@
     <string name="compose_settings_category_about">About</string>
     <string name="compose_settings_category_general">General</string>
     <string name="compose_settings_page_account">Account</string>
+    <string name="rewards_ad_free_title">Watch an ad for 1 hour without ads</string>
+    <string name="rewards_ad_free_description">Watch a short video to browse and watch without ads for 1 hour.</string>
+    <string name="rewards_ad_free_active">Ad-free session active · about %1$d minutes remaining.</string>
+    <string name="rewards_ad_free_loading">Preparing the rewarded video…</string>
     <string name="compose_settings_page_addons">Addons</string>
     <string name="compose_settings_page_advanced">Advanced</string>
     <string name="compose_settings_page_appearance">Layout</string>
