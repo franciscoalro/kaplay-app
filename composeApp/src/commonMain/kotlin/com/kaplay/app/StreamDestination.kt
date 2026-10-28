@@ -583,6 +583,7 @@ internal fun StreamDestination(
         forceExternal: Boolean,
         forceInternal: Boolean,
         saveForReuse: Boolean = true,
+        replaceStreamRoute: Boolean = false,
     ) {
         if (stream.needsServerPreparation) {
             if (preparingServerStream) return
@@ -603,6 +604,7 @@ internal fun StreamDestination(
                     resolvedResumeProgressFraction = resolvedResumeProgressFraction.takeIf { serverResumeMs == null },
                     forceExternal = false,
                     forceInternal = true,
+                    replaceStreamRoute = replaceStreamRoute,
                 )
             }
             return
@@ -624,6 +626,7 @@ internal fun StreamDestination(
                         resolvedResumeProgressFraction = resolvedResumeProgressFraction,
                         forceExternal = forceExternal,
                         forceInternal = forceInternal,
+                        replaceStreamRoute = replaceStreamRoute,
                     )
                     else -> {
                         resolved.toastMessage()?.let { KAPlayToastController.show(it) }
@@ -669,6 +672,7 @@ internal fun StreamDestination(
                     resolvedResumeProgressFraction = resolvedResumeProgressFraction,
                     forceExternal = forceExternal,
                     forceInternal = forceInternal,
+                    replaceStreamRoute = replaceStreamRoute,
                     // The resolved URL expires after a few hours, so it isn't kept for reuse.
                     saveForReuse = false,
                 )
@@ -749,8 +753,12 @@ internal fun StreamDestination(
         val launchId = PlayerLaunchStore.put(playerLaunch)
         StreamsRepository.cancelLoading()
         navController.navigate(
-            PlayerRoute(launchId = launchId, title = playerLaunch.title)
-        )
+            PlayerRoute(launchId = launchId, title = playerLaunch.title),
+        ) {
+            if (replaceStreamRoute) {
+                popUpTo<StreamRoute> { inclusive = true }
+            }
+        }
     }
 
     LaunchedEffect(
@@ -791,6 +799,7 @@ internal fun StreamDestination(
             resolvedResumeProgressFraction = launch.resumeProgressFraction,
             forceExternal = false,
             forceInternal = true,
+            replaceStreamRoute = true,
         )
     }
 
