@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -515,6 +517,7 @@ private fun SeasonTextChipScrollRow(
     ) {
         items(seasons, key = { season -> season }) { season ->
             val isSelected = season == currentSeason
+            var isFocused by remember(season) { mutableStateOf(false) }
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(sizing.seasonChipRadius))
@@ -523,6 +526,15 @@ private fun SeasonTextChipScrollRow(
                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                         } else {
                             Color.Transparent
+                        },
+                    )
+                    .focusable()
+                    .onFocusChanged { isFocused = it.isFocused }
+                    .then(
+                        if (isFocused) {
+                            Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(sizing.seasonChipRadius))
+                        } else {
+                            Modifier
                         },
                     )
                     .combinedClickable(
