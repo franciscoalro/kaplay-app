@@ -6,4 +6,6 @@ internal actual object RewardedAdsPlatform {
     actual fun initialize() = Unit
     actual fun load(onLoaded: () -> Unit, onFailed: () -> Unit) = onFailed()
     actual fun show(onCompleted: () -> Unit, onDismissed: () -> Unit) = onDismissed()
+    actual fun loadInterstitial(onLoaded: () -> Unit, onFailed: () -> Unit) = onFailed()
+    actual fun showInterstitial(onDismissed: () -> Unit) = onDismissed()
 }

@@ -72,6 +72,7 @@ import com.kaplay.app.features.watchprogress.ContinueWatchingEnrichmentStorage
 import com.kaplay.app.features.watchprogress.ContinueWatchingPreferencesStorage
 import com.kaplay.app.features.watchprogress.ResumePromptStorage
 import com.kaplay.app.features.watchprogress.WatchProgressStorage
+import com.kaplay.app.features.rewards.AdRewardController
 import com.kaplay.app.features.rewards.RewardStorage
 import com.kaplay.app.features.rewards.RewardedAdsPlatform
 
@@ -97,6 +98,7 @@ open class MainActivity : AppCompatActivity() {
         current = this
         RewardStorage.initialize(applicationContext)
         RewardedAdsPlatform.bind()
+        AdRewardController.initialize()
         AutoSyncPreferencesAndroid.initialize(applicationContext) // AutoSync hook
         window.setBackgroundDrawableResource(R.color.kaplay_background)
         pipRemoteActionReceiver = PipRemoteActionReceiver.register(this)

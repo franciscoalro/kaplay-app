@@ -6,4 +6,6 @@ internal expect object RewardedAdsPlatform {
     fun initialize()
     fun load(onLoaded: () -> Unit, onFailed: () -> Unit)
     fun show(onCompleted: () -> Unit, onDismissed: () -> Unit)
+    fun loadInterstitial(onLoaded: () -> Unit, onFailed: () -> Unit)
+    fun showInterstitial(onDismissed: () -> Unit)
 }

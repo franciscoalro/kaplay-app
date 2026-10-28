@@ -2,11 +2,19 @@ package com.kaplay.app.features.home
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CardGiftcard
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.gestures.stopScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -17,10 +25,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.AuthState
@@ -96,6 +106,7 @@ import com.kaplay.app.features.watching.domain.WatchingContentRef
 import com.kaplay.app.features.watching.domain.isReleasedBy
 import com.kaplay.app.features.collection.CollectionRepository
 import com.kaplay.app.features.profiles.ProfileRepository
+import com.kaplay.app.features.rewards.AdRewardController
 import com.kaplay.app.features.home.components.HomeCollectionRowSection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -987,8 +998,9 @@ fun HomeScreen(
             Modifier
         }
 
-        KAPlayScreen(
-            modifier = Modifier.fillMaxSize().then(heroStretchModifier),
+        Box(modifier = Modifier.fillMaxSize()) {
+            KAPlayScreen(
+                modifier = Modifier.fillMaxSize().then(heroStretchModifier),
             horizontalPadding = 0.dp,
             topPadding = if (showHeroSlot) 0.dp else null,
             listState = homeListState,
@@ -1203,7 +1215,35 @@ fun HomeScreen(
                     }
                 }
             }
+            HomeRewardButton(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 14.dp, end = 14.dp)
+                    .zIndex(5f),
+            )
         }
+    }
+}
+
+@Composable
+private fun HomeRewardButton(modifier: Modifier = Modifier) {
+    val rewardState by AdRewardController.state.collectAsStateWithLifecycle()
+    val label = if (rewardState.remainingMs > 0L) {
+        "✨ ${((rewardState.remainingMs / 60_000L).coerceAtLeast(1L))}m sem anúncios"
+    } else {
+        "🎁 1h sem anúncios"
+    }
+    Button(
+        modifier = modifier,
+        enabled = !rewardState.syncing && rewardState.remainingMs <= 0L,
+        onClick = AdRewardController::showRewarded,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.CardGiftcard,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(text = label)
     }
 }
 

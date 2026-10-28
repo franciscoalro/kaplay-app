@@ -15,6 +15,8 @@ internal object AdRewardController {
     private val _state = MutableStateFlow(AdRewardState())
     val state: StateFlow<AdRewardState> = _state.asStateFlow()
     private var initialized = false
+    private var lastInterstitialAtMs = 0L
+    private const val interstitialCooldownMs = 3L * 60L * 1_000L
 
     fun initialize() {
         if (initialized) return
@@ -33,6 +35,7 @@ internal object AdRewardController {
             onLoaded = { _state.value = _state.value.copy(error = null) },
             onFailed = { _state.value = _state.value.copy(error = "Anúncio recompensado indisponível no momento") },
         )
+        RewardedAdsPlatform.loadInterstitial(onLoaded = {}, onFailed = {})
     }
 
     fun refresh() {
@@ -47,7 +50,19 @@ internal object AdRewardController {
         }
     }
 
+    fun showInterstitialThen(onContinue: () -> Unit) {
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val rewardActive = AdRewardRepository.currentState().remainingMs > 0L
+        if (rewardActive || now - lastInterstitialAtMs < interstitialCooldownMs) {
+            onContinue()
+            return
+        }
+        lastInterstitialAtMs = now
+        RewardedAdsPlatform.showInterstitial(onDismissed = onContinue)
+    }
+
     fun showRewarded() {
+        if (AdRewardRepository.currentState().remainingMs > 0L) return
         if (AdRewardRepository.remoteUserId() == null) {
             _state.value = _state.value.copy(error = "Entre na sua conta KA Play para ganhar 1 hora sem anúncios")
             return

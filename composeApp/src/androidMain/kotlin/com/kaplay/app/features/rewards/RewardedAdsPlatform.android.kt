@@ -11,14 +11,17 @@ import com.unity3d.ads.UnityAdsShowOptions
 internal actual object RewardedAdsPlatform {
     private const val GAME_ID = "800397586"
     private const val PLACEMENT = "BP_Rewarded_Android"
+    private const val INTERSTITIAL_PLACEMENT = "BP_Interstitial_Android"
 
     @Volatile private var initialized = false
     @Volatile private var loaded = false
+    @Volatile private var interstitialLoaded = false
 
     actual fun bind() = Unit
 
     actual fun unbind() {
         loaded = false
+        interstitialLoaded = false
     }
 
     actual fun initialize() {
@@ -65,6 +68,69 @@ internal actual object RewardedAdsPlatform {
                     loaded = false
                     onFailed()
                 }
+            },
+        )
+    }
+
+    actual fun loadInterstitial(onLoaded: () -> Unit, onFailed: () -> Unit) {
+        val activity = MainActivity.current
+        if (activity == null || activity.isFinishing || activity.isDestroyed) {
+            onFailed()
+            return
+        }
+        initialize()
+        UnityAds.load(
+            INTERSTITIAL_PLACEMENT,
+            UnityAdsLoadOptions(),
+            object : IUnityAdsLoadListener {
+                override fun onUnityAdsAdLoaded(placementId: String?) {
+                    interstitialLoaded = placementId == INTERSTITIAL_PLACEMENT
+                    if (interstitialLoaded) onLoaded() else onFailed()
+                }
+
+                override fun onUnityAdsFailedToLoad(
+                    placementId: String?,
+                    error: UnityAds.UnityAdsLoadError?,
+                    message: String?,
+                ) {
+                    interstitialLoaded = false
+                    onFailed()
+                }
+            },
+        )
+    }
+
+    actual fun showInterstitial(onDismissed: () -> Unit) {
+        val activity = MainActivity.current
+        if (activity == null || activity.isFinishing || activity.isDestroyed || !interstitialLoaded) {
+            loadInterstitial(onLoaded = { showInterstitial(onDismissed) }, onFailed = onDismissed)
+            return
+        }
+        interstitialLoaded = false
+        UnityAds.show(
+            activity,
+            INTERSTITIAL_PLACEMENT,
+            UnityAdsShowOptions(),
+            object : IUnityAdsShowListener {
+                override fun onUnityAdsShowComplete(
+                    placementId: String?,
+                    state: UnityAds.UnityAdsShowCompletionState?,
+                ) {
+                    loadInterstitial(onLoaded = {}, onFailed = {})
+                    onDismissed()
+                }
+
+                override fun onUnityAdsShowFailure(
+                    placementId: String?,
+                    error: UnityAds.UnityAdsShowError?,
+                    message: String?,
+                ) {
+                    interstitialLoaded = false
+                    onDismissed()
+                }
+
+                override fun onUnityAdsShowStart(placementId: String?) = Unit
+                override fun onUnityAdsShowClick(placementId: String?) = Unit
             },
         )
     }

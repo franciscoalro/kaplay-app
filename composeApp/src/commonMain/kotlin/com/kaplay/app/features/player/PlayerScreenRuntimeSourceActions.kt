@@ -10,6 +10,7 @@ import com.kaplay.app.features.downloads.DownloadItem
 import com.kaplay.app.features.downloads.DownloadSubtitles
 import com.kaplay.app.features.downloads.DownloadsRepository
 import com.kaplay.app.features.p2p.P2pSettingsRepository
+import com.kaplay.app.features.rewards.AdRewardController
 import com.kaplay.app.features.p2p.P2pStreamingEngine
 import com.kaplay.app.features.servers.ServerPlayback
 import com.kaplay.app.features.servers.serverPlaybackMessage
@@ -243,11 +244,19 @@ internal fun PlayerScreenRuntime.switchToP2pEpisodeStream(
     stream: StreamItem,
     episode: MetaVideo,
     isAutoPlay: Boolean = false,
+    showInterstitial: Boolean = true,
 ) {
     val infoHash = stream.p2pInfoHash ?: return
     if (!P2pSettingsRepository.isVisible) return
     if (!P2pSettingsRepository.uiState.value.p2pEnabled) {
         pendingP2pSwitch = PendingPlayerP2pSwitch(stream = stream, episode = episode, isAutoPlay = isAutoPlay)
+        return
+    }
+    if (showInterstitial) {
+        playerController?.pause()
+        AdRewardController.showInterstitialThen {
+            switchToP2pEpisodeStream(stream, episode, isAutoPlay, showInterstitial = false)
+        }
         return
     }
     resetEpisodePanelAndNextEpisodeState()
@@ -347,11 +356,24 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
     episode: MetaVideo,
     serverResumeMs: Long? = null,
     saveForReuse: Boolean = true,
+    showInterstitial: Boolean = true,
 ) {
-    if (prepareServerForPlayer(stream) { switchToEpisodeStream(it, episode, serverResumeMs = newerServerResumeMs(it, episode)) }) return
+    if (prepareServerForPlayer(stream) {
+            switchToEpisodeStream(
+                it,
+                episode,
+                serverResumeMs = newerServerResumeMs(it, episode),
+                showInterstitial = showInterstitial,
+            )
+        }) return
     if (
         resolveYouTubeForPlayer(stream) { resolved ->
-            switchToEpisodeStream(resolved, episode, saveForReuse = false)
+            switchToEpisodeStream(
+                resolved,
+                episode,
+                saveForReuse = false,
+                showInterstitial = showInterstitial,
+            )
         }
     ) return
     if (
@@ -359,7 +381,13 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
             stream = stream,
             season = episode.season,
             episode = episode.episode,
-            onResolved = { resolvedStream -> switchToEpisodeStream(resolvedStream, episode) },
+            onResolved = { resolvedStream ->
+                switchToEpisodeStream(
+                    resolvedStream,
+                    episode,
+                    showInterstitial = showInterstitial,
+                )
+            },
             onStale = {
                 PlayerStreamsRepository.loadEpisodeStreams(
                     type = contentType ?: parentMetaType,
@@ -372,11 +400,24 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
         )
     ) return
     if (isP2pStream(stream)) {
-        switchToP2pEpisodeStream(stream, episode)
+        switchToP2pEpisodeStream(stream, episode, showInterstitial = showInterstitial)
         return
     }
     if (openExternalSourceUrl(stream)) return
     val url = stream.playableDirectUrl ?: return
+    if (showInterstitial) {
+        playerController?.pause()
+        AdRewardController.showInterstitialThen {
+            switchToEpisodeStream(
+                stream,
+                episode,
+                serverResumeMs = serverResumeMs,
+                saveForReuse = saveForReuse,
+                showInterstitial = false,
+            )
+        }
+        return
+    }
     resetEpisodePanelAndNextEpisodeState()
     flushWatchProgress()
     stopActiveP2pStream()
@@ -394,8 +435,19 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
     applyEpisodeStreamMetadata(stream, episode, resume)
 }
 
-internal fun PlayerScreenRuntime.switchToDownloadedEpisode(downloadItem: DownloadItem, episode: MetaVideo) {
+internal fun PlayerScreenRuntime.switchToDownloadedEpisode(
+    downloadItem: DownloadItem,
+    episode: MetaVideo,
+    showInterstitial: Boolean = true,
+) {
     val localFileUri = DownloadsRepository.playableLocalFileUri(downloadItem) ?: return
+    if (showInterstitial) {
+        playerController?.pause()
+        AdRewardController.showInterstitialThen {
+            switchToDownloadedEpisode(downloadItem, episode, showInterstitial = false)
+        }
+        return
+    }
     resetEpisodePanelAndNextEpisodeState()
     flushWatchProgress()
     stopActiveP2pStream()

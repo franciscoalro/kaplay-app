@@ -20,6 +20,7 @@ import com.kaplay.app.features.details.MetaVideo
 import com.kaplay.app.features.p2p.P2pSettingsRepository
 import com.kaplay.app.features.p2p.P2pStreamRequest
 import com.kaplay.app.features.p2p.P2pStreamingEngine
+import com.kaplay.app.features.rewards.AdRewardController
 import com.kaplay.app.features.p2p.P2pStreamingState
 import com.kaplay.app.features.player.skip.NextEpisodeInfo
 import com.kaplay.app.features.player.skip.PlayerNextEpisodeRules
@@ -382,6 +383,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
     DisposableEffect(Unit) {
         PlayerStreamsRepository.pauseSearchForPlayback()
         onDispose {
+            AdRewardController.showInterstitialThen {}
             args.launchId?.let { launchId -> PlayerLaunchStore.update(launchId) { currentLaunch(it) } }
             playerController?.clearNowPlayingInfo()
             P2pStreamingEngine.shutdown()
