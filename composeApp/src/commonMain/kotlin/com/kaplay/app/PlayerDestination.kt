@@ -17,6 +17,7 @@ import com.kaplay.app.features.watchprogress.ResumePromptRepository
 import com.kaplay.app.navigation.DetailRoute
 import com.kaplay.app.navigation.KAPlayNavigator
 import com.kaplay.app.navigation.PlayerRoute
+import com.kaplay.app.navigation.StreamRoute
 
 @Composable
 internal fun PlayerDestination(
@@ -35,7 +36,11 @@ internal fun PlayerDestination(
     val onBack = remember(route.launchId, launch, guardedBack) {
         {
             guardedBack()
-            if (navController.currentRoute == route && launch != null) {
+            val returnedToStream = navController.currentRoute is StreamRoute
+            if (returnedToStream) {
+                navController.popBackStack()
+            }
+            if ((navController.currentRoute == route || (returnedToStream && navController.currentRoute !is DetailRoute)) && launch != null) {
                 val parentMetaId = launch.parentMetaId
                 val parentMetaType = launch.parentMetaType
                 if (!parentMetaId.isNullOrBlank() && !parentMetaType.isNullOrBlank()) {
