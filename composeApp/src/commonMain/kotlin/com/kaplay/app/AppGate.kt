@@ -310,7 +310,8 @@ internal fun AppGate(
             cachedProfiles.isNotEmpty() &&
                 authState !is AuthState.Authenticated
         val allowCachedProfileAccess =
-            hasCachedProfileAccess &&
+            AuthRepository.isOnboardingCompleted() &&
+                hasCachedProfileAccess &&
                 (
                     networkStatusUiState.condition != NetworkCondition.Online ||
                         gateScreen != AppGateScreen.Auth.name
