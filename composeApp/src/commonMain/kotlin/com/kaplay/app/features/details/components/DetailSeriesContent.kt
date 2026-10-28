@@ -806,9 +806,12 @@ private fun EpisodeHorizontalCard(
             ?.let(::formatEpisodeRating)
     }
     val formattedDate = remember(video.released) { video.released?.let { formatReleaseDateForDisplay(it) } }
-    val runtimeLabel = video.runtime
-        ?.takeIf { it > 0 }
-        ?.let(::formatEpisodeRuntime)
+    val runtimeMinutes = video.runtime?.takeIf { it > 0 }
+    val runtimeLabel = if (runtimeMinutes != null) {
+        formatEpisodeRuntime(runtimeMinutes)
+    } else {
+        null
+    }
     val imageUrl = video.thumbnail ?: fallbackImage
     val visibleProgressEntry = progressEntry?.takeIf { it.durationMs > 0L && !it.isCompleted }
     val progressBarHeight = 4.dp
@@ -923,9 +926,9 @@ private fun EpisodeHorizontalCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    runtimeLabel?.let { runtime ->
+                    if (runtimeLabel != null) {
                         Text(
-                            text = runtime,
+                            text = runtimeLabel,
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = metrics.metaTextSize),
                             color = Color.White.copy(alpha = 0.78f),
                             maxLines = 1,
