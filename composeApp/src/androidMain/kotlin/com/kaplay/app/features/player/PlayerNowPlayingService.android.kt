@@ -8,7 +8,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.core.content.IntentCompat
 import com.kaplay.app.core.build.AppFeaturePolicy
 import com.kaplay.app.core.concurrent.ConflatedTaskDispatcher
 import java.util.concurrent.Executors
@@ -18,7 +17,6 @@ internal const val NOW_PLAYING_TAG = "KAPlayNowPlaying"
 internal const val NOW_PLAYING_CHANNEL_ID = "kaplay_playback"
 internal const val NOW_PLAYING_NOTIFICATION_ID = 0x4E55
 private const val ACTION_START_FOREGROUND = "com.kaplay.app.nowplaying.START_FOREGROUND"
-private const val EXTRA_START_NOTIFICATION = "com.kaplay.app.nowplaying.START_NOTIFICATION"
 
 class PlayerNowPlayingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
@@ -29,8 +27,7 @@ class PlayerNowPlayingService : Service() {
             return START_NOT_STICKY
         }
 
-        val startNotification = IntentCompat.getParcelableExtra(intent, EXTRA_START_NOTIFICATION, Notification::class.java)
-            ?: PlayerNowPlayingServiceState.notification
+        val startNotification = PlayerNowPlayingServiceState.notification
         if (startNotification == null) {
             stopSelf(startId)
             return START_NOT_STICKY

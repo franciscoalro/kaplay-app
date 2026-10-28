@@ -22,7 +22,11 @@ object PlayerNextEpisodeRules {
             it.season == currentSeason && it.episode == currentEpisode
         }
         if (currentIndex < 0) return null
-        return sortedEpisodes.getOrNull(currentIndex + 1)
+        return sortedEpisodes
+            .drop(currentIndex + 1)
+            .firstOrNull { episode ->
+                episode.season != currentSeason || episode.episode != currentEpisode
+            }
     }
 
     fun shouldShowNextEpisodeCard(

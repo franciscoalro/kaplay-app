@@ -57,6 +57,20 @@ class PlayerAutoPlayTest {
     }
 
     @Test
+    fun nextEpisodeSkipsDuplicateEntriesForCurrentEpisode() {
+        val videos = listOf(
+            MetaVideo(id = "duplicate:1:1:a", title = "Episode 1", season = 1, episode = 1),
+            MetaVideo(id = "duplicate:1:1:b", title = "Episode 1 duplicate", season = 1, episode = 1),
+            MetaVideo(id = "duplicate:1:2", title = "Episode 2", season = 1, episode = 2),
+        )
+
+        assertEquals(
+            "duplicate:1:2",
+            PlayerNextEpisodeRules.resolveNextEpisode(videos, currentSeason = 1, currentEpisode = 1)?.id,
+        )
+    }
+
+    @Test
     fun freshEpisodeSnapshotDoesNotStartAnotherAutoPlay() {
         val runtime = startRuntime()
         compose.runOnIdle { runtime.updatePlaybackSnapshot(nearEnd) }

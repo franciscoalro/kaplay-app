@@ -89,6 +89,7 @@ internal fun StreamDestination(
     val pauseDescription = launch.pauseDescription
     val streamRouteScope = rememberCoroutineScope()
     var autoPlayNavigationStarted by remember(route.launchId) { mutableStateOf(false) }
+    var autoPlayDecisionPending by remember(route.launchId) { mutableStateOf(!launch.manualSelection) }
     var resolvingDebridStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var resolvingYouTubeStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var preparingServerStream by remember(route.launchId) { mutableStateOf(false) }
@@ -400,7 +401,7 @@ internal fun StreamDestination(
         episode = launch.episodeNumber,
         manualSelection = launch.manualSelection,
     )
-    val showLoadingScreen = autoPlayNavigationStarted || resolvingDebridStream || resolvingYouTubeStream || preparingServerStream || streamsUiState.shouldShowAutoPlayLoading(
+    val showLoadingScreen = autoPlayDecisionPending || autoPlayNavigationStarted || resolvingDebridStream || resolvingYouTubeStream || preparingServerStream || streamsUiState.shouldShowAutoPlayLoading(
         expectedRequestToken = expectedStreamsRequestToken,
         settings = playerSettings,
         manualSelection = launch.manualSelection,
@@ -779,7 +780,10 @@ internal fun StreamDestination(
                     stream.serverTarget != null ||
                     stream.needsLocalDebridResolve
             }
-            ?: return@LaunchedEffect
+        if (fallback == null) {
+            autoPlayDecisionPending = false
+            return@LaunchedEffect
+        }
         autoPlayNavigationStarted = true
         openSelectedStream(
             stream = fallback,
