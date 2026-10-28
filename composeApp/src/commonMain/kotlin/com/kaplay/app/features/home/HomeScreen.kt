@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
@@ -135,6 +136,7 @@ fun HomeScreen(
     onPosterLongClick: ((MetaPreview) -> Unit)? = null,
     onContinueWatchingClick: ((ContinueWatchingItem) -> Unit)? = null,
     onContinueWatchingLongPress: ((ContinueWatchingItem) -> Unit)? = null,
+    onRequestAuthentication: () -> Unit = {},
     continueWatchingDisintegrationRequest: DisintegrationRequest<String>? = null,
     onFolderClick: ((collectionId: String, folderId: String) -> Unit)? = null,
     onFirstCatalogRendered: (() -> Unit)? = null,
@@ -1218,6 +1220,7 @@ fun HomeScreen(
             }
             }
             HomeRewardButton(
+                onRequestAuthentication = onRequestAuthentication,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 14.dp, end = 14.dp)
@@ -1228,22 +1231,29 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeRewardButton(modifier: Modifier = Modifier) {
+private fun HomeRewardButton(
+    onRequestAuthentication: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val rewardState by AdRewardController.state.collectAsStateWithLifecycle()
-    val label = if (rewardState.remainingMs > 0L) {
-        "✨ ${((rewardState.remainingMs / 60_000L).coerceAtLeast(1L))}m sem anúncios"
-    } else {
-        "🎁 1h sem anúncios"
+    val authState by AuthRepository.state.collectAsStateWithLifecycle()
+    val isAnonymous = (authState as? AuthState.Authenticated)?.isAnonymous == true
+    val requiresAuthentication = authState !is AuthState.Authenticated || isAnonymous
+    val label = when {
+        requiresAuthentication -> "Entrar • 1h grátis"
+        rewardState.remainingMs > 0L -> "✨ ${((rewardState.remainingMs / 60_000L).coerceAtLeast(1L))}m sem anúncios"
+        else -> "🎁 1h grátis"
     }
     Button(
-        modifier = modifier,
+        modifier = modifier.height(38.dp),
         enabled = !rewardState.syncing && rewardState.remainingMs <= 0L,
-        onClick = AdRewardController::showRewarded,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 11.dp, vertical = 0.dp),
+        onClick = if (requiresAuthentication) onRequestAuthentication else AdRewardController::showRewarded,
     ) {
         Icon(
             imageVector = Icons.Rounded.CardGiftcard,
             contentDescription = null,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(17.dp),
         )
         Text(text = label)
     }

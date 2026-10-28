@@ -152,6 +152,11 @@ internal fun AppGate(
     var profileSelectionTransitionActive by rememberSaveable { mutableStateOf(false) }
     var skipProfileSelectionEnterAnimation by remember { mutableStateOf(false) }
     var mainContentStarted by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(appGateController) {
+        appGateController?.authenticationRequests?.collect {
+            gateScreen = AppGateScreen.Auth.name
+        }
+    }
     val externalMainContentReady = if (!renderMainContent && appGateController != null) {
         val ready by appGateController.mainContentReady.collectAsStateWithLifecycle()
         ready
