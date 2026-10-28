@@ -124,7 +124,6 @@ private object PlayerNowPlayingServiceController {
         if (startRequested.compareAndSet(false, true)) {
             val intent = Intent(command.context, PlayerNowPlayingService::class.java)
                 .setAction(ACTION_START_FOREGROUND)
-                .putExtra(EXTRA_START_NOTIFICATION, command.notification)
             val started = runCatching {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     command.context.startForegroundService(intent)
