@@ -1214,7 +1214,7 @@ fun HomeScreen(
                         }
                     }
                 }
-            )
+            }
             HomeRewardButton(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -1223,6 +1223,7 @@ fun HomeScreen(
             )
         }
     }
+}
 }
 
 @Composable
