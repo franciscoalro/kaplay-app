@@ -319,7 +319,7 @@ internal fun AppGate(
 
         when (authState) {
             is AuthState.Loading -> {
-                if (hasCachedProfileAccess) {
+                if (allowCachedProfileAccess) {
                     enterProfileGate(cachedProfiles, syncOnEnter = false)
                 } else {
                     gateScreen = AppGateScreen.Loading.name
