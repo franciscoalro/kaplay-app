@@ -281,7 +281,7 @@ object AuthRepository {
         return null
     }
 
-    private fun Throwable.safeAuthErrorDescription(): String? {
+    private suspend fun Throwable.safeAuthErrorDescription(): String? {
         findCause<AuthRestException>()
             ?.errorDescription
             ?.trim()
