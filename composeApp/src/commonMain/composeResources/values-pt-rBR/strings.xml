@@ -1752,6 +1752,7 @@
     <string name="auth_sign_in_failed">Falha no login</string>
     <string name="auth_sign_out_failed">Falha ao sair</string>
     <string name="auth_sign_up_failed">Falha no cadastro</string>
+    <string name="auth_network_unavailable">Não foi possível alcançar o servidor de autenticação. Verifique sua conexão ou tente novamente mais tarde.</string>
     <string name="catalog_load_failed">Não foi possível carregar itens do catálogo.</string>
     <string name="continue_watching_up_next">A Seguir</string>
     <string name="continue_watching_up_next_episode">A Seguir • T%1$d E%2$d</string>

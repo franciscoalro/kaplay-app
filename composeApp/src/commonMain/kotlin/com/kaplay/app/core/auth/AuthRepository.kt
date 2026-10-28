@@ -281,13 +281,32 @@ object AuthRepository {
         return null
     }
 
-    private fun Throwable.safeAuthErrorDescription(): String? =
+    private fun Throwable.safeAuthErrorDescription(): String? {
         findCause<AuthRestException>()
             ?.errorDescription
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
-            ?: findCause<RestException>()
-                ?.description
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
+            ?.let { return it }
+        findCause<RestException>()
+            ?.description
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { return it }
+
+        val messages = generateSequence(this) { it.cause }
+            .mapNotNull { it.message?.lowercase() }
+            .toList()
+        return if (messages.any { message ->
+                "unknown host" in message ||
+                    "unable to resolve host" in message ||
+                    "failed to connect" in message ||
+                    "connection refused" in message ||
+                    "timeout" in message ||
+                    "timed out" in message
+            }) {
+            getString(Res.string.auth_network_unavailable)
+        } else {
+            null
+        }
+    }
 }
