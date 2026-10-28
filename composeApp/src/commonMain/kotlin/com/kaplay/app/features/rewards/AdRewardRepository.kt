@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.AuthState
 import com.kaplay.app.core.network.SupabaseProvider
+import com.kaplay.app.features.profiles.ProfileRepository
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.Dispatchers
@@ -78,7 +79,7 @@ internal object AdRewardRepository {
             val response = SupabaseProvider.client.postgrest.rpc(
                 RPC,
                 buildJsonObject {
-                    put("p_profile_index", 0)
+                    put("p_profile_index", ProfileRepository.state.value.activeProfile?.profileIndex ?: 1)
                     put("p_event_id", Uuid.random().toString())
                 },
             )
