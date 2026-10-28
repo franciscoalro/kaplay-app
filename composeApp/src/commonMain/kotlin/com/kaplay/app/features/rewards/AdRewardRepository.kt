@@ -13,9 +13,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlinx.datetime.Instant
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -32,7 +31,6 @@ internal object AdRewardRepository {
     private val log = Logger.withTag("AdRewardRepository")
     private val json = Json { ignoreUnknownKeys = true }
 
-    @OptIn(ExperimentalTime::class)
     private fun nowMs(): Long = Clock.System.now().toEpochMilliseconds()
 
     fun currentState(): AdRewardState {
