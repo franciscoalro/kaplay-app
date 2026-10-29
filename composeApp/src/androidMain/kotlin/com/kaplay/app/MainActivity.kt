@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import com.kaplay.app.features.autosync.AutoSyncPreferencesAndroid
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.remember
 
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
@@ -162,7 +163,8 @@ open class MainActivity : AppCompatActivity() {
         handleIncomingAppIntent(intent)
 
         setContent {
-            App()
+            val appGateController = remember { AppGateController() }
+            App(appGateController = appGateController)
         }
     }
 
