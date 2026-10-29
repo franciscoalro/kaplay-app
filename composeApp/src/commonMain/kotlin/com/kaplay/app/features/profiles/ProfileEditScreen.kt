@@ -53,6 +53,7 @@ import com.kaplay.app.features.membership.MemberAccessRepository
 import com.kaplay.app.features.membership.ProfileBackgroundRepository
 import kotlinx.coroutines.launch
 import kaplay.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -79,6 +80,7 @@ fun ProfileEditScreen(
     var selectedBackgroundUrl by rememberSaveable { mutableStateOf(currentProfile?.profileBackgroundUrl) }
     var usesPrimaryAddons by rememberSaveable { mutableStateOf(currentProfile?.usesPrimaryAddons ?: false) }
     var isSaving by remember { mutableStateOf(false) }
+    var saveError by remember { mutableStateOf<String?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showPinSetup by remember { mutableStateOf(false) }
     var showPinClear by remember { mutableStateOf(false) }
@@ -269,6 +271,13 @@ fun ProfileEditScreen(
         }
 
         item {
+            saveError?.let { error ->
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             KAPlayPrimaryButton(
                 text = if (isSaving) {
@@ -281,9 +290,10 @@ fun ProfileEditScreen(
                 enabled = name.isNotBlank() && !avatarUrlIsInvalid && !isSaving,
                 onClick = {
                     isSaving = true
+                    saveError = null
                     scope.launch {
                         val avatarColorHex = visibleAvatarItem?.bgColor ?: fallbackColorHex
-                        if (isNew) {
+                        val saved = if (isNew) {
                             ProfileRepository.createProfile(
                                 name = name,
                                 avatarColorHex = avatarColorHex,
@@ -304,7 +314,8 @@ fun ProfileEditScreen(
                             )
                         }
                         isSaving = false
-                        onSaved()
+                        if (saved) onSaved()
+                        else saveError = getString(Res.string.profile_save_failed)
                     }
                 },
             )
