@@ -47,7 +47,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,7 +85,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.DeviceLinkAuthRepository
 import com.kaplay.app.core.auth.DeviceLinkAuthState
-import com.kaplay.app.core.build.AppFeaturePolicy
 import com.kaplay.app.features.settings.AppBrandWordmark
 import kotlin.math.abs
 import kotlin.math.cos
@@ -99,7 +97,6 @@ import kaplay.composeapp.generated.resources.compose_auth_continue_without_accou
 import kaplay.composeapp.generated.resources.compose_auth_create_account
 import kaplay.composeapp.generated.resources.compose_auth_dont_have_account
 import kaplay.composeapp.generated.resources.compose_auth_email
-import kaplay.composeapp.generated.resources.compose_auth_or_separator
 import kaplay.composeapp.generated.resources.compose_auth_password
 import kaplay.composeapp.generated.resources.compose_auth_sign_in
 import kaplay.composeapp.generated.resources.compose_auth_sign_in_subtitle
@@ -122,7 +119,6 @@ private val AuthFieldBackgroundMobile = Color.White.copy(alpha = 0.035f)
 internal val AuthFieldBorder = Color.White.copy(alpha = 0.08f)
 private val AuthPaneBackground = Color.White.copy(alpha = 0.022f)
 private val AuthPaneBorder = Color.White.copy(alpha = 0.07f)
-private val AuthDividerColor = Color.White.copy(alpha = 0.10f)
 private val AuthSecondaryButtonBackground = Color.White.copy(alpha = 0.05f)
 private val AuthSecondaryButtonBorder = Color.White.copy(alpha = 0.09f)
 
@@ -200,8 +196,6 @@ fun AuthScreen(
     var isLoading by rememberSaveable { mutableStateOf(false) }
     var emailFieldBounds by remember { mutableStateOf<Rect?>(null) }
     var passwordFieldBounds by remember { mutableStateOf<Rect?>(null) }
-    var showServerSheet by rememberSaveable { mutableStateOf(false) }
-    var showOfficialServerDialog by rememberSaveable { mutableStateOf(false) }
 
     fun submitAuth() {
         if (email.isBlank() || password.length < 6 || isLoading) return
@@ -229,13 +223,6 @@ fun AuthScreen(
     }
 
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-
-    LaunchedEffect(serverConnectionState.activeServer.backendUrl) {
-        DeviceLinkAuthRepository.cancel()
-        if (!serverConnectionState.activeServer.isCustom) {
-            showOfficialServerDialog = false
-        }
-    }
 
     DisposableEffect(Unit) {
         onDispose(DeviceLinkAuthRepository::cancel)
@@ -350,64 +337,6 @@ fun AuthScreen(
             }
         }
 
-        if (AppFeaturePolicy.customServerConnectionsEnabled) {
-            ServerConnectionMenu(
-                activeServer = serverConnectionState.activeServer,
-                onUseOfficial = {
-                    ServerConnectionController.resetDiscovery()
-                    showOfficialServerDialog = true
-                },
-                onConnectCustom = {
-                    ServerConnectionController.resetDiscovery()
-                    showServerSheet = true
-                },
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 8.dp, top = statusBarTop + 4.dp),
-            )
-        }
-    }
-
-    if (
-        AppFeaturePolicy.customServerConnectionsEnabled &&
-        showServerSheet &&
-        serverConnectionState.discoveredServer == null
-    ) {
-        ServerConnectionSheet(
-            state = serverConnectionState,
-            onDiscover = ServerConnectionController::discover,
-            onDismiss = {
-                showServerSheet = false
-                ServerConnectionController.resetDiscovery()
-            },
-        )
-    }
-
-    serverConnectionState.discoveredServer?.let { server ->
-        if (AppFeaturePolicy.customServerConnectionsEnabled) {
-            ServerTrustDialog(
-                server = server,
-                isSwitching = serverConnectionState.isSwitching,
-                switchFailure = serverConnectionState.switchFailure,
-                onConfirm = ServerConnectionController::connectDiscovered,
-                onDismiss = {
-                    showServerSheet = false
-                    ServerConnectionController.resetDiscovery()
-                },
-            )
-        }
-    }
-
-    if (AppFeaturePolicy.customServerConnectionsEnabled && showOfficialServerDialog) {
-        OfficialServerDialog(
-            isSwitching = serverConnectionState.isSwitching,
-            switchFailure = serverConnectionState.switchFailure,
-            onConfirm = ServerConnectionController::useOfficial,
-            onDismiss = {
-                showOfficialServerDialog = false
-                ServerConnectionController.resetDiscovery()
-            },
-        )
     }
 }
 
@@ -797,24 +726,7 @@ private fun AuthForm(
             onToggleAuthMode = onToggleAuthMode,
         )
 
-        Spacer(modifier = Modifier.height(metrics.dividerTop))
-
-        AuthDivider(scale = scale)
-
         Spacer(modifier = Modifier.height(metrics.secondaryTop))
-
-        if (!isSignUp && deviceLinkEnabled) {
-            DeviceLinkAuthSection(
-                state = deviceLinkAuthState,
-                enabled = !isLoading,
-                height = metrics.secondaryHeight,
-                scale = scale,
-                onStart = onStartDeviceLink,
-                onCancel = onCancelDeviceLink,
-            )
-
-            Spacer(modifier = Modifier.height(14.dp * scale))
-        }
 
         AuthSecondaryButton(
             text = stringResource(Res.string.compose_auth_continue_without_account),
@@ -1061,37 +973,6 @@ private fun AuthModeToggle(
                 ),
             )
         }
-    }
-}
-
-@Composable
-private fun AuthDivider(scale: Float) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(1.dp)
-                .background(AuthDividerColor),
-        )
-        Text(
-            text = stringResource(Res.string.compose_auth_or_separator).trim(),
-            modifier = Modifier.padding(horizontal = 16.dp),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = AuthTextMuted,
-                fontSize = (13f * scale).sp,
-                lineHeight = (18f * scale).sp,
-                fontWeight = FontWeight.Normal,
-            ),
-        )
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(1.dp)
-                .background(AuthDividerColor),
-        )
     }
 }
 
