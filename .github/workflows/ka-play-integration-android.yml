@@ -9,6 +9,8 @@ permissions:
 env:
   KAPLAY_SUPABASE_URL: ${{ vars.KAPLAY_ISOLATED_BASE_URL }}
   KAPLAY_SUPABASE_ANON_KEY: ${{ secrets.KAPLAY_ISOLATED_ANON_KEY }}
+  KAPLAY_TEST_EMAIL: ${{ secrets.KAPLAY_ISOLATED_TEST_EMAIL }}
+  KAPLAY_TEST_PASSWORD: ${{ secrets.KAPLAY_ISOLATED_TEST_PASSWORD }}
 
 jobs:
   integration:
@@ -24,6 +26,8 @@ jobs:
           set -euo pipefail
           test -n "$KAPLAY_SUPABASE_URL"
           test -n "$KAPLAY_SUPABASE_ANON_KEY"
+          test -n "$KAPLAY_TEST_EMAIL"
+          test -n "$KAPLAY_TEST_PASSWORD"
           case "$KAPLAY_SUPABASE_URL" in
             https://*) ;;
             *) echo "Integration requires an HTTPS backend reachable by GitHub Actions" >&2; exit 1 ;;
@@ -65,14 +69,17 @@ jobs:
       - name: Build integration APK
         run: ./gradlew :androidApp:assembleFullDebug --no-daemon
 
-      - name: Require Android integration test sources
+      - name: Require sync-specific Android integration tests
         shell: bash
         run: |
           set -euo pipefail
-          test -d androidApp/src/androidTest || {
-            echo "No Android instrumentation test suite exists yet; integration is not approved." >&2
+          test -d androidApp/src/androidTest
+          sync_tests=$(find androidApp/src/androidTest -type f \( -iname '*Sync*Test.kt' -o -iname '*Supabase*Test.kt' \) -print)
+          test -n "$sync_tests" || {
+            echo "No sync-specific Android instrumentation tests exist; integration is not approved." >&2
             exit 1
           }
+          printf '%s\n' "$sync_tests"
 
       - name: Run Android emulator integration tests
         uses: reactivecircus/android-emulator-runner@v2
