@@ -1,0 +1,80 @@
+name: KA Play isolated Android validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend_url:
+        description: 'Isolated Supabase/PostgREST URL (never production)'
+        required: true
+        type: string
+      android_distribution:
+        description: 'Android distribution'
+        required: false
+        default: full
+        type: choice
+        options:
+          - full
+          - playstore
+
+permissions:
+  contents: read
+
+jobs:
+  build-isolated-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      KAPLAY_SUPABASE_URL: ${{ inputs.backend_url }}
+      KAPLAY_SUPABASE_ANON_KEY: ${{ secrets.KAPLAY_ISOLATED_ANON_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate backend target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$KAPLAY_SUPABASE_URL"
+          test "$KAPLAY_SUPABASE_URL" != "https://iibureqvpurmbgqupnvl.supabase.co"
+          test "$KAPLAY_SUPABASE_URL" != "https://iibureqvpurmbgqupnvl.supabase.co/"
+          test -n "$KAPLAY_SUPABASE_ANON_KEY"
+          case "$KAPLAY_SUPABASE_URL" in
+            http://127.0.0.1:*|http://localhost:*|http://10.0.2.2:*)
+              echo "Local URL accepted for self-hosted runner only: $KAPLAY_SUPABASE_URL" ;;
+            https://*)
+              echo "HTTPS isolated URL accepted: $KAPLAY_SUPABASE_URL" ;;
+            *)
+              echo "Backend URL must be HTTPS or an explicit local test URL" >&2
+              exit 1 ;;
+          esac
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build isolated debug APK
+        run: ./gradlew :androidApp:assemble${{ inputs.android_distribution == 'playstore' && 'Playstore' || 'Full' }}Debug
+
+      - name: Locate APK
+        id: apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=$(find androidApp/build/outputs/apk -type f -name '*.apk' -print -quit)
+          test -n "$apk"
+          echo "path=$apk" >> "$GITHUB_OUTPUT"
+          ls -lh "$apk"
+
+      - name: Upload isolated APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ka-play-isolated-${{ inputs.android_distribution }}-debug
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 7
