@@ -94,14 +94,36 @@ APK/artifact: não publicado porque o scanner interrompeu o job
 
 O scanner foi restringido para analisar apenas `SupabaseConfig.kt` gerado e os arquivos DEX do APK, evitando textos não relacionados em artefatos intermediários.
 
-O workflow foi separado para permitir compilação sem backend ativo. O resultado somente será registrado como concluído após o GitHub Actions fornecer:
+O workflow foi separado para permitir compilação sem backend ativo. Execução final do BUILD ONLY:
 
-- `BUILD SUCCESSFUL`;
-- caminho do APK;
-- variante `fullDebug`;
-- tamanho;
-- SHA-256;
-- artifact recuperável.
+```text
+Run: 41083330476
+URL: https://github.com/franciscoalro/kaplay-app/actions/runs/41083330476
+Commit: d71457ac1d22eacc3a8dfe6cdd1906628b11dce9
+Resultado: success
+BUILD SUCCESSFUL in 6m 27s
+```
+
+Metadados do APK:
+
+```text
+variant=fullDebug
+path=androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk
+size_bytes=167436474
+sha256=9595226ac43b86a85abe1c7b15edaf3b1c74e253e667cbdf2ab860909dd8ef31
+functional_homologation=NOT_PERFORMED
+```
+
+Artifact publicado:
+
+```text
+ka-play-full-debug-build-only
+artifact_id=12991470811
+size_bytes=161541077
+expired=false
+```
+
+As etapas de build, verificação do APK, scanner de credenciais e upload terminaram com sucesso.
 
 ## 5. Segurança
 
