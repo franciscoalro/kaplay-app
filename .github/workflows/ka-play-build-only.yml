@@ -57,14 +57,24 @@ jobs:
           ls -lh build-artifacts
           cat build-artifacts/BUILD_METADATA.txt
 
-      - name: Scan generated runtime config for privileged credentials
+      - name: Scan generated config and APK for privileged credentials
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -Eiq 'service[_-]?role|sb_secret_|-----BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY-----' composeApp/build/generated androidApp/build 2>/dev/null; then
-            echo 'Privileged credential material found in build outputs' >&2
+          pattern='service[_-]?role|sb_secret_|-----BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY-----'
+          config=$(find composeApp/build/generated -type f -name 'SupabaseConfig.kt' -print -quit)
+          test -n "$config"
+          if grep -Eiq "$pattern" "$config"; then
+            echo 'Privileged credential material found in generated SupabaseConfig.kt' >&2
             exit 1
           fi
+          apk=build-artifacts/ka-play-full-debug.apk
+          while IFS= read -r dex; do
+            if unzip -p "$apk" "$dex" | strings | grep -Eiq "$pattern"; then
+              echo "Privileged credential material found in APK dex: $dex" >&2
+              exit 1
+            fi
+          done < <(unzip -Z1 "$apk" | grep -E '^classes[0-9]*\\.dex$')
 
       - name: Upload Full Debug APK artifact
         uses: actions/upload-artifact@v4

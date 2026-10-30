@@ -83,6 +83,17 @@ A falha não foi de Compose, desugaring ou backend. A task customizada declara `
 
 Correção aplicada somente no workflow: criar um `local.properties` vazio antes do build. Nenhuma credencial é gravada nesse arquivo.
 
+Segunda execução após a correção:
+
+```text
+Run: 41081928462
+Build Full Debug APK: sucesso
+Falha posterior: scanner amplo encontrou falso positivo em androidApp/build
+APK/artifact: não publicado porque o scanner interrompeu o job
+```
+
+O scanner foi restringido para analisar apenas `SupabaseConfig.kt` gerado e os arquivos DEX do APK, evitando textos não relacionados em artefatos intermediários.
+
 O workflow foi separado para permitir compilação sem backend ativo. O resultado somente será registrado como concluído após o GitHub Actions fornecer:
 
 - `BUILD SUCCESSFUL`;
