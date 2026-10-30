@@ -202,7 +202,12 @@ object TomatoProvider {
     }
 
     internal fun animeIdOf(item: JsonObject): Long? {
-        val raw = (item["anime_id"] ?: item["id"] ?: item["animeId"])?.jsonPrimitive?.intOrNull ?: return null
+        val raw = (
+            item["anime_id"]
+                ?: item["ep_anime_id"]
+                ?: item["id"]
+                ?: item["animeId"]
+            )?.jsonPrimitive?.intOrNull ?: return null
         return raw.takeIf { it > 0 }?.toLong()
     }
 

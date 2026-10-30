@@ -20,6 +20,17 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun parsesNewEpisodeCardsByEpisodeAnimeId() {
+        val payload = json.parseToJsonElement(
+            """{"data":[{"title":"Novos episódios","data":[{"ep_id":37809,"ep_anime_id":6839,"anime_name":"Koori no Jouheki","thumbnail":"https://cdn.example/new.jpg"}]}]}""",
+        ).jsonObject
+
+        val cards = TomatoProvider.feedItems(payload["data"], mutableListOf())
+
+        assertEquals(listOf(6839L), cards.mapNotNull(TomatoProvider::animeIdOf))
+    }
+
+    @Test
     fun readsCurrentDetailEnvelope() {
         val payload = json.parseToJsonElement(
             """{"anime_details":{"anime_id":6945,"anime_name":"Even the Student Council Has Its Holes!"},"anime_seasons":[]}""",
