@@ -246,4 +246,19 @@ Ele:
 - não usa service-role key;
 - não altera a configuração de produção.
 
-O workflow foi criado localmente, mas ainda não foi disparado no GitHub porque isso requer publicação do commit no repositório remoto e um backend isolado acessível pelo runner.
+O workflow foi publicado no repositório correto:
+
+```text
+https://github.com/franciscoalro/kaplay-app
+branch: kaplay-rebrand
+commit: 4734ca19
+```
+
+A publicação foi verificada pela API do GitHub (`.github/workflows/ka-play-isolated-android.yml` presente). Não foi disparado um run porque:
+
+- não existe runner self-hosted disponível;
+- o PostgREST local em `127.0.0.1:3300` não é acessível por um runner GitHub-hosted;
+- o repositório ainda não possui `KAPLAY_ISOLATED_ANON_KEY` configurada;
+- não existe URL HTTPS de backend isolado com Auth disponível.
+
+Executar o workflow com uma URL falsa produziria apenas um APK configurado para um backend inexistente, sem evidência Android end-to-end, e por isso não foi feito.
