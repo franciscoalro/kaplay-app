@@ -52,6 +52,8 @@ versionName: 0.9.18
 sha256: 9595226ac43b86a85abe1c7b15edaf3b1c74e253e667cbdf2ab860909dd8ef31
 ```
 
+Esse APK é do BUILD ONLY e contém `https://build-only.invalid`; ele não é adequado para testar o túnel local. Um APK de integração precisa ser recompilado com `KAPLAY_SUPABASE_URL=http://127.0.0.1:3301` e a chave anon do ambiente GoTrue/PostgREST.
+
 ## 3. GitHub Actions
 
 O BUILD ONLY foi aprovado no run `41083330476`, com APK Full Debug e artifact verificável. Esse resultado é de compilação, não de homologação funcional.
