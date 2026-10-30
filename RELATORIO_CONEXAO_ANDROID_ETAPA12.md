@@ -108,6 +108,8 @@ KAPLAY_SUPABASE_ANON_KEY=local-anon
 :androidApp:assembleFullDebug
 ```
 
+A configuração gerada confirmou `http://127.0.0.1:3002` em `SupabaseConfig.kt`. O Gradle daemon encerrou antes de gerar o APK; não foi registrado `BUILD SUCCESSFUL` e nenhum APK de integração foi usado como evidência.
+
 O APK BUILD ONLY anterior não foi usado como evidência.
 
 ## 6. Resultado atual
@@ -122,7 +124,7 @@ O APK BUILD ONLY anterior não foi usado como evidência.
 | RPC pelo gateway | aprovado |
 | ADB local nesta sessão | bloqueado: sem dispositivo |
 | SSH Termux → VPS | pendente no ambiente do operador |
-| APK de integração | build em execução |
+| APK de integração | falhou antes de gerar APK; daemon encerrou |
 | Instalação Android | pendente |
 | Login dentro do APK | pendente |
 | Sincronização dentro do APK | pendente |
