@@ -34,6 +34,9 @@ jobs:
           accept-android-sdk-licenses: true
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
+      - name: Create empty local Gradle properties
+        run: : > local.properties
+
       - name: Build Full Debug APK
         run: ./gradlew :androidApp:assembleFullDebug --no-daemon
 

@@ -70,7 +70,18 @@ Não foi encontrado APK em `androidApp/build/outputs`. Não há evidência local
 
 ## 4. Resultado GitHub Actions
 
-Estado: **aguardando execução do workflow BUILD ONLY**.
+Primeira execução do BUILD ONLY:
+
+```text
+Run: 41081322176
+Resultado: BUILD FAILED
+Etapa: :composeApp:generateRuntimeConfigs
+Erro: local.properties não existia no runner
+```
+
+A falha não foi de Compose, desugaring ou backend. A task customizada declara `localPropertiesFile` como input e o Gradle 9.4.1 rejeitou o arquivo ausente durante a validação.
+
+Correção aplicada somente no workflow: criar um `local.properties` vazio antes do build. Nenhuma credencial é gravada nesse arquivo.
 
 O workflow foi separado para permitir compilação sem backend ativo. O resultado somente será registrado como concluído após o GitHub Actions fornecer:
 
