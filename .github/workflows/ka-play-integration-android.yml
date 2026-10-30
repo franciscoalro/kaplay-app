@@ -59,7 +59,8 @@ jobs:
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
       - name: Create empty local Gradle properties
-        run: : > local.properties
+        run: |
+          : > local.properties
 
       - name: Build integration APK
         run: ./gradlew :androidApp:assembleFullDebug --no-daemon
