@@ -85,7 +85,7 @@ internal fun MainTabsDestination(
             .calculateBottomPadding()
         val overlayBottomPadding = when {
             useNativeBottomTabs -> bottomSystemInset + 49.dp
-            !isTabletLayout && navBarStyleSetting != NavBarStyle.CLASSIC -> bottomSystemInset + 72.dp
+            !isTabletLayout && navBarStyleSetting != NavBarStyle.CLASSIC -> bottomSystemInset + 120.dp
             else -> 0.dp
         }
         val floatingNavigationItems = listOf(
