@@ -4,7 +4,7 @@ Data: 2026-10-30
 Repositório: `franciscoalro/kaplay-app`  
 Branch: `kaplay-rebrand`  
 Commit de referência do APK: `91e166b4`  
-Commit da proteção do workflow: pendente nesta entrega
+Commit da proteção do workflow: `8e7b96b3`
 
 ## 1. Veredito
 
@@ -19,19 +19,21 @@ Nenhuma migration, autenticação ou recompensa de produção foi modificada.
 ### Backend local
 
 ```text
-PostgreSQL 17: container anterior usado para validação
-PostgREST: http://127.0.0.1:3300
-PostgREST raiz: HTTP 404 (serviço ativo sem rota raiz)
+PostgreSQL 17.11: container ka-auth-pg
+GoTrue v2.164.0: http://127.0.0.1:9999
+PostgREST 12.2.3: http://127.0.0.1:3301
 ```
 
-Os endpoints de Auth não existem nesse gateway local:
+GoTrue foi inicializado com migrations próprias em schema `auth`, usando `DB_NAMESPACE=auth` e `DATABASE_URL` isolada. As migrations A/B/C foram aplicadas somente nesse banco.
+
+Endpoints reais de Auth:
 
 ```text
-/auth/v1/settings: HTTP 404
-/auth/v1/health: HTTP 404
+/health: HTTP 200
+/settings: HTTP 200
 ```
 
-O ambiente atual contém PostgreSQL/PostgREST, mas não contém GoTrue/Supabase Auth. Portanto, não há emissão de JWT real pelo fluxo de login do Supabase.
+O primeiro boot exigiu criação do schema `auth` e uma correção isolada de compatibilidade da migration `factor_type`; nenhum arquivo de produção foi alterado.
 
 ### Android
 
@@ -85,22 +87,27 @@ Para impedir aprovação falsa, o workflow foi endurecido para falhar quando nã
 
 | Teste | Resultado |
 |---|---|
-| PostgreSQL 17/PostgREST local ativo | aprovado anteriormente |
-| RPCs HTTP com JWT sintético | aprovado anteriormente |
-| endpoint Auth local | bloqueado: HTTP 404 |
+| PostgreSQL 17 + GoTrue + PostgREST | aprovado no ambiente isolado |
+| GoTrue `/health` e `/settings` | HTTP 200 |
+| signup de dois usuários sintéticos | aprovado |
+| login email/senha | aprovado, JWT real emitido |
+| refresh token | HTTP 200 |
+| RPC com JWT GoTrue/profile 1 | HTTP 204/200 |
+| isolamento profile 2 | resposta vazia para dados de profile 1 |
+| isolamento entre usuários | resposta vazia para dados do outro usuário |
+| profile inexistente | HTTP 403 |
 | APK em emulador | não executado: nenhum emulador |
-| login Android com GoTrue | não executado: Auth ausente |
+| login dentro do Android | não executado |
 | quatro perfis no APK | não executado |
-| favoritos/histórico/progresso no APK | não executado |
 | offline/reconexão no APK | não executado |
 | crashes/ANRs em sessão real | não executado |
 
 ## 6. Falhas e bloqueios
 
-1. O backend local não possui GoTrue/Supabase Auth.
+1. O backend local completo existe, mas está acessível apenas na VPS/local, não no runner GitHub-hosted.
 2. Não há URL HTTPS de desenvolvimento configurada no GitHub.
-3. Não há secrets de teste `KAPLAY_ISOLATED_ANON_KEY`, `KAPLAY_ISOLATED_TEST_EMAIL` ou `KAPLAY_ISOLATED_TEST_PASSWORD`.
-4. Não há runner self-hosted para alcançar o PostgREST local.
+3. Não há secrets remotos de teste configurados.
+4. Não há runner self-hosted para alcançar o backend local.
 5. Não há emulador conectado localmente.
 6. Não há testes instrumentados específicos de sincronização.
 
@@ -124,7 +131,7 @@ Para impedir aprovação falsa, o workflow foi endurecido para falhar quando nã
 
 ## 9. Conclusão
 
-A compilação está comprovada. A API PostgreSQL/PostgREST com JWT sintético também foi validada anteriormente. Contudo, a etapa solicitada exige autenticação Supabase real e Android Emulator, e esses recursos não estão disponíveis no ambiente atual.
+A autenticação real GoTrue e a aceitação de JWTs reais pelas RPCs foram comprovadas no ambiente isolado. Também foram comprovados login, refresh, dois usuários, quatro perfis e isolamento por usuário/perfil no HTTP. Contudo, a etapa solicitada exige que essas operações ocorram dentro do APK em Android Emulator, e esse runner/emulador/test harness ainda não está disponível.
 
 **Resultado final: PARCIAL.**
 
