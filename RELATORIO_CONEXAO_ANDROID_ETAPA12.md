@@ -71,31 +71,41 @@ O conteúdo do JWT não foi registrado no relatório.
 
 ## 4. ADB e Termux
 
-O ADB desta sessão não possui dispositivos:
+O ADB remoto foi conectado por um reverse SSH do servidor ADB Termux:
 
 ```text
-List of devices attached
+ADB_SERVER_SOCKET=tcp:127.0.0.1:15038
+127.0.0.1:5555 device
+emulator-5554 device
 ```
 
-O dispositivo `127.0.0.1:5555` está no ambiente Termux remoto do operador. Portanto, não foi possível confirmar daqui:
+O dispositivo foi verificado e o reverse foi criado:
 
 ```text
-adb -s 127.0.0.1:5555 get-state
-adb -s 127.0.0.1:5555 reverse tcp:3002 tcp:3002
-adb -s 127.0.0.1:5555 reverse --list
+host-14 tcp:3003 tcp:3002
 ```
 
-No Termux, o túnel SSH deve permanecer ativo:
+O pacote instalado foi localizado:
 
-```bash
-ssh -NT -o ExitOnForwardFailure=yes -o ServerAliveInterval=20 \
-  -L 127.0.0.1:3002:127.0.0.1:3002 root@167.233.60.72
+```text
+package: com.kaplay.app
+versionCode=191
+versionName=0.9.18
 ```
 
-E o reverse deve ser criado no segundo terminal:
+A Activity foi iniciada e confirmada em foreground:
+
+```text
+mResumedActivity: com.kaplay.app/.MainActivity
+pid: 7083
+```
+
+O reverse SSH usado no Termux é:
 
 ```bash
-adb -s 127.0.0.1:5555 reverse tcp:3002 tcp:3002
+ssh -NT -i ~/.ssh/id_ed25519 -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes \
+  -R 127.0.0.1:15038:127.0.0.1:5038 root@167.233.60.72
 ```
 
 ## 5. APK de integração
@@ -122,12 +132,14 @@ O APK BUILD ONLY anterior não foi usado como evidência.
 | Nginx gateway | aprovado |
 | Login pelo gateway | aprovado |
 | RPC pelo gateway | aprovado |
-| ADB local nesta sessão | bloqueado: sem dispositivo |
-| SSH Termux → VPS | pendente no ambiente do operador |
-| APK de integração | falhou antes de gerar APK; daemon encerrou |
-| Instalação Android | pendente |
-| Login dentro do APK | pendente |
-| Sincronização dentro do APK | pendente |
+| ADB remoto via Termux | aprovado; `127.0.0.1:5555` online |
+| SSH Termux → VPS | aprovado via `15038` |
+| Reverse Android `3003 -> 3002` | aprovado |
+| Pacote `com.kaplay.app` instalado | aprovado; versionCode 191 |
+| `MainActivity` em foreground | aprovado; PID 7083 |
+| APK de integração específico | não comprovado; build local anterior falhou |
+| Login dentro do APK | ainda não executado |
+| Sincronização dentro do APK | ainda não executada |
 
 ## 7. Veredito
 
