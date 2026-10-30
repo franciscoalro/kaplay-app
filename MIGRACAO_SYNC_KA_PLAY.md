@@ -48,9 +48,32 @@ SupabaseProgressSyncAdapter.kt
 - O endpoint público retornou `HTTP 200` vazio para `user_favorites` e `watch_history` sem autenticação durante a sondagem. Isso não prova exposição de linhas, mas exige confirmação explícita das policies RLS antes de qualquer mudança.
 - O endpoint retornou `PGRST205` para `watch_progress`; a estrutura remota de progresso não foi identificada com segurança por acesso público.
 
+## Snapshot administrativo obtido
+
+A introspecção somente leitura foi executada pelo endpoint de Management API do projeto, sem aplicar SQL. Resultado relevante:
+
+- `user_favorites`: `user_id`, `media_id`, `title`, `poster_url`, `media_type`, `status`, `updated_at`.
+- `watch_history`: `user_id`, `media_id`, `title`, `episode_num`, `season_num`, `position_sec`, `duration_sec`, `poster_url`, `updated_at`.
+- Nenhuma das duas tabelas possui `profile_index`.
+- Não existe tabela pública `watch_progress`.
+- `ka_profiles` possui `user_id`, `profile_index` e índice único `(user_id, profile_index)`.
+- Chaves atuais: favoritos `(user_id, media_id)`; histórico `(user_id, media_id, season_num, episode_num)`.
+- RLS está habilitado nas tabelas; as policies atuais de favoritos/histórico autorizam por `auth.uid() = user_id`, mas não distinguem perfis.
+- A única função entre as RPCs de recompensas pesquisadas que existe é `ka_claim_ad_reward(integer, uuid)`, `SECURITY DEFINER`; ela foi preservada.
+- A consulta ampla por `sync_%` encontrou apenas `sync_pull_profiles()` e `sync_push_profiles(...)`; os RPCs relacionados de biblioteca, histórico e progresso também não estão presentes.
+- Não foram encontradas tabelas públicas de catálogo de avatares ou membership necessárias para implementar `get_avatar_catalog()` e `get_my_member_access()` sem criar uma nova fonte de dados.
+
+### Consequência
+
+As três RPCs de sincronização de dados existentes podem ser preparadas apenas depois de uma migração de compatibilidade que acrescente o escopo de perfil às tabelas atuais. Sem essa etapa, qualquer RPC que aceite `p_profile_id` teria de compartilhar favoritos/histórico entre todos os perfis do mesmo usuário, contrariando o requisito de isolamento.
+
+`sync_pull_watch_progress` também não pode ser implementada fielmente apenas com as colunas atuais: faltam `video_id`, `progress_key` e `content_type` no histórico. `position_sec`/`duration_sec` podem servir como origem de dados legados, mas não substituem esses campos sem uma decisão de contrato.
+
+`get_avatar_catalog()` e `get_my_member_access()` permanecem bloqueadas por falta de tabelas-fonte e dados de negócio confirmados. Não será criado catálogo vazio nem entitlement fictício.
+
 ## Bloqueio para uma migration concreta
 
-A confirmação de que as RPCs estão fisicamente ausentes não fornece, neste workspace, o DDL autoritativo das tabelas. Ainda faltam, por função/tabela:
+A confirmação de que as RPCs estão fisicamente ausentes agora foi complementada pelo snapshot real. Ainda faltam, por função/tabela:
 
 - nome exato e tipo da coluna de perfil;
 - vínculo entre `profileId` local e `profile_index` remoto;

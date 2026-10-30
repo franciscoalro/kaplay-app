@@ -174,3 +174,7 @@ A compilação passou, mas isso não foi usado como prova de correção funciona
 **Status geral: REPROVADO para sincronização remota; PARCIAL para a Home; APK compilável e executável.**
 
 Não iniciar redesign da Home nem criar/substituir RPCs enquanto os bloqueios de backend e a sobreposição da navegação não estiverem isolados e aprovados.
+
+## Adendo de introspecção administrativa
+
+Foi executada introspecção somente leitura via Management API autenticada do projeto `iibureqvpurmbgqupnvl`. Confirmou-se que `user_favorites` e `watch_history` não têm `profile_index`, que não existe tabela pública `watch_progress`, e que uma busca ampla por funções `sync_%` encontrou somente `sync_pull_profiles()` e `sync_push_profiles(...)`. Portanto, as RPCs relacionadas de biblioteca, histórico e progresso também precisam ser tratadas no desenho de recuperação; implementar apenas as cinco chamadas inicialmente listadas não completaria o fluxo do APK.
