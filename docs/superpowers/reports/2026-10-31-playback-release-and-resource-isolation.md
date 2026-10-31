@@ -52,7 +52,7 @@ Final push validation: [run 41244659898](https://github.com/franciscoalro/kaplay
 - `d6d8c883` — validation evidence report.
 - `9d084f88` — implementation plan.
 
-Final HEAD: `d6d8c883`.
+Final validation commit: `044a9c29fc1eb56505f0d9f58a3276a2a719763a` (the CI-validated code/workflow commit was `d6d8c883`).
 
 ## Review
 
