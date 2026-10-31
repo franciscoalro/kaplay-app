@@ -32,7 +32,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MergingMediaSource
-import com.kaplay.app.features.player.PlaybackTopLevelRequest
 import com.kaplay.app.features.player.PlatformPlaybackDataSourceFactory
 import com.kaplay.app.features.trailer.LetterboxDetector
 import com.kaplay.app.features.trailer.LetterboxSampler
@@ -60,17 +59,13 @@ actual fun HeroTrailerPlayerSurface(
     var playerContainer by remember { mutableStateOf<HeroTrailerTextureContainer?>(null) }
 
     val dataSourceFactory = remember(context, sourceUrl, sourceAudioUrl) {
-        val primaryRequest = PlaybackTopLevelRequest(url = sourceUrl, headers = emptyMap())
-        val additionalRequests = sourceAudioUrl?.takeIf { it.isNotBlank() }?.let {
-            listOf(PlaybackTopLevelRequest(url = it, headers = emptyMap()))
-        } ?: emptyList()
         PlatformPlaybackDataSourceFactory.create(
             context = context,
+            sourceUrl = sourceUrl,
+            sourceAudioUrl = sourceAudioUrl,
             defaultRequestHeaders = emptyMap(),
             defaultResponseHeaders = emptyMap(),
             useYoutubeChunkedPlayback = true,
-            primary = primaryRequest,
-            additional = additionalRequests,
         )
     }
     val exoPlayer = remember(sourceUrl, sourceAudioUrl, dataSourceFactory) {

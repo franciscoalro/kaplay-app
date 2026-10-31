@@ -8,36 +8,41 @@ import com.kaplay.app.features.trailer.YoutubeChunkedDataSourceFactory
 internal object PlatformPlaybackDataSourceFactory {
     fun create(
         context: Context,
+        sourceUrl: String,
+        sourceAudioUrl: String?,
         defaultRequestHeaders: Map<String, String>,
         defaultResponseHeaders: Map<String, String>,
         useYoutubeChunkedPlayback: Boolean,
         useLongReadTimeout: Boolean = false,
         externalSubtitles: List<com.kaplay.app.features.streams.StreamSubtitle> = emptyList(),
-        primary: PlaybackTopLevelRequest? = null,
-        additional: List<PlaybackTopLevelRequest> = emptyList(),
     ): DataSource.Factory {
-        val networkFactory: DataSource.Factory = if (useYoutubeChunkedPlayback) {
-            YoutubeChunkedDataSourceFactory(defaultRequestHeaders = defaultRequestHeaders)
-        } else if (primary != null) {
-            val subsAsAdditional = externalSubtitles.mapNotNull { sub ->
-                if (sub.url.isBlank()) null
-                else PlaybackTopLevelRequest(url = sub.url, headers = sub.headers ?: emptyMap())
+        val primary = PlaybackTopLevelRequest(sourceUrl, defaultRequestHeaders)
+        val additional = buildList {
+            sourceAudioUrl?.takeIf { it.isNotBlank() }?.let {
+                add(PlaybackTopLevelRequest(it, defaultRequestHeaders))
             }
-            PlayerPlaybackNetworking.createHttpDataSourceFactory(
-                primary = primary,
-                additional = additional + subsAsAdditional,
-                defaultHeaders = defaultRequestHeaders,
-                useLongReadTimeout = useLongReadTimeout,
+            externalSubtitles.forEach { subtitle ->
+                if (subtitle.url.isNotBlank()) {
+                    add(PlaybackTopLevelRequest(subtitle.url, subtitle.headers.orEmpty()))
+                }
+            }
+        }
+        val secureFactory = PlayerPlaybackNetworking.createHttpDataSourceFactory(
+            primary = primary,
+            additional = additional,
+            defaultHeaders = defaultRequestHeaders,
+            useLongReadTimeout = useLongReadTimeout,
+        )
+        val networkFactory: DataSource.Factory = if (useYoutubeChunkedPlayback) {
+            YoutubeChunkedDataSourceFactory(
+                upstreamFactory = secureFactory,
             )
         } else {
-            PlayerPlaybackNetworking.createHttpDataSourceFactory(
-                defaultRequestHeaders,
-                useLongReadTimeout,
-            )
+            secureFactory
         }
         val subtitleHeaderFactory = SubtitleRequestHeaderDataSourceFactory(
             upstreamFactory = networkFactory,
-            externalSubtitles = externalSubtitles
+            externalSubtitles = externalSubtitles,
         )
         val baseFactory: DataSource.Factory = DefaultDataSource.Factory(context, subtitleHeaderFactory)
         return if (defaultResponseHeaders.isEmpty()) {

@@ -24,7 +24,8 @@ import org.jetbrains.compose.resources.getString
 @UnstableApi
 class YoutubeChunkedDataSourceFactory(
     private val defaultRequestHeaders: Map<String, String> = emptyMap(),
-    private val chunkSizeBytes: Long = CHUNK_SIZE
+    private val chunkSizeBytes: Long = CHUNK_SIZE,
+     private val upstreamFactory: DataSource.Factory? = null,
 ) : DataSource.Factory {
 
     companion object {
@@ -34,19 +35,19 @@ class YoutubeChunkedDataSourceFactory(
     }
 
     override fun createDataSource(): DataSource {
-        val upstreamFactory = DefaultHttpDataSource.Factory()
+        val defaultFactory = DefaultHttpDataSource.Factory()
             .setConnectTimeoutMs(15_000)
             .setReadTimeoutMs(15_000)
             .setAllowCrossProtocolRedirects(true)
         if (defaultRequestHeaders.isNotEmpty()) {
-            upstreamFactory.setDefaultRequestProperties(defaultRequestHeaders)
+            defaultFactory.setDefaultRequestProperties(defaultRequestHeaders)
         }
-        val upstream = upstreamFactory.createDataSource()
+        val upstream = (upstreamFactory ?: defaultFactory).createDataSource()
         return YoutubeChunkedDataSource(upstream, chunkSizeBytes)
     }
 
     private class YoutubeChunkedDataSource(
-        private val upstream: DefaultHttpDataSource,
+        private val upstream: DataSource,
         private val chunkSize: Long
     ) : DataSource {
 

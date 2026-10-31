@@ -7,34 +7,34 @@ import androidx.media3.datasource.DefaultDataSource
 internal object PlatformPlaybackDataSourceFactory {
     fun create(
         context: Context,
+        sourceUrl: String,
+        sourceAudioUrl: String?,
         defaultRequestHeaders: Map<String, String>,
         defaultResponseHeaders: Map<String, String>,
         useYoutubeChunkedPlayback: Boolean,
         useLongReadTimeout: Boolean = false,
         externalSubtitles: List<com.kaplay.app.features.streams.StreamSubtitle> = emptyList(),
-        primary: PlaybackTopLevelRequest? = null,
-        additional: List<PlaybackTopLevelRequest> = emptyList(),
     ): DataSource.Factory {
-        val httpFactory = if (primary != null) {
-            val subsAsAdditional = externalSubtitles.mapNotNull { sub ->
-                if (sub.url.isBlank()) null
-                else PlaybackTopLevelRequest(url = sub.url, headers = sub.headers ?: emptyMap())
+        val primary = PlaybackTopLevelRequest(sourceUrl, defaultRequestHeaders)
+        val additional = buildList {
+            sourceAudioUrl?.takeIf { it.isNotBlank() }?.let {
+                add(PlaybackTopLevelRequest(it, defaultRequestHeaders))
             }
-            PlayerPlaybackNetworking.createHttpDataSourceFactory(
-                primary = primary,
-                additional = additional + subsAsAdditional,
-                defaultHeaders = defaultRequestHeaders,
-                useLongReadTimeout = useLongReadTimeout,
-            )
-        } else {
-            PlayerPlaybackNetworking.createHttpDataSourceFactory(
-                defaultRequestHeaders,
-                useLongReadTimeout,
-            )
+            externalSubtitles.forEach { subtitle ->
+                if (subtitle.url.isNotBlank()) {
+                    add(PlaybackTopLevelRequest(subtitle.url, subtitle.headers.orEmpty()))
+                }
+            }
         }
+        val httpFactory = PlayerPlaybackNetworking.createHttpDataSourceFactory(
+            primary = primary,
+            additional = additional,
+            defaultHeaders = defaultRequestHeaders,
+            useLongReadTimeout = useLongReadTimeout,
+        )
         val subtitleHeaderFactory = SubtitleRequestHeaderDataSourceFactory(
             upstreamFactory = httpFactory,
-            externalSubtitles = externalSubtitles
+            externalSubtitles = externalSubtitles,
         )
         val baseFactory: DataSource.Factory = DefaultDataSource.Factory(context, subtitleHeaderFactory)
         return if (defaultResponseHeaders.isEmpty()) {

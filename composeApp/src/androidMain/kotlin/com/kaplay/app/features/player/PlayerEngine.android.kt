@@ -321,24 +321,15 @@ private fun ExoPlayerSurface(
         playerSettings.vodCacheSizeMode,
         playerSettings.vodCacheSizeMb,
     ) {
-        val primaryRequest = PlaybackTopLevelRequest(
-            url = sourceUrl,
-            headers = sanitizedSourceHeaders,
-        )
-        val additionalRequests = buildList {
-            sourceAudioUrl?.takeIf { it.isNotBlank() }?.let {
-                add(PlaybackTopLevelRequest(url = it, headers = sanitizedSourceHeaders))
-            }
-        }
         val upstream = PlatformPlaybackDataSourceFactory.create(
             context = context,
+            sourceUrl = sourceUrl,
+            sourceAudioUrl = sourceAudioUrl,
             defaultRequestHeaders = sanitizedSourceHeaders,
             defaultResponseHeaders = sanitizedSourceResponseHeaders,
             useYoutubeChunkedPlayback = useYoutubeChunkedPlayback,
             useLongReadTimeout = isLoopbackPlaybackSource(sourceUrl),
             externalSubtitles = externalSubtitles,
-            primary = primaryRequest,
-            additional = additionalRequests,
         )
         val mimeType = playbackMediaItemFromUrl(
             url = sourceUrl,
