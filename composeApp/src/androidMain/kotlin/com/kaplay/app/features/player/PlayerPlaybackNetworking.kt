@@ -9,14 +9,7 @@ import com.kaplay.app.core.network.IPv4FirstDns
 import okhttp3.OkHttpClient
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
-import javax.net.ssl.HostnameVerifier
-import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
 
 internal object PlayerPlaybackNetworking {
     internal const val DEFAULT_USER_AGENT =
@@ -27,20 +20,20 @@ internal object PlayerPlaybackNetworking {
         "User-Agent" to DEFAULT_USER_AGENT,
     )
 
-    private val trustAllManager = object : X509TrustManager {
-        override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-
-        override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-
-        override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+    // ─── RED stub: permissive client remains for backward compatibility ───────
+    @Suppress("UNUSED_VARIABLE")
+    private val trustAllManager = object : javax.net.ssl.X509TrustManager {
+        override fun checkClientTrusted(chain: Array<out java.security.cert.X509Certificate>?, authType: String?) = Unit
+        override fun checkServerTrusted(chain: Array<out java.security.cert.X509Certificate>?, authType: String?) = Unit
+        override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = emptyArray()
     }
 
-    private val playbackHostnameVerifier = HostnameVerifier { _, _ -> true }
+    @Suppress("UNUSED_VARIABLE")
+    private val playbackHostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
 
-    private val sslContext: SSLContext by lazy {
-        SSLContext.getInstance("TLS").apply {
-            init(null, arrayOf<TrustManager>(trustAllManager), SecureRandom())
-        }
+    @Suppress("UNUSED_VARIABLE")
+    private val sslContext: java.security.SSLContext = java.security.SSLContext.getInstance("TLS").apply {
+        init(null, arrayOf<javax.net.ssl.TrustManager>(trustAllManager), java.security.SecureRandom())
     }
 
     private val playbackHttpClient: OkHttpClient by lazy {
@@ -71,6 +64,36 @@ internal object PlayerPlaybackNetworking {
             }
             .build()
     }
+
+    // ─── RED stubs for new security-aware signatures (throw — tests verify these) ───
+
+    internal fun createPlaybackHttpClient(
+        context: PlaybackRequestSecurityContext,
+        useLongReadTimeout: Boolean,
+    ): OkHttpClient = throw UnsupportedOperationException(
+        "createPlaybackHttpClient with security context not yet implemented",
+    )
+
+    internal fun createHttpDataSourceFactory(
+        primary: PlaybackTopLevelRequest,
+        additional: Iterable<PlaybackTopLevelRequest> = emptyList(),
+        defaultHeaders: Map<String, String> = emptyMap(),
+        useLongReadTimeout: Boolean = false,
+    ): DataSource.Factory = throw UnsupportedOperationException(
+        "createHttpDataSourceFactory with security context not yet implemented",
+    )
+
+    internal fun createDataSourceFactory(
+        context: Context,
+        primary: PlaybackTopLevelRequest,
+        additional: Iterable<PlaybackTopLevelRequest> = emptyList(),
+        defaultHeaders: Map<String, String> = emptyMap(),
+        useLongReadTimeout: Boolean = false,
+    ): DataSource.Factory = throw UnsupportedOperationException(
+        "createDataSourceFactory with security context not yet implemented",
+    )
+
+    // ─── Original implementation (backward-compatible overloads) ───────────────
 
     fun createHttpDataSourceFactory(
         defaultHeaders: Map<String, String> = emptyMap(),
@@ -124,7 +147,7 @@ internal object PlayerPlaybackNetworking {
     ): HttpURLConnection {
         val mergedHeaders = withDefaultUserAgent(headers)
         return (URL(url).openConnection() as HttpURLConnection).apply {
-            if (this is HttpsURLConnection) {
+            if (this is javax.net.ssl.HttpsURLConnection) {
                 sslSocketFactory = sslContext.socketFactory
                 hostnameVerifier = playbackHostnameVerifier
             }
