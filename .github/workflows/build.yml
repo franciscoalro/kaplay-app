@@ -63,6 +63,23 @@ jobs:
           echo "status=$status" >> "$GITHUB_ENV"
           exit "$status"
 
+      - name: Compile KAPlay Play Store debug Kotlin
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :androidApp:compilePlaystoreDebugKotlin \
+            --no-daemon --no-parallel --max-workers=2 --stacktrace
+
+      - name: Verify playback TLS hardening patterns
+        run: |
+          set -eu
+          player_dir="composeApp/src/androidMain/kotlin/com/kaplay/app/features/player"
+          forbidden='trustAllManager|checkServerTrusted|HostnameVerifier|hostnameVerifier|sslSocketFactory|SSLContext|TrustManager'
+          if grep -RInE "$forbidden" "$player_dir"; then
+            echo "Forbidden permissive/custom playback TLS pattern detected" >&2
+            exit 1
+          fi
+          echo "No forbidden playback TLS patterns found"
+
       - name: Run Android host unit tests
         run: |
           chmod +x ./gradlew
