@@ -13,6 +13,8 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
+import javax.net.ssl.SSLException
+import javax.net.ssl.SSLSocket
 
 class PlayerPlaybackNetworkingSecurityTest {
     @Test
@@ -34,8 +36,13 @@ class PlayerPlaybackNetworkingSecurityTest {
                 context = securityContext(),
                 useLongReadTimeout = false,
             )
-            val request = Request.Builder().url(server.url("/video.m3u8")).build()
+            val tlsSocket = client.sslSocketFactory.createSocket("localhost", server.port) as SSLSocket
+            assertFailsWith<SSLException> {
+                tlsSocket.startHandshake()
+            }
+            tlsSocket.close()
 
+            val request = Request.Builder().url(server.url("/video.m3u8")).build()
             val failure = assertFailsWith<IOException> {
                 client.newCall(request).execute().use { response ->
                     error("Untrusted HTTPS unexpectedly succeeded with ${response.code}")
