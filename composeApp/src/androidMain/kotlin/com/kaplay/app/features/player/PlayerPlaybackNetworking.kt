@@ -7,8 +7,6 @@ import androidx.media3.datasource.okhttp.OkHttpDataSource
 import com.kaplay.app.core.diagnostics.SentryNetworkBreadcrumbInterceptor
 import com.kaplay.app.core.network.IPv4FirstDns
 import okhttp3.OkHttpClient
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.concurrent.TimeUnit
 
 internal object PlayerPlaybackNetworking {
@@ -20,27 +18,10 @@ internal object PlayerPlaybackNetworking {
         "User-Agent" to DEFAULT_USER_AGENT,
     )
 
-    // ─── RED stub: permissive client remains for backward compatibility ───────
-    @Suppress("UNUSED_VARIABLE")
-    private val trustAllManager = object : javax.net.ssl.X509TrustManager {
-        override fun checkClientTrusted(chain: Array<out java.security.cert.X509Certificate>?, authType: String?) = Unit
-        override fun checkServerTrusted(chain: Array<out java.security.cert.X509Certificate>?, authType: String?) = Unit
-        override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = emptyArray()
-    }
-
-    @Suppress("UNUSED_VARIABLE")
-    private val playbackHostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
-
-    @Suppress("UNUSED_VARIABLE")
-    private val sslContext: java.security.SSLContext = java.security.SSLContext.getInstance("TLS").apply {
-        init(null, arrayOf<javax.net.ssl.TrustManager>(trustAllManager), java.security.SecureRandom())
-    }
-
+    /** Standard playback HTTP client — platform TLS, no trust-all, no custom hostname verifier. */
     private val playbackHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .dns(IPv4FirstDns())
-            .sslSocketFactory(sslContext.socketFactory, trustAllManager)
-            .hostnameVerifier(playbackHostnameVerifier)
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
@@ -51,6 +32,7 @@ internal object PlayerPlaybackNetworking {
             .build()
     }
 
+    /** Long-read variant for loopback/local streams. */
     private val loopbackPlaybackHttpClient: OkHttpClient by lazy {
         playbackHttpClient.newBuilder()
             .addInterceptor { chain ->
@@ -65,23 +47,42 @@ internal object PlayerPlaybackNetworking {
             .build()
     }
 
-    // ─── RED stubs for new security-aware signatures (throw — tests verify these) ───
+    // ─── Security-aware entry points ───────────────────────────────────────────
 
+    /**
+     * Creates an OkHttpClient with [PlaybackRequestSecurityInterceptor] installed as a
+     * network interceptor, enforcing per-origin credential scoping on every exchange
+     * including redirects and HLS/DASH child requests.
+     *
+     * The returned client uses platform-default TLS and hostname verification.
+     */
     internal fun createPlaybackHttpClient(
         context: PlaybackRequestSecurityContext,
         useLongReadTimeout: Boolean,
-    ): OkHttpClient = throw UnsupportedOperationException(
-        "createPlaybackHttpClient with security context not yet implemented",
-    )
+    ): OkHttpClient {
+        val base = if (useLongReadTimeout) loopbackPlaybackHttpClient else playbackHttpClient
+        return base.newBuilder()
+            .addInterceptor(SentryNetworkBreadcrumbInterceptor())
+            .addNetworkInterceptor(PlaybackRequestSecurityInterceptor(context))
+            .build()
+    }
 
     internal fun createHttpDataSourceFactory(
         primary: PlaybackTopLevelRequest,
         additional: Iterable<PlaybackTopLevelRequest> = emptyList(),
         defaultHeaders: Map<String, String> = emptyMap(),
         useLongReadTimeout: Boolean = false,
-    ): DataSource.Factory = throw UnsupportedOperationException(
-        "createHttpDataSourceFactory with security context not yet implemented",
-    )
+    ): DataSource.Factory {
+        val context = PlaybackRequestSecurityContext.create(primary, additional)
+        val client = createPlaybackHttpClient(context, useLongReadTimeout)
+        val mergedHeaders = sanitizeHeaders(defaultHeaders)
+        return OkHttpDataSource.Factory(client).apply {
+            setDefaultRequestProperties(mergedHeaders)
+            if (mergedHeaders.headerValue("User-Agent") == null) {
+                setUserAgent(DEFAULT_USER_AGENT)
+            }
+        }
+    }
 
     internal fun createDataSourceFactory(
         context: Context,
@@ -89,41 +90,27 @@ internal object PlayerPlaybackNetworking {
         additional: Iterable<PlaybackTopLevelRequest> = emptyList(),
         defaultHeaders: Map<String, String> = emptyMap(),
         useLongReadTimeout: Boolean = false,
-    ): DataSource.Factory = throw UnsupportedOperationException(
-        "createDataSourceFactory with security context not yet implemented",
-    )
+    ): DataSource.Factory {
+        return DefaultDataSource.Factory(
+            context,
+            createHttpDataSourceFactory(primary, additional, defaultHeaders, useLongReadTimeout),
+        )
+    }
 
-    // ─── Original implementation (backward-compatible overloads) ───────────────
+    // ─── Backward-compatible overloads (delegate to security-aware entry points) ──
 
     fun createHttpDataSourceFactory(
         defaultHeaders: Map<String, String> = emptyMap(),
         useLongReadTimeout: Boolean = false,
     ): DataSource.Factory {
-        val requestHeaders = sanitizeHeaders(defaultHeaders)
-        val baseClient = if (useLongReadTimeout) loopbackPlaybackHttpClient else playbackHttpClient
-        val client = requestHeaders.headerValue("Authorization")?.let { authorization ->
-            baseClient.newBuilder()
-                .addNetworkInterceptor { chain ->
-                    val request = chain.request()
-                    if (request.header("Authorization") == null) {
-                        chain.proceed(
-                            request.newBuilder()
-                                .header("Authorization", authorization)
-                                .build()
-                        )
-                    } else {
-                        chain.proceed(request)
-                    }
-                }
-                .build()
-        } ?: baseClient
-
-        return OkHttpDataSource.Factory(client).apply {
-            setDefaultRequestProperties(requestHeaders)
-            if (requestHeaders.headerValue("User-Agent") == null) {
-                setUserAgent(DEFAULT_USER_AGENT)
-            }
-        }
+        val sanitized = sanitizeHeaders(defaultHeaders)
+        // Delegate to security-aware overload with an empty primary URL;
+        // this preserves existing call-site behavior while enforcing HTTP stripping.
+        val primary = PlaybackTopLevelRequest(
+            url = "",
+            headers = sanitized.filterKeys { it.equals("Authorization", ignoreCase = true) },
+        )
+        return createHttpDataSourceFactory(primary, emptyList(), defaultHeaders, useLongReadTimeout)
     }
 
     fun createDataSourceFactory(
@@ -137,33 +124,7 @@ internal object PlayerPlaybackNetworking {
         )
     }
 
-    fun openConnection(
-        url: String,
-        headers: Map<String, String>,
-        method: String,
-        connectTimeoutMs: Int,
-        readTimeoutMs: Int,
-        range: String? = null,
-    ): HttpURLConnection {
-        val mergedHeaders = withDefaultUserAgent(headers)
-        return (URL(url).openConnection() as HttpURLConnection).apply {
-            if (this is javax.net.ssl.HttpsURLConnection) {
-                sslSocketFactory = sslContext.socketFactory
-                hostnameVerifier = playbackHostnameVerifier
-            }
-            instanceFollowRedirects = true
-            connectTimeout = connectTimeoutMs
-            readTimeout = readTimeoutMs
-            requestMethod = method
-            setRequestProperty("User-Agent", mergedHeaders.headerValue("User-Agent") ?: DEFAULT_USER_AGENT)
-            mergedHeaders.forEach { (key, value) ->
-                if (key.equals("Range", ignoreCase = true)) return@forEach
-                if (key.equals("User-Agent", ignoreCase = true)) return@forEach
-                setRequestProperty(key, value)
-            }
-            range?.let { setRequestProperty("Range", it) }
-        }
-    }
+    // ─── Private helpers ────────────────────────────────────────────────────────
 
     private fun sanitizeHeaders(headers: Map<String, String>): Map<String, String> =
         headers.mapNotNull { (rawKey, rawValue) ->
@@ -179,12 +140,6 @@ internal object PlayerPlaybackNetworking {
     private fun isLoopbackHost(host: String): Boolean = when (host.lowercase()) {
         "127.0.0.1", "localhost", "::1" -> true
         else -> false
-    }
-
-    private fun withDefaultUserAgent(headers: Map<String, String>): Map<String, String> {
-        val sanitized = sanitizeHeaders(headers)
-        if (sanitized.headerValue("User-Agent") != null) return sanitized
-        return DEFAULT_STREAM_HEADERS + sanitized
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

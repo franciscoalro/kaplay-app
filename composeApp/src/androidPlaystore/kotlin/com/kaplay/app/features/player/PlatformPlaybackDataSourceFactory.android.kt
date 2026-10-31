@@ -12,11 +12,26 @@ internal object PlatformPlaybackDataSourceFactory {
         useYoutubeChunkedPlayback: Boolean,
         useLongReadTimeout: Boolean = false,
         externalSubtitles: List<com.kaplay.app.features.streams.StreamSubtitle> = emptyList(),
+        primary: PlaybackTopLevelRequest? = null,
+        additional: List<PlaybackTopLevelRequest> = emptyList(),
     ): DataSource.Factory {
-        val httpFactory = PlayerPlaybackNetworking.createHttpDataSourceFactory(
-            defaultRequestHeaders,
-            useLongReadTimeout,
-        )
+        val httpFactory = if (primary != null) {
+            val subsAsAdditional = externalSubtitles.mapNotNull { sub ->
+                if (sub.url.isBlank()) null
+                else PlaybackTopLevelRequest(url = sub.url, headers = sub.headers ?: emptyMap())
+            }
+            PlayerPlaybackNetworking.createHttpDataSourceFactory(
+                primary = primary,
+                additional = additional + subsAsAdditional,
+                defaultHeaders = defaultRequestHeaders,
+                useLongReadTimeout = useLongReadTimeout,
+            )
+        } else {
+            PlayerPlaybackNetworking.createHttpDataSourceFactory(
+                defaultRequestHeaders,
+                useLongReadTimeout,
+            )
+        }
         val subtitleHeaderFactory = SubtitleRequestHeaderDataSourceFactory(
             upstreamFactory = httpFactory,
             externalSubtitles = externalSubtitles

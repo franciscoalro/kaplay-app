@@ -27,7 +27,7 @@ class PlayerPlaybackNetworkingSecurityTest {
             .build()
 
         MockWebServer().use { server ->
-            server.useHttps(serverCertificates.sslSocketFactory())
+            server.useHttps(serverCertificates.sslSocketFactory(), tunnelProxy = false)
             server.enqueue(MockResponse().setBody("unexpected success"))
             server.start()
 
