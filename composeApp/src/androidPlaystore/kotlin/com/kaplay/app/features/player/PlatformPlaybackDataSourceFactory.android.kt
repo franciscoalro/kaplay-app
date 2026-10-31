@@ -7,19 +7,34 @@ import androidx.media3.datasource.DefaultDataSource
 internal object PlatformPlaybackDataSourceFactory {
     fun create(
         context: Context,
+        sourceUrl: String,
+        sourceAudioUrl: String?,
         defaultRequestHeaders: Map<String, String>,
         defaultResponseHeaders: Map<String, String>,
         useYoutubeChunkedPlayback: Boolean,
         useLongReadTimeout: Boolean = false,
         externalSubtitles: List<com.kaplay.app.features.streams.StreamSubtitle> = emptyList(),
     ): DataSource.Factory {
+        val primary = PlaybackTopLevelRequest(sourceUrl, defaultRequestHeaders)
+        val additional = buildList {
+            sourceAudioUrl?.takeIf { it.isNotBlank() }?.let {
+                add(PlaybackTopLevelRequest(it, defaultRequestHeaders))
+            }
+            externalSubtitles.forEach { subtitle ->
+                if (subtitle.url.isNotBlank()) {
+                    add(PlaybackTopLevelRequest(subtitle.url, subtitle.headers.orEmpty()))
+                }
+            }
+        }
         val httpFactory = PlayerPlaybackNetworking.createHttpDataSourceFactory(
-            defaultRequestHeaders,
-            useLongReadTimeout,
+            primary = primary,
+            additional = additional,
+            defaultHeaders = defaultRequestHeaders,
+            useLongReadTimeout = useLongReadTimeout,
         )
         val subtitleHeaderFactory = SubtitleRequestHeaderDataSourceFactory(
             upstreamFactory = httpFactory,
-            externalSubtitles = externalSubtitles
+            externalSubtitles = externalSubtitles,
         )
         val baseFactory: DataSource.Factory = DefaultDataSource.Factory(context, subtitleHeaderFactory)
         return if (defaultResponseHeaders.isEmpty()) {

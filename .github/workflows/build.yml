@@ -5,6 +5,12 @@ on:
     branches:
       - '**'
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Build and upload the signed release APK'
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
   group: kaplay-build-${{ github.ref }}
@@ -63,6 +69,23 @@ jobs:
           echo "status=$status" >> "$GITHUB_ENV"
           exit "$status"
 
+      - name: Compile KAPlay Play Store debug Kotlin
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :androidApp:compilePlaystoreDebugKotlin \
+            --no-daemon --no-parallel --max-workers=2 --stacktrace
+
+      - name: Verify playback TLS hardening patterns
+        run: |
+          set -eu
+          player_dir="composeApp/src/androidMain/kotlin/com/kaplay/app/features/player"
+          forbidden='trustAllManager|checkServerTrusted|HostnameVerifier|hostnameVerifier|sslSocketFactory|SSLContext|TrustManager'
+          if grep -RInE "$forbidden" "$player_dir"; then
+            echo "Forbidden permissive/custom playback TLS pattern detected" >&2
+            exit 1
+          fi
+          echo "No forbidden playback TLS patterns found"
+
       - name: Run Android host unit tests
         run: |
           chmod +x ./gradlew
@@ -70,6 +93,8 @@ jobs:
             --tests 'com.kaplay.app.features.tomato.TomatoProviderTest' \
             --tests 'com.kaplay.app.core.network.NetworkStatusRepositoryTest' \
             --tests 'com.kaplay.app.features.player.PlayerScreenRuntimeStateTest' \
+            --tests 'com.kaplay.app.features.player.PlaybackRequestSecurityPolicyTest' \
+            --tests 'com.kaplay.app.features.player.PlayerPlaybackNetworkingSecurityTest' \
             --tests 'com.kaplay.app.features.player.VideoQualityTest' \
             --tests 'com.kaplay.app.features.streams.StreamAutoPlaySelectorTest' \
             --no-daemon --no-parallel --max-workers=2 --stacktrace
@@ -90,6 +115,7 @@ jobs:
 
   assemble-full-release:
     name: assembleFullRelease
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release == true }}
     runs-on: ubuntu-latest
     needs: compile-full-debug
     env:

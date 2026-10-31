@@ -58,9 +58,11 @@ actual fun HeroTrailerPlayerSurface(
     val latestOnError = rememberUpdatedState(onError)
     var playerContainer by remember { mutableStateOf<HeroTrailerTextureContainer?>(null) }
 
-    val dataSourceFactory = remember(context) {
+    val dataSourceFactory = remember(context, sourceUrl, sourceAudioUrl) {
         PlatformPlaybackDataSourceFactory.create(
             context = context,
+            sourceUrl = sourceUrl,
+            sourceAudioUrl = sourceAudioUrl,
             defaultRequestHeaders = emptyMap(),
             defaultResponseHeaders = emptyMap(),
             useYoutubeChunkedPlayback = true,

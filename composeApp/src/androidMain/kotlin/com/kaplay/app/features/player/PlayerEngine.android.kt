@@ -311,6 +311,7 @@ private fun ExoPlayerSurface(
     val dataSourceFactory = remember(
         context,
         sourceUrl,
+        sourceAudioUrl,
         sanitizedSourceHeaders,
         sanitizedSourceResponseHeaders,
         useYoutubeChunkedPlayback,
@@ -322,6 +323,8 @@ private fun ExoPlayerSurface(
     ) {
         val upstream = PlatformPlaybackDataSourceFactory.create(
             context = context,
+            sourceUrl = sourceUrl,
+            sourceAudioUrl = sourceAudioUrl,
             defaultRequestHeaders = sanitizedSourceHeaders,
             defaultResponseHeaders = sanitizedSourceResponseHeaders,
             useYoutubeChunkedPlayback = useYoutubeChunkedPlayback,
