@@ -33,7 +33,9 @@ class PlaybackRequestSecurityPolicyTest {
             headers = mapOf("Authorization" to "Bearer video"),
         )
         val unsafeReferer = "https://catalog.example/watch?access_token=leak"
-        val http = context.secure(
+        val http = context(
+            url = "http://media.example/video/master.m3u8",
+        ).secure(
             request("http://media.example/video/segment.ts", mapOf("Referer" to unsafeReferer)),
         )
         val unauthorizedHttps = context.secure(

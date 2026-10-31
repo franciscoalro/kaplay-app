@@ -43,7 +43,7 @@ class PlayerPlaybackNetworkingSecurityTest {
             }
 
             assertTrue(failure.message.orEmpty().isNotBlank())
-            assertEquals(1, server.requestCount, "TLS failure must not trigger a fallback request")
+            assertEquals(0, server.requestCount, "TLS failure must not trigger a fallback request")
         }
     }
 
