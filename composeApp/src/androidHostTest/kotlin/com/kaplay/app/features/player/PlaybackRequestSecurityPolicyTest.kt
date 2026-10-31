@@ -27,6 +27,62 @@ class PlaybackRequestSecurityPolicyTest {
     }
 
     @Test
+    fun unsafeRefererIsStrippedOnHttpAndUnauthorizedHttpsButSafeSameOriginSurvives() {
+        val context = context(
+            url = "https://media.example/video/master.m3u8",
+            headers = mapOf("Authorization" to "Bearer video"),
+        )
+        val unsafeReferer = "https://catalog.example/watch?access_token=leak"
+        val http = context.secure(
+            request("http://media.example/video/segment.ts", mapOf("Referer" to unsafeReferer)),
+        )
+        val unauthorizedHttps = context.secure(
+            request("https://cdn.example/segment.ts", mapOf("Referer" to unsafeReferer)),
+        )
+        val safeSameOrigin = context.secure(
+            request(
+                "https://media.example/video/segment.ts",
+                mapOf("Referer" to "https://media.example/video/index.html"),
+            ),
+        )
+
+        assertNull(http.header("Referer"))
+        assertNull(unauthorizedHttps.header("Referer"))
+        assertEquals("https://media.example/video/index.html", safeSameOrigin.header("Referer"))
+    }
+
+    @Test
+    fun sameOriginResourcesAuthorizeOnlyTheirOwnSensitiveValues() {
+        val context = context(
+            url = "https://media.example/video/master.m3u8",
+            headers = mapOf("Authorization" to "Bearer video"),
+            additional = listOf(
+                PlaybackTopLevelRequest(
+                    "https://media.example/audio/master.m3u8",
+                    mapOf("Authorization" to "Bearer audio"),
+                ),
+            ),
+        )
+
+        val video = context.secure(request(
+            "https://media.example/video/segment.ts",
+            mapOf("Authorization" to "Bearer video"),
+        ))
+        val audio = context.secure(request(
+            "https://media.example/audio/segment.ts",
+            mapOf("Authorization" to "Bearer audio"),
+        ))
+        val swapped = context.secure(request(
+            "https://media.example/video/segment.ts",
+            mapOf("Authorization" to "Bearer audio"),
+        ))
+
+        assertEquals("Bearer video", video.header("Authorization"))
+        assertEquals("Bearer audio", audio.header("Authorization"))
+        assertNull(swapped.header("Authorization"))
+    }
+
+    @Test
     fun sameOriginHttpsStripsUnregisteredSensitiveValue() {
         val context = context(
             "https://media.example/master.m3u8",

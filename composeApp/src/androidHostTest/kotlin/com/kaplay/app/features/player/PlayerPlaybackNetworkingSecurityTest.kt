@@ -4,6 +4,7 @@ import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import okhttp3.OkHttpClient
@@ -42,7 +43,7 @@ class PlayerPlaybackNetworkingSecurityTest {
             }
 
             assertTrue(failure.message.orEmpty().isNotBlank())
-            assertEquals(0, server.requestCount, "TLS failure must not fall back to another request")
+            assertEquals(1, server.requestCount, "TLS failure must not trigger a fallback request")
         }
     }
 
@@ -121,6 +122,151 @@ class PlayerPlaybackNetworkingSecurityTest {
 
         assertTrue(factory.createDataSource() != null)
     }
+
+    @Test
+    fun httpsToHttpsCrossOriginRedirectStripsSensitiveHeaders() {
+        val held = HeldCertificate.Builder()
+            .commonName("localhost")
+            .addSubjectAlternativeName("localhost")
+            .build()
+        val serverCertificates = HandshakeCertificates.Builder().heldCertificate(held).build()
+        val trustedCertificates = HandshakeCertificates.Builder()
+            .addTrustedCertificate(held.certificate)
+            .build()
+
+        MockWebServer().use { source ->
+            MockWebServer().use { destination ->
+                source.useHttps(serverCertificates.sslSocketFactory(), tunnelProxy = false)
+                destination.useHttps(serverCertificates.sslSocketFactory(), tunnelProxy = false)
+                source.start()
+                destination.start()
+                source.enqueue(
+                    MockResponse()
+                        .setResponseCode(302)
+                        .setHeader("Location", destination.url("/segment.ts")),
+                )
+                destination.enqueue(MockResponse().setBody("ok"))
+                val sourceUrl = source.url("/master.m3u8").toString()
+                val context = PlaybackRequestSecurityContext.create(
+                    PlaybackTopLevelRequest(
+                        sourceUrl,
+                        mapOf(
+                            "Authorization" to "Bearer source",
+                            "Referer" to "https://catalog.example/watch?token=secret",
+                        ),
+                    ),
+                )
+                val client = trustedClient(trustedCertificates, context)
+                val response = client.newCall(
+                    Request.Builder()
+                        .url(sourceUrl)
+                        .header("Authorization", "Bearer source")
+                        .header("Referer", "https://catalog.example/watch?token=secret")
+                        .build(),
+                ).execute()
+
+                assertEquals(200, response.code)
+                response.close()
+                source.takeRequest()
+                val redirected = destination.takeRequest()
+                assertNull(redirected.getHeader("Authorization"))
+                assertNull(redirected.getHeader("Referer"))
+            }
+        }
+    }
+
+    @Test
+    fun httpsToHttpRedirectIsRejectedBeforeHttpServerReceivesRequest() {
+        val held = HeldCertificate.Builder()
+            .commonName("localhost")
+            .addSubjectAlternativeName("localhost")
+            .build()
+        val serverCertificates = HandshakeCertificates.Builder().heldCertificate(held).build()
+        val trustedCertificates = HandshakeCertificates.Builder()
+            .addTrustedCertificate(held.certificate)
+            .build()
+
+        MockWebServer().use { https ->
+            MockWebServer().use { http ->
+                https.useHttps(serverCertificates.sslSocketFactory(), tunnelProxy = false)
+                https.start()
+                http.start()
+                https.enqueue(
+                    MockResponse()
+                        .setResponseCode(302)
+                        .setHeader("Location", http.url("/segment.ts")),
+                )
+                val sourceUrl = https.url("/master.m3u8").toString()
+                val context = PlaybackRequestSecurityContext.create(
+                    PlaybackTopLevelRequest(sourceUrl, mapOf("Authorization" to "Bearer source")),
+                )
+                val client = trustedClient(trustedCertificates, context)
+
+                assertFailsWith<IOException> {
+                    client.newCall(Request.Builder().url(sourceUrl).build()).execute().use { }
+                }
+                assertEquals(0, http.requestCount)
+            }
+        }
+    }
+
+    @Test
+    fun trustedHttpsControlSucceeds() {
+        val held = HeldCertificate.Builder()
+            .commonName("localhost")
+            .addSubjectAlternativeName("localhost")
+            .build()
+        val serverCertificates = HandshakeCertificates.Builder().heldCertificate(held).build()
+        val trustedCertificates = HandshakeCertificates.Builder()
+            .addTrustedCertificate(held.certificate)
+            .build()
+        MockWebServer().use { server ->
+            server.useHttps(serverCertificates.sslSocketFactory(), tunnelProxy = false)
+            server.enqueue(MockResponse().setBody("valid"))
+            server.start()
+            val url = server.url("/valid.m3u8").toString()
+            val context = PlaybackRequestSecurityContext.create(PlaybackTopLevelRequest(url))
+            val response = trustedClient(trustedCertificates, context)
+                .newCall(Request.Builder().url(url).build()).execute()
+            assertEquals("valid", response.body.string())
+            response.close()
+        }
+    }
+
+    @Test
+    fun trustedClientRejectsWrongHostname() {
+        val held = HeldCertificate.Builder()
+            .commonName("localhost")
+            .addSubjectAlternativeName("localhost")
+            .build()
+        val serverCertificates = HandshakeCertificates.Builder().heldCertificate(held).build()
+        val trustedCertificates = HandshakeCertificates.Builder()
+            .addTrustedCertificate(held.certificate)
+            .build()
+        MockWebServer().use { server ->
+            server.useHttps(serverCertificates.sslSocketFactory(), tunnelProxy = false)
+            server.start()
+            val validUrl = server.url("/valid.m3u8")
+            val wrongHostUrl = validUrl.newBuilder().host("127.0.0.1").build()
+            val context = PlaybackRequestSecurityContext.create(PlaybackTopLevelRequest(validUrl.toString()))
+            val failure = assertFailsWith<IOException> {
+                trustedClient(trustedCertificates, context)
+                    .newCall(Request.Builder().url(wrongHostUrl).build()).execute().use { }
+            }
+            assertTrue(generateSequence<Throwable>(failure) { it.cause }.any {
+                it.javaClass.simpleName.contains("SSL", ignoreCase = true) ||
+                    it.javaClass.simpleName.contains("Hostname", ignoreCase = true)
+            })
+        }
+    }
+
+    private fun trustedClient(
+        trustedCertificates: HandshakeCertificates,
+        context: PlaybackRequestSecurityContext,
+    ): OkHttpClient = PlayerPlaybackNetworking.createPlaybackHttpClient(context, false)
+        .newBuilder()
+        .sslSocketFactory(trustedCertificates.sslSocketFactory(), trustedCertificates.trustManager)
+        .build()
 
     private fun securityContext(): PlaybackRequestSecurityContext =
         PlaybackRequestSecurityContext.create(
