@@ -10,7 +10,7 @@ A Etapa 15 implementou as correções críticas identificadas na Etapa 14, focan
 - Progresso >1000 registros
 - Migrations A1/B2/C3 com UUID estável de perfil
 
-**Status: Implementação concluída. Compilação local bloqueada por policy VPS (GitHub Actions obrigatório). Testes SQL isolados validados com sucesso.**
+**Status: Implementação concluída. GitHub Actions build SUCCESSFUL. APK Full Debug gerado. Testes SQL isolados validados com sucesso. Homologação Android pendente.**
 
 ## Alterações Kotlin
 
@@ -96,16 +96,27 @@ A Etapa 15 implementou as correções críticas identificadas na Etapa 14, focan
   - Zero SECURITY DEFINER
   - Zero PUBLIC/anon execute
 
-## Bloqueios
+## Resultado da Compilação (GitHub Actions)
 
-1. Compilação local bloqueada por policy VPS (GitHub Actions obrigatório)
-2. Homologação Android não executada
-3. APK Full Debug não gerado
-4. Testes Kotlin unitários não executados (processos killed por OOM)
+- Workflow: `ka-play-build-only.yml`
+- Run ID: `41153247812`
+- Status: **SUCCESS**
+- Duração: 4m 27s
+- APK: `ka-play-full-debug.apk`
+- Tamanho: 167450158 bytes (160M)
+- SHA-256: `4afc2a0ff98781a3c2b182be9dc3f55b1a039ddb2dac3bb891e96670a68aa456`
+- Homologação funcional: NOT_PERFORMED
+- Artefato salvo em: `evidence/ka-play-etapa15/apk/`
+
+## Bloqueios Restantes
+
+1. Homologação Android não executada (requer dispositivo/emulador)
+2. Testes Kotlin unitários não executados via CI (memória insuficiente local)
+3. Implantação em produção não autorizada
 
 ## Próximos Passos
 
-1. Disparar GitHub Actions para compilação e testes
-2. Validar APK gerado
-3. Executar testes de homologação
-4. Avaliar pacote de implantação em produção
+1. Executar testes de homologação Android (dispositivo/emulador)
+2. Validar APK em ambiente controlado
+3. Avaliar pacote de implantação em produção (requer aprovação formal)
+4. Executar migrations em banco isolado adicional se necessário
