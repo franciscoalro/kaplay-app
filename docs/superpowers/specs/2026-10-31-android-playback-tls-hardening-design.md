@@ -113,6 +113,10 @@ Static checks will also confirm that `PlayerPlaybackNetworking` contains no trus
 - Review the generated diff to ensure only playback networking, focused tests, and necessary CI wiring are touched.
 - Confirm the repository contains no permissive TLS constructs in the player path.
 
+## Residual risk: signed HTTP URLs
+
+For legacy CDN compatibility, cleartext HTTP URLs with the non-sensitive query parameters `signature`, `expires`, and `key` remain intentionally allowed. These names are common signed-media identifiers, so blocking them indiscriminately would reject legitimate legacy sources. They do not provide confidentiality or integrity against an active network attacker when transported over HTTP: an attacker can observe, alter, replay, or replace the URL and its signed parameters. HTTPS remains the recommended transport for all signed media. The policy continues to reject HTTP user-info credentials and the explicitly sensitive query names listed above, and it strips sensitive headers before permitted HTTP requests.
+
 ## Deferred follow-up
 
 Design a separate migration that disables global cleartext by default and permits explicit, user-approved exceptions for identified local/server sources.

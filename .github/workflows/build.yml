@@ -109,6 +109,7 @@ jobs:
 
   assemble-full-release:
     name: assembleFullRelease
+    if: ${{ !startsWith(github.ref, 'refs/heads/security/') }}
     runs-on: ubuntu-latest
     needs: compile-full-debug
     env:
