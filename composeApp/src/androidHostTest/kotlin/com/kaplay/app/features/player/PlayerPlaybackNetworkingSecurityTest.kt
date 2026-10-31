@@ -131,6 +131,70 @@ class PlayerPlaybackNetworkingSecurityTest {
     }
 
     @Test
+    fun sameOriginResourceRedirectDoesNotTransferAuthorizationBetweenResources() {
+        val held = HeldCertificate.Builder()
+            .commonName("localhost")
+            .addSubjectAlternativeName("localhost")
+            .build()
+        val serverCertificates = HandshakeCertificates.Builder().heldCertificate(held).build()
+        val trustedCertificates = HandshakeCertificates.Builder()
+            .addTrustedCertificate(held.certificate)
+            .build()
+
+        MockWebServer().use { server ->
+            server.useHttps(serverCertificates.sslSocketFactory(), tunnelProxy = false)
+            server.start()
+            val resourceA = server.url("/media/a.m3u8").toString()
+            val resourceB = server.url("/media/b.m3u8").toString()
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(302)
+                    .setHeader("Location", resourceB),
+            )
+            server.enqueue(MockResponse().setBody("redirected"))
+            server.enqueue(MockResponse().setBody("direct"))
+
+            val context = PlaybackRequestSecurityContext.create(
+                PlaybackTopLevelRequest(
+                    resourceA,
+                    mapOf("Authorization" to "Bearer resource-a"),
+                ),
+                additional = listOf(
+                    PlaybackTopLevelRequest(
+                        resourceB,
+                        mapOf("Authorization" to "Bearer resource-b"),
+                    ),
+                ),
+            )
+            val client = trustedClient(trustedCertificates, context)
+
+            client.newCall(
+                Request.Builder()
+                    .url(resourceA)
+                    .header("Authorization", "Bearer resource-a")
+                    .build(),
+            ).execute().use { response ->
+                assertEquals(200, response.code)
+            }
+            val requestA = server.takeRequest()
+            val redirectedRequestB = server.takeRequest()
+            assertEquals("Bearer resource-a", requestA.getHeader("Authorization"))
+            assertNull(redirectedRequestB.getHeader("Authorization"))
+
+            client.newCall(
+                Request.Builder()
+                    .url(resourceB)
+                    .header("Authorization", "Bearer resource-b")
+                    .build(),
+            ).execute().use { response ->
+                assertEquals(200, response.code)
+            }
+            val directRequestB = server.takeRequest()
+            assertEquals("Bearer resource-b", directRequestB.getHeader("Authorization"))
+        }
+    }
+
+    @Test
     fun httpsToHttpsCrossOriginRedirectStripsSensitiveHeaders() {
         val held = HeldCertificate.Builder()
             .commonName("localhost")
