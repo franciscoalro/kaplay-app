@@ -5,6 +5,12 @@ on:
     branches:
       - '**'
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Build and upload the signed release APK'
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
   group: kaplay-build-${{ github.ref }}
@@ -109,7 +115,7 @@ jobs:
 
   assemble-full-release:
     name: assembleFullRelease
-    if: ${{ !startsWith(github.ref, 'refs/heads/security/') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release == true }}
     runs-on: ubuntu-latest
     needs: compile-full-debug
     env:
