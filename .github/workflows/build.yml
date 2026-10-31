@@ -70,6 +70,7 @@ jobs:
             --tests 'com.kaplay.app.features.tomato.TomatoProviderTest' \
             --tests 'com.kaplay.app.core.network.NetworkStatusRepositoryTest' \
             --tests 'com.kaplay.app.features.player.PlayerScreenRuntimeStateTest' \
+            --tests 'com.kaplay.app.features.player.PlaybackRequestSecurityPolicyTest' \
             --tests 'com.kaplay.app.features.player.VideoQualityTest' \
             --tests 'com.kaplay.app.features.streams.StreamAutoPlaySelectorTest' \
             --no-daemon --no-parallel --max-workers=2 --stacktrace
