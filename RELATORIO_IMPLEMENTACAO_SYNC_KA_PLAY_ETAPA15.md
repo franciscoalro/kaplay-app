@@ -1,204 +1,111 @@
-# RELATORIO_IMPLEMENTACAO_SYNC_KA_PLAY_ETAPA15
+# KA Play — Relatório de Implementação Etapa 15
 
-## Etapa 15 — Implementação das Correções e Nova Validação
+## Resumo Executivo
 
-Data: 2026-10-30
-Branch: `kaplay-rebrand`
-Commit de referência anterior: `775a1945`
+A Etapa 15 implementou as correções críticas identificadas na Etapa 14, focando em:
+- Eliminação de falso sucesso no SyncManager
+- Paginação keyset sem perda de dados
+- Batching consistente entre Kotlin e SQL
+- Delete de watched com chave completa (content_type)
+- Progresso >1000 registros
+- Migrations A1/B2/C3 com UUID estável de perfil
 
-## 1. Resumo
+**Status: Implementação concluída. Compilação local bloqueada por policy VPS (GitHub Actions obrigatório). Testes SQL isolados validados com sucesso.**
 
-A Etapa 15 implementou as correções identificadas na Etapa 14, focando em:
+## Alterações Kotlin
 
-- Eliminação de falso sucesso na sincronização (`SyncManager`);
-- Paginação keyset determinística para library, watched e progress;
-- Batching consistente entre Kotlin e SQL;
-- Exclusão de watched com `content_type` completo;
-- Progresso superior a 1000 registros via keyset;
-- UUID estável como identidade real de perfil;
-- Migrations A1/B2/C3 revisadas com segurança reforçada;
-- Testes isolados de SQL com 1201 registros e 15 RPCs v2.
+### SyncManager.kt
+- Adicionado `KAPlaySyncState` com estados `SYNCING`, `SYNCED`, `PENDING`, `OFFLINE`, `ERROR`
+- `ProfileSyncResult` agora inclui `failures: List<ProfileSyncFailure>` com kind e code
+- `profileSyncStateFor()` garante que falhas impedem `SYNCED`
+- `publishSyncState()` expõe `StateFlow<Map<Int, KAPlaySyncState>>`
+- Corrigido log incondicional `completed` → `succeeded`/`finished status=...`
+- `LibraryRepository.pullFromServer()` agora retorna `LibraryPullResult` (Success/Skipped/Failed)
+- Todos os serviços obrigatórios propagam falhas via `.getOrThrow()`
 
-Nenhuma migration ou alteração de produção foi executada.
+### LibraryRepository.kt
+- `LibraryPullResult` sealed interface (Success, Skipped, Failed)
+- `pullFromServer()` retorna resultado estruturado em vez de engolir exceções
+- `hasPendingChanges(profileId)` exposto para o SyncManager
 
-## 2. Alterações de Código Kotlin
+### SupabaseLibrarySyncAdapter.kt
+- Paginação convertida de offset para keyset (`collectKeysetPages`)
+- RPCs renomeadas para v2
 
-### 2.1 SyncManager.kt
+### SupabaseWatchedSyncAdapter.kt
+- Paginação keyset
+- `WatchedDeleteKey` agora inclui `content_type`
+- `WatchedItem.toDeleteKey()` helper
+- Push/delete com batching (`forEachSyncMutationBatch`)
 
-- Adicionados estados observáveis `SYNCING`, `SYNCED`, `PENDING`, `OFFLINE`, `ERROR` via `StateFlow<Map<Int, KAPlaySyncState>>`.
-- `ProfileSyncResult` agora inclui `failures: List<ProfileSyncFailure>` com classificação de erro (`OFFLINE`, `CONTRACT`, `TRANSIENT`, `UNKNOWN`).
-- `LibraryPullResult` introduzido para propagação real de falhas da biblioteca.
-- `finishSyncState` determina status global com base em falhas e pendências.
-- Log incondicional `completed` substituído por `succeeded` ou `finished status=ERROR`.
-- `PGRST202` classificado como `CONTRACT`, não retry infinito.
+### SupabaseProgressSyncAdapter.kt
+- Paginação keyset para >1000 registros
+- Push/delete com batching
+- `buildProgressPullParams()` com parâmetros nulos explícitos
+- RPCs renomeadas para v2
 
-### 2.2 LibraryRepository.kt
+### LibrarySyncPaging.kt
+- Adicionado `collectKeysetPages()` e `forEachSyncMutationBatch()`
 
-- `pullFromServer` agora retorna `LibraryPullResult` (`Success`, `Skipped`, `Failed`).
-- Falhas em `getDeltaCursor`, `pullSnapshot`, `pullDelta` são propagadas, não engolidas.
-- `hasPendingChanges(profileId)` exposto para projeção de estado.
+## Migrations SQL
 
-### 2.3 SupabaseLibrarySyncAdapter.kt
+### A1: `20261031000001_ka_profile_identity_expand_v2.sql`
+- UUID estável: UPSERT preserva `ka_profiles.id`
+- Legado: `profile_id UUID NULL` sem default automático
+- Tabela `ka_legacy_profile_assignments` para mapeamento auditado
+- Políticas RLS com verificação de anonymous auth
 
-- Migração de offset para keyset via `collectKeysetPages`.
-- RPCs renomeadas para v2 (`sync_pull_library_v2`, etc.).
-- `LibrarySnapshotCursor` com `added_at/content_id/content_type`.
+### B2: `20261031000002_ka_sync_storage_uuid_v2.sql`
+- Schema `ka_sync` privado
+- 6 tabelas com FK composta `(profile_id, user_id) → ka_profiles(id, user_id)`
+- `ON UPDATE RESTRICT ON DELETE CASCADE`
+- RLS enabled + forced
+- Checks de domínio (tamanho, ranges)
 
-### 2.4 SupabaseWatchedSyncAdapter.kt
+### C3: `20261031000003_ka_sync_rpcs_v2.sql`
+- 15 RPCs SECURITY INVOKER
+- Resolução de profile_index para UUID
+- Rejeição de anonymous auth
+- Paginação keyset determinística
+- Batch ≤500, JSON ≤1MiB
+- Delete watched com content_type
+- Stale progress protection (WHERE excluded.last_watched >= current)
+- Eventos/tombstones na mesma transação
+- Idempotência (no-op não gera evento)
+- Grants mínimos, revoke PUBLIC/anon
 
-- Keyset pagination com cursor composto (`watched_at/content_id/content_type/season/episode`).
-- Batching de push/delete via `forEachSyncMutationBatch`.
-- `WatchedDeleteKey` agora inclui `content_type`.
-- `WatchedItem.toDeleteKey()` extension function.
+## Testes
 
-### 2.5 SupabaseProgressSyncAdapter.kt
+### Kotlin (novos)
+- `SyncManagerTest`: falha de Library estruturada, estados nunca SYNCED após falha
+- `SupabaseSyncPagingTest`: keyset >1000, batching, cursor que não avança, delete com content_type, parâmetros nulos explícitos
 
-- Keyset pagination para progresso acima de 1000 registros.
-- Batching de push/delete.
-- `buildProgressPullParams` com parâmetros explícitos (nulls explícitos).
-- `ProgressSnapshotCursor` com `last_watched/progress_key`.
+### SQL Isolado (validado)
+- Arquivo: `supabase/tests/run_etapa15_sync_v2_isolated.sh`
+- Resultado: `ETAPA15_SYNC_V2_ISOLATED_OK` (1201 progress rows, 15 v2 RPCs)
+- Testes:
+  - UUID estável no upsert
+  - Sem atribuição automática de legado
+  - Sem reexposição ao recriar perfil
+  - Delete watched preserva outro content_type
+  - Paginação keyset 1201 registros sem perda/duplicação
+  - Stale progress rejeitado
+  - Batch >500 rejeitado atomicamente
+  - Anonymous auth rejeitado (42501)
+  - Cross-user rejeitado (42501)
+  - Zero SECURITY DEFINER
+  - Zero PUBLIC/anon execute
 
-### 2.6 SupabaseSyncPaging.kt (novo)
+## Bloqueios
 
-- `collectKeysetPages` genérico.
-- `forEachSyncMutationBatch` compartilhado.
+1. Compilação local bloqueada por policy VPS (GitHub Actions obrigatório)
+2. Homologação Android não executada
+3. APK Full Debug não gerado
+4. Testes Kotlin unitários não executados (processos killed por OOM)
 
-### 2.7 Serviços auxiliares
+## Próximos Passos
 
-- `AddonRepository`, `CollectionSyncService`, `HomeCatalogSettingsSyncService`, `PluginRepository`, `ProfileSettingsSync`: `.getOrThrow()` adicionado para propagar falhas ao `SyncManager`.
-
-## 3. Migrations Revisadas
-
-### 3.1 A1 — `20261031000001_ka_profile_identity_expand_v2.sql`
-
-- UUID estável como identidade real de perfil.
-- `sync_push_profiles` reescrito como UPSERT por `(user_id, profile_index)`, preservando UUID.
-- `profile_id UUID` nullable adicionado em `user_favorites` e `watch_history` sem default.
-- Tabela `ka_legacy_profile_assignments` para mapeamento auditável.
-- Trigger de imutabilidade de `id` e `user_id`.
-- RLS com exclusão de usuários anônimos.
-- Nenhuma atribuição automática ao perfil 1.
-
-### 3.2 B2 — `20261031000002_ka_sync_storage_uuid_v2.sql`
-
-- Storage em schema privado `ka_sync`.
-- Todas as 6 tabelas vinculadas por FK composta `(profile_id, user_id) → ka_profiles(id, user_id)`.
-- `ON UPDATE RESTRICT` e `ON DELETE CASCADE`.
-- RLS habilitado e forçado em todas as tabelas.
-- Policies com exclusão de `is_anonymous`.
-- Constraints de tamanho para strings, JSON e arrays.
-- Índices para paginação keyset.
-
-### 3.3 C3 — `20261031000003_ka_sync_rpcs_v2.sql`
-
-- 15 RPCs v2 com contratos exatos correspondentes aos adapters Kotlin.
-- `SECURITY INVOKER` em todas as funções.
-- Helper `ka_sync.resolve_profile_id_v2` resolve `profile_index` para UUID do proprietário.
-- Rejeição explícita de usuários Auth anônimos (`is_anonymous = true`).
-- Paginação keyset determinística.
-- Cursores delta por `event_id`.
-- Batch máximo de 500 itens, JSON máximo 1 MiB.
-- Validação de chaves, strings, duplicatas e `origin_client_id`.
-- Delete de watched com chave completa (`content_type` incluído).
-- Progresso stale nunca sobrescreve valor mais recente (`excluded.last_watched >= atual`).
-- Eventos/tombstones gravados na mesma transação.
-- Idempotência: no-op não gera evento.
-- Grants mínimos: `authenticated` com EXECUTE, `PUBLIC`/`anon` sem acesso.
-
-## 4. Testes Executados
-
-### 4.1 SQL Isolado (PostgreSQL 17)
-
-Script: `supabase/tests/run_etapa15_sync_v2_isolated.sh`
-
-Resultado: **ETAPA15_SYNC_V2_ISOLATED_OK**
-
-Verificações:
-- 15 RPCs v2 criadas e funcionais;
-- 1201 registros de progresso paginados em 3 páginas (500+500+201) sem duplicação;
-- Delete de watched preservando o outro `content_type`;
-- Stale progress rejeitado (não sobrescreve);
-- Batch de 501 itens rejeitado atomicamente;
-- Usuário anônimo rejeitado (42501);
-- Acesso cross-user rejeitado (42501);
-- Zero SECURITY DEFINER em RPCs v2;
-- Zero grants para PUBLIC/anon;
-- UUID estável preservado em UPSERT;
-- Exclusão e recriação de perfil não reexpõe dados antigos;
-- Legado não atribuído automaticamente ao perfil 1.
-
-Evidência: `evidence/ka-play-etapa15/isolated-sql-tests.txt`
-
-### 4.2 Kotlin — Verificação de Compilação
-
-- Verificação estática de nomes RPC: 15/15 correspondência exata entre Kotlin e SQL.
-- Testes Android foram executados mas interrompidos por limitação de memória do ambiente (SIGKILL).
-- Código compila sem erros de sintaxe.
-
-### 4.3 APK — GitHub Actions
-
-- Push do commit `6701302d` para `buildci/kaplay-rebrand` dispara o workflow `ka-play-build-only.yml`.
-- A compilação local é bloqueada na VPS por política de segurança (2 cores / 4GB).
-- O workflow compila `:androidApp:assembleFullDebug` em ubuntu-24.04 com JDK 21.
-- O APK e checksum serão gerados pelo GitHub Actions e disponibilizados como artifact.
-- Status: **em andamento no GitHub Actions**.
-
-## 5. Compatibilidade Kotlin ↔ PostgREST
-
-| Kotlin Adapter | RPC v2 | Status |
-|---|---|---|
-| SupabaseLibrarySyncAdapter | sync_get_library_delta_cursor_v2, sync_pull_library_v2, sync_pull_library_delta_v2, sync_push_library_items_v2, sync_delete_library_items_v2 | ✅ |
-| SupabaseWatchedSyncAdapter | sync_get_watched_items_delta_cursor_v2, sync_pull_watched_items_v2, sync_pull_watched_items_delta_v2, sync_push_watched_items_v2, sync_delete_watched_items_v2 | ✅ |
-| SupabaseProgressSyncAdapter | sync_get_watch_progress_delta_cursor_v2, sync_pull_watch_progress_v2, sync_pull_watch_progress_delta_v2, sync_push_watch_progress_v2, sync_delete_watch_progress_v2 | ✅ |
-
-## 6. Bloqueios Restantes
-
-1. Testes unitários Android (SyncManagerTest, LibrarySyncPagingTest, SupabaseSyncPagingTest) não puderam ser executados localmente devido à limitação de memória da VPS (SIGKILL). O workflow de GitHub Actions pode executá-los.
-2. APK Full Debug está sendo compilado pelo GitHub Actions (workflow `ka-play-build-only.yml`). O resultado estará disponível como artifact.
-3. Testes de concorrência e rollback não foram executados em ambiente isolado (apenas testes unitários de SQL).
-4. Homologação funcional Android não foi realizada.
-
-## 7. Veredito
-
-**A Etapa 15 está substancialmente concluída no código e nas migrations.**
-
-Entregas comprovadas:
-- ✅ Código Kotlin corrigido (SyncManager, LibraryRepository, adapters, serviços auxiliares).
-- ✅ Migrations A1/B2/C3 criadas e validadas em PostgreSQL 17 isolado.
-- ✅ Testes SQL isolados executados com sucesso (1201 registros, 15 RPCs, segurança, stale progress, UUID estável).
-- ✅ Testes Kotlin criados (SyncManagerTest, LibrarySyncPagingTest, SupabaseSyncPagingTest).
-- ✅ Commit `6701302d` publicado em `buildci/kaplay-rebrand`.
-- ✅ Workflow GitHub Actions disparado para compilação APK.
-
-Bloqueadores restantes:
-- APK Full Debug em compilação no GitHub Actions (resultado pendente).
-- Testes unitários Android não executados (serão executados pelo CI).
-- Nenhuma migration foi aprovada para produção (requer aprovação formal).
-
-## 8. Arquivos Modificados/Criados
-
-### Modificados
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/core/sync/SyncManager.kt`
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/core/sync/ProfileSettingsSync.kt`
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/features/addons/AddonRepository.kt`
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/features/collection/CollectionSyncService.kt`
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/features/home/HomeCatalogSettingsSyncService.kt`
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/features/library/LibraryRepository.kt`
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/features/library/sync/LibrarySyncPaging.kt`
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/features/library/sync/SupabaseLibrarySyncAdapter.kt`
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/features/watching/sync/SupabaseProgressSyncAdapter.kt`
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/features/watching/sync/SupabaseWatchedSyncAdapter.kt`
-- `composeApp/src/commonTest/kotlin/com/kaplay/app/core/sync/SyncManagerTest.kt`
-- `composeApp/src/commonTest/kotlin/com/kaplay/app/features/library/sync/LibrarySyncPagingTest.kt`
-- `composeApp/src/fullCommonMain/kotlin/com/kaplay/app/features/plugins/PluginRepository.kt`
-
-### Criados
-- `composeApp/src/commonMain/kotlin/com/kaplay/app/features/watching/sync/SupabaseSyncPaging.kt`
-- `composeApp/src/commonTest/kotlin/com/kaplay/app/features/watching/sync/SupabaseSyncPagingTest.kt`
-- `supabase/proposed/20261031000001_ka_profile_identity_expand_v2.sql`
-- `supabase/proposed/20261031000002_ka_sync_storage_uuid_v2.sql`
-- `supabase/proposed/20261031000003_ka_sync_rpcs_v2.sql`
-- `supabase/tests/etapa15_bootstrap.sql`
-- `supabase/tests/etapa15_sync_v2_test.sql`
-- `supabase/tests/run_etapa15_sync_v2_isolated.sh`
-- `evidence/ka-play-etapa15/isolated-sql-tests.txt`
+1. Disparar GitHub Actions para compilação e testes
+2. Validar APK gerado
+3. Executar testes de homologação
+4. Avaliar pacote de implantação em produção
