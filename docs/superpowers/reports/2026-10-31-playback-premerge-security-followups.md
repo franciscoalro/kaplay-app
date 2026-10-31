@@ -17,14 +17,14 @@ Follow-up Task 2 for `security/playback-tls-hardening`. No Supabase, authenticat
 
 ## CI evidence
 
-- Follow-up commits: `0ecfe642` (guard/docs) and the evidence update commit containing this report.
-- GitHub Actions run: `41234741151` — https://github.com/franciscoalro/kaplay-app/actions/runs/41234741151
-- Android gate job: `compileFullDebugKotlin`, job `124636026307`, success.
-- Full compile: `BUILD SUCCESSFUL in 3m 42s`.
-- Play Store compile: `:androidApp:compilePlaystoreDebugKotlin`, `BUILD SUCCESSFUL in 3m 33s`.
-- Focused tests: both `PlaybackRequestSecurityPolicyTest` and `PlayerPlaybackNetworkingSecurityTest` selectors were invoked; host test task completed successfully in 3m 54s.
+- Follow-up commits: `0ecfe642` (guard/docs) and `b4b96d4f` (evidence report).
+- Guard verification run: `41234741151` — https://github.com/franciscoalro/kaplay-app/actions/runs/41234741151; Android job `124636026307` succeeded and `assembleFullRelease` job `124638739169` was skipped.
+- Final HEAD verification run: `41235706402` — https://github.com/franciscoalro/kaplay-app/actions/runs/41235706402; Android job `124638919771` succeeded and `assembleFullRelease` job `124641768779` was skipped.
+- Full compile: `BUILD SUCCESSFUL in 3m 46s` on the final run.
+- Play Store compile: `:androidApp:compilePlaystoreDebugKotlin`, `BUILD SUCCESSFUL in 3m 54s` on the final run.
+- Focused tests: both `PlaybackRequestSecurityPolicyTest` and `PlayerPlaybackNetworkingSecurityTest` selectors were invoked; host test task completed successfully in 4m 14s.
 - Static TLS gate: `No forbidden playback TLS patterns found`.
-- Release guard: `assembleFullRelease`, job `124638739169`, was `skipped` on `security/playback-tls-hardening`.
+- No APK or release artifact is authorized or published.
 - No APK or release artifact is authorized or published.
 
 Known prior evidence before this follow-up:
@@ -34,7 +34,7 @@ Known prior evidence before this follow-up:
 
 ## Separate Pages-job classification
 
-The `publish-plugin-pages` failure is job `124636026132` in run `41234741151`. It is separate from the Android security/product gates and is caused by GitHub environment protection rejecting deployment from the feature branch (`security/playback-tls-hardening`). It is not caused by playback code, tests, compilation, or the static TLS gate. The Pages job behavior is intentionally unchanged in this task.
+The `publish-plugin-pages` failures are jobs `124636026132` (run `41234741151`) and `124638919550` (run `41235706402`). They are separate from the Android security/product gates and are caused by GitHub environment protection rejecting deployment from the feature branch (`security/playback-tls-hardening`). They are not caused by playback code, tests, compilation, or the static TLS gate. The Pages job behavior is intentionally unchanged in this task.
 
 ## Release guard behavior
 
