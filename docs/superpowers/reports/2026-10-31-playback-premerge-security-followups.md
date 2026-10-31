@@ -17,12 +17,12 @@ Follow-up Task 2 for `security/playback-tls-hardening`. No Supabase, authenticat
 
 ## CI evidence
 
-- Follow-up commits: `0ecfe642` (guard/docs) and `b4b96d4f` (evidence report).
+- Follow-up commits: `9b675b93`, `ab48a3d8`, `fb5586a2` (policy/tests), `0ecfe642`, `b4b96d4f`, `1224e3c9`, `7b68e4d8`, `e3858e4d` (guard/evidence), and `693432ce` (explicit TLS failure assertion).
 - Guard verification run: `41234741151` — https://github.com/franciscoalro/kaplay-app/actions/runs/41234741151; Android job `124636026307` succeeded and `assembleFullRelease` job `124638739169` was skipped.
-- Final HEAD verification run: `41237776222` — https://github.com/franciscoalro/kaplay-app/actions/runs/41237776222; Android job `124645066888` succeeded and `assembleFullRelease` job `124647874795` was skipped.
-- Full compile: `BUILD SUCCESSFUL in 3m 43s` on the final run.
-- Play Store compile: `:androidApp:compilePlaystoreDebugKotlin`, `BUILD SUCCESSFUL in 3m 35s` on the final run.
-- Focused tests: both `PlaybackRequestSecurityPolicyTest` and `PlayerPlaybackNetworkingSecurityTest` selectors were invoked; host test task completed successfully in 3m 56s.
+- Final code verification run: `41238859372` — https://github.com/franciscoalro/kaplay-app/actions/runs/41238859372; Android job `124648372539` succeeded and `assembleFullRelease` job `124651086625` was skipped.
+- Full compile: `BUILD SUCCESSFUL in 3m 36s` on the final run.
+- Play Store compile: `:androidApp:compilePlaystoreDebugKotlin`, `BUILD SUCCESSFUL in 3m 34s` on the final run.
+- Focused tests: both `PlaybackRequestSecurityPolicyTest` and `PlayerPlaybackNetworkingSecurityTest` selectors were invoked; host test task completed successfully in 3m 47s.
 - Static TLS gate: `No forbidden playback TLS patterns found`.
 - No APK or release artifact is authorized or published.
 
@@ -33,7 +33,7 @@ Known prior evidence before this follow-up:
 
 ## Separate Pages-job classification
 
-The `publish-plugin-pages` failure is job `124645067104` (run `41237776222`), plus earlier guard-verification job `124636026132` (run `41234741151`). They are separate from the Android security/product gates and are caused by GitHub environment protection rejecting deployment from the feature branch (`security/playback-tls-hardening`). They are not caused by playback code, tests, compilation, or the static TLS gate. The Pages job behavior is intentionally unchanged in this task.
+The `publish-plugin-pages` failure is job `124648372698` (run `41238859372`), plus earlier guard-verification job `124636026132` (run `41234741151`). They are separate from the Android security/product gates and are caused by GitHub environment protection rejecting deployment from the feature branch (`security/playback-tls-hardening`). They are not caused by playback code, tests, compilation, or the static TLS gate. The Pages job behavior is intentionally unchanged in this task.
 
 ## Release guard behavior
 
@@ -44,5 +44,5 @@ On `refs/heads/security/*`, the release assembly job is skipped at the job level
 1. Legacy HTTP media remains mutable in transit. Sensitive headers and credential-bearing URL forms are blocked, but HTTP cannot provide confidentiality or authenticity.
 2. HTTP signed parameters named `signature`, `expires`, and `key` remain allowed intentionally for compatibility. They are not a security boundary over cleartext HTTP; HTTPS is recommended.
 3. Redirect behavior is enforced by the network interceptor and policy tests; a dedicated end-to-end redirect test remains useful follow-up coverage.
-4. The self-signed certificate test is platform-tolerant because JVM/Android exception wrapping differs; it verifies request failure before server observation.
+4. The self-signed certificate test now directly asserts `SSLException` from the client's TLS handshake, while the playback call remains platform-tolerant and verifies failure before server observation.
 5. The static gate is intentionally conservative and rejects broad TLS customization symbols in the playback package.
