@@ -110,9 +110,7 @@ object HomeCatalogSettingsSyncService {
             }
 
             if (remotePayload == null) {
-                log.w { "pullFromServer — failed to parse remote home catalog settings" }
-                markInitialPullComplete(pullToken)
-                return
+                error("Remote home catalog settings JSON is invalid")
             }
 
             if (remotePayload.items.isEmpty()) {
@@ -128,7 +126,7 @@ object HomeCatalogSettingsSyncService {
         }.onFailure { e ->
             isSyncingFromRemote = false
             log.e(e) { "pullFromServer — FAILED" }
-        }
+        }.getOrThrow()
     }
 
     fun triggerPush() {

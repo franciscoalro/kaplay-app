@@ -156,7 +156,7 @@ object AddonRepository {
             log.i { "pullFromServer() — applied ${urls.size} addons to state" }
         }.onFailure { e ->
             log.e(e) { "pullFromServer() — FAILED" }
-        }
+        }.getOrThrow()
     }
 
     suspend fun awaitManifestsLoaded() {

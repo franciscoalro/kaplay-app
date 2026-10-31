@@ -35,6 +35,24 @@ class LibrarySyncPagingTest {
     }
 
     @Test
+    fun `keyset snapshot does not skip after earlier rows are deleted`() = runBlocking {
+        val source = (1..1_201).toMutableList()
+        var pageCount = 0
+
+        val result = collectKeysetPages<Int, Int>(
+            pageSize = librarySnapshotPageSize,
+            fetchPage = { cursor, limit ->
+                pageCount += 1
+                if (pageCount == 2) source.removeAll { it <= 250 }
+                source.filter { cursor == null || it > cursor }.take(limit)
+            },
+            cursorOf = { it },
+        )
+
+        assertEquals((1..1_201).toList(), result)
+    }
+
+    @Test
     fun `delta paging consumes every page and advances the cursor`() = runBlocking {
         val events = (1L..1_201L).toList()
         val requestedCursors = mutableListOf<Long>()

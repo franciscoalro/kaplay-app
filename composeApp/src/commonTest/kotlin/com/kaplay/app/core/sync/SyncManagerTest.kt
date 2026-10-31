@@ -197,6 +197,44 @@ class SyncManagerTest {
     }
 
     @Test
+    fun `activity library failure is structured and never succeeds globally`() = runBlocking {
+        val watchCompleted = mutableListOf<Int>()
+        val result = runActivityProfileSync(
+            profileId = 9,
+            operations = ProfileActivitySyncOperations(
+                pullLibrary = { error("library RPC failed") },
+                pullWatchActivity = { watchCompleted += it },
+            ),
+        )
+
+        assertFalse(result.succeeded)
+        assertEquals(setOf(ProfileSyncStep.Library), result.failedSteps)
+        assertEquals(ProfileSyncFailureKind.UNKNOWN, result.failures.single().kind)
+        assertEquals(listOf(9), watchCompleted)
+    }
+
+    @Test
+    fun `sync state never reports synced when any required step failed`() {
+        val offline = ProfileSyncResult(
+            failedSteps = setOf(ProfileSyncStep.Library),
+            failures = listOf(ProfileSyncFailure(ProfileSyncStep.Library, ProfileSyncFailureKind.OFFLINE)),
+        )
+        val mixed = ProfileSyncResult(
+            failedSteps = setOf(ProfileSyncStep.Library, ProfileSyncStep.Collections),
+            failures = listOf(
+                ProfileSyncFailure(ProfileSyncStep.Library, ProfileSyncFailureKind.OFFLINE),
+                ProfileSyncFailure(ProfileSyncStep.Collections, ProfileSyncFailureKind.CONTRACT, "PGRST202"),
+            ),
+        )
+
+        assertEquals(KAPlaySyncStatus.OFFLINE, profileSyncStateFor(offline, hasPendingChanges = true).status)
+        assertEquals(KAPlaySyncStatus.ERROR, profileSyncStateFor(mixed, hasPendingChanges = false).status)
+        assertEquals(KAPlaySyncStatus.PENDING, profileSyncStateFor(ProfileSyncResult(emptySet()), true).status)
+        assertEquals(KAPlaySyncStatus.SYNCED, profileSyncStateFor(ProfileSyncResult(emptySet()), false).status)
+        assertFalse(profileSyncStateFor(mixed, false).status == KAPlaySyncStatus.SYNCED)
+    }
+
+    @Test
     fun `failed profile sync does not advance foreground freshness`() {
         val previous = ProfilePullFreshness(
             profileId = 3,

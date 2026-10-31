@@ -9,6 +9,9 @@ import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
@@ -21,10 +24,10 @@ object SupabaseProgressSyncAdapter : ProgressSyncAdapter {
 
     override suspend fun getDeltaCursor(profileId: Int): Long {
         val params = buildJsonObject {
-            put("p_profile_id", profileId)
+            put("p_profile_index", profileId)
         }
         return SupabaseProvider.client.postgrest
-            .rpc("sync_get_watch_progress_delta_cursor", params)
+            .rpc("sync_get_watch_progress_delta_cursor_v2", params)
             .decodeAs<Long>()
     }
 
@@ -34,11 +37,11 @@ object SupabaseProgressSyncAdapter : ProgressSyncAdapter {
         limit: Int,
     ): List<ProgressDeltaEvent> {
         val params = buildJsonObject {
-            put("p_profile_id", profileId)
+            put("p_profile_index", profileId)
             put("p_since_event_id", sinceEventId)
             put("p_limit", limit)
         }
-        val result = SupabaseProvider.client.postgrest.rpc("sync_pull_watch_progress_delta", params)
+        val result = SupabaseProvider.client.postgrest.rpc("sync_pull_watch_progress_delta_v2", params)
         return result.decodeList<WatchProgressDeltaSyncEntry>().map { event ->
             ProgressDeltaEvent(
                 eventId = event.eventId,
@@ -61,17 +64,33 @@ object SupabaseProgressSyncAdapter : ProgressSyncAdapter {
         sinceLastWatched: Long?,
         limit: Int?,
     ): List<ProgressSyncRecord> {
-        val params = buildJsonObject {
-            put("p_profile_id", profileId)
-            if (sinceLastWatched != null) {
-                put("p_since_last_watched", sinceLastWatched)
-            }
-            if (limit != null) {
-                put("p_limit", limit)
-            }
+        val serverEntries = if (sinceLastWatched != null || limit != null) {
+            SupabaseProvider.client.postgrest
+                .rpc(
+                    "sync_pull_watch_progress",
+                    buildProgressPullParams(profileId, sinceLastWatched, limit),
+                )
+                .decodeList<WatchProgressSyncEntry>()
+        } else {
+            collectKeysetPages(
+                fetchPage = { cursor: ProgressSnapshotCursor?, pageLimit ->
+                    val params = buildJsonObject {
+                        put("p_profile_index", profileId)
+                        put("p_limit", pageLimit)
+                        cursor?.let {
+                            put("p_after_last_watched", it.lastWatched)
+                            put("p_after_progress_key", it.progressKey)
+                        }
+                    }
+                    SupabaseProvider.client.postgrest
+                        .rpc("sync_pull_watch_progress_v2", params)
+                        .decodeList<WatchProgressSyncEntry>()
+                },
+                cursorOf = { entry ->
+                    ProgressSnapshotCursor(entry.lastWatched, entry.progressKey)
+                },
+            )
         }
-        val result = SupabaseProvider.client.postgrest.rpc("sync_pull_watch_progress", params)
-        val serverEntries = result.decodeList<WatchProgressSyncEntry>()
         return serverEntries.map { entry ->
             ProgressSyncRecord(
                 progressKey = entry.progressKey,
@@ -104,12 +123,14 @@ object SupabaseProgressSyncAdapter : ProgressSyncAdapter {
                 progressKey = entry.resolvedProgressKey(),
             )
         }
-        val params = buildJsonObject {
-            put("p_profile_id", profileId)
-            put("p_entries", json.encodeToJsonElement(syncEntries))
-            putSyncOriginClientId()
+        forEachSyncMutationBatch(syncEntries) { batch ->
+            val params = buildJsonObject {
+                put("p_profile_index", profileId)
+                put("p_entries", json.encodeToJsonElement(batch))
+                putSyncOriginClientId()
+            }
+            SupabaseProvider.client.postgrest.rpc("sync_push_watch_progress_v2", params)
         }
-        SupabaseProvider.client.postgrest.rpc("sync_push_watch_progress", params)
     }
 
     override suspend fun delete(
@@ -117,14 +138,31 @@ object SupabaseProgressSyncAdapter : ProgressSyncAdapter {
         entries: Collection<WatchProgressEntry>,
     ) {
         val progressKeys = entries.map { entry -> entry.resolvedProgressKey() }
-        val params = buildJsonObject {
-            put("p_profile_id", profileId)
-            put("p_keys", json.encodeToJsonElement(progressKeys))
-            putSyncOriginClientId()
+        forEachSyncMutationBatch(progressKeys) { batch ->
+            val params = buildJsonObject {
+                put("p_profile_index", profileId)
+                put("p_keys", json.encodeToJsonElement(batch))
+                putSyncOriginClientId()
+            }
+            SupabaseProvider.client.postgrest.rpc("sync_delete_watch_progress_v2", params)
         }
-        SupabaseProvider.client.postgrest.rpc("sync_delete_watch_progress", params)
     }
 
+}
+
+internal data class ProgressSnapshotCursor(
+    val lastWatched: Long,
+    val progressKey: String,
+)
+
+internal fun buildProgressPullParams(
+    profileId: Int,
+    sinceLastWatched: Long?,
+    limit: Int?,
+): JsonObject = buildJsonObject {
+    put("p_profile_id", profileId)
+    put("p_since_last_watched", sinceLastWatched?.let(::JsonPrimitive) ?: JsonNull)
+    put("p_limit", limit?.let(::JsonPrimitive) ?: JsonNull)
 }
 
 @Serializable

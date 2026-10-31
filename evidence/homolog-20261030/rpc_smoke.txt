@@ -1,0 +1,14 @@
+sync_pull_profiles                         HTTP=200  [{"id":"041423b4-82ee-4141-b7b2-a813cd107231","user_id":"21141410-a3bc-49db-9d6d-9b1b14b6d9aa","profile_index":1,"name":"Homolog","avatar_color_hex":"#3F51B5","
+sync_pull_watch_progress_v2                HTTP=400  {"code":"22023","details":null,"hint":null,"message":"incomplete progress cursor"}
+sync_get_watch_progress_delta_cursor_v2    HTTP=200  0
+sync_pull_watch_progress_delta_v2          HTTP=200  []
+sync_pull_library_v2                       HTTP=400  {"code":"22023","details":null,"hint":null,"message":"incomplete library cursor"}
+sync_get_library_delta_cursor_v2           HTTP=200  0
+sync_pull_watched_items_v2                 HTTP=400  {"code":"22023","details":null,"hint":null,"message":"incomplete watched cursor"}
+sync_get_watched_items_delta_cursor_v2     HTTP=200  0
+sync_push_watch_progress_v2                HTTP=204  
+sync_push_library_items_v2                 HTTP=204  
+sync_push_watched_items_v2                 HTTP=204  
+sync_delete_watch_progress_v2              HTTP=204  
+sync_delete_library_items_v2               HTTP=204  
+sync_delete_watched_items_v2               HTTP=204  

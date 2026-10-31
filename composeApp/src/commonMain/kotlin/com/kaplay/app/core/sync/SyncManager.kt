@@ -9,6 +9,7 @@ import com.kaplay.app.features.addons.AddonRepository
 import com.kaplay.app.features.collection.CollectionSyncService
 import com.kaplay.app.features.home.HomeCatalogSettingsSyncService
 import com.kaplay.app.features.library.LibrarySourceMode
+import com.kaplay.app.features.library.LibraryPullResult
 import com.kaplay.app.features.library.LibraryRepository
 import com.kaplay.app.features.plugins.PluginRepository
 import com.kaplay.app.features.profiles.ProfileRepository
@@ -30,6 +31,11 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import io.github.jan.supabase.postgrest.exception.PostgrestRestException
+import io.ktor.utils.io.errors.IOException
 
 private const val FOREGROUND_PULL_DELAY_MS = 2500L
 private const val FOREGROUND_ACTIVITY_PULL_MIN_INTERVAL_MS = 2 * 60_000L
@@ -47,6 +53,34 @@ internal enum class ProfileSyncStep {
     HomeCatalogSettings,
     MediaServers,
 }
+
+enum class KAPlaySyncStatus {
+    SYNCING,
+    SYNCED,
+    PENDING,
+    OFFLINE,
+    ERROR,
+}
+
+data class KAPlaySyncState(
+    val status: KAPlaySyncStatus,
+    val failedSteps: Set<String> = emptySet(),
+    val hasPendingChanges: Boolean = false,
+    val errorCode: String? = null,
+)
+
+internal enum class ProfileSyncFailureKind {
+    OFFLINE,
+    CONTRACT,
+    TRANSIENT,
+    UNKNOWN,
+}
+
+internal data class ProfileSyncFailure(
+    val step: ProfileSyncStep,
+    val kind: ProfileSyncFailureKind,
+    val code: String? = null,
+)
 
 internal data class ProfileSyncOperations(
     val pullAddons: suspend (Int) -> Unit,
@@ -67,9 +101,41 @@ internal data class ProfileActivitySyncOperations(
 
 internal data class ProfileSyncResult(
     val failedSteps: Set<ProfileSyncStep>,
+    val failures: List<ProfileSyncFailure> = failedSteps.map { step ->
+        ProfileSyncFailure(step = step, kind = ProfileSyncFailureKind.UNKNOWN)
+    },
 ) {
     val succeeded: Boolean
-        get() = failedSteps.isEmpty()
+        get() = failures.isEmpty()
+}
+
+private fun profileSyncFailure(step: ProfileSyncStep, error: Throwable): ProfileSyncFailure {
+    val postgrestError = error as? PostgrestRestException
+    val code = postgrestError?.code
+    val kind = when {
+        code == "PGRST202" -> ProfileSyncFailureKind.CONTRACT
+        error is IOException -> ProfileSyncFailureKind.OFFLINE
+        else -> ProfileSyncFailureKind.UNKNOWN
+    }
+    return ProfileSyncFailure(step = step, kind = kind, code = code)
+}
+
+internal fun profileSyncStateFor(
+    result: ProfileSyncResult,
+    hasPendingChanges: Boolean,
+): KAPlaySyncState {
+    val status = when {
+        result.succeeded && hasPendingChanges -> KAPlaySyncStatus.PENDING
+        result.succeeded -> KAPlaySyncStatus.SYNCED
+        result.failures.all { it.kind == ProfileSyncFailureKind.OFFLINE } -> KAPlaySyncStatus.OFFLINE
+        else -> KAPlaySyncStatus.ERROR
+    }
+    return KAPlaySyncState(
+        status = status,
+        failedSteps = result.failedSteps.mapTo(linkedSetOf()) { it.name },
+        hasPendingChanges = hasPendingChanges,
+        errorCode = result.failures.firstNotNullOfOrNull { it.code },
+    )
 }
 
 internal data class ProfilePullFreshness(
@@ -102,6 +168,7 @@ internal suspend fun runOrderedProfileSync(
 ): ProfileSyncResult {
     val failureLock = SynchronizedObject()
     val failedSteps = mutableSetOf<ProfileSyncStep>()
+    val failures = mutableListOf<ProfileSyncFailure>()
 
     suspend fun runStep(
         step: ProfileSyncStep,
@@ -114,6 +181,7 @@ internal suspend fun runOrderedProfileSync(
         } catch (error: Throwable) {
             synchronized(failureLock) {
                 failedSteps += step
+                failures += profileSyncFailure(step, error)
             }
             onFailure(step, error)
         }
@@ -143,9 +211,12 @@ internal suspend fun runOrderedProfileSync(
             runStep(ProfileSyncStep.MediaServers, operations.syncMediaServers)
         }
     }
-    return ProfileSyncResult(
-        failedSteps = synchronized(failureLock) { failedSteps.toSet() },
-    )
+    return synchronized(failureLock) {
+        ProfileSyncResult(
+            failedSteps = failedSteps.toSet(),
+            failures = failures.toList(),
+        )
+    }
 }
 
 internal suspend fun runActivityProfileSync(
@@ -157,6 +228,7 @@ internal suspend fun runActivityProfileSync(
 ): ProfileSyncResult {
     val failureLock = SynchronizedObject()
     val failedSteps = mutableSetOf<ProfileSyncStep>()
+    val failures = mutableListOf<ProfileSyncFailure>()
 
     suspend fun runStep(
         step: ProfileSyncStep,
@@ -169,6 +241,7 @@ internal suspend fun runActivityProfileSync(
         } catch (error: Throwable) {
             synchronized(failureLock) {
                 failedSteps += step
+                failures += profileSyncFailure(step, error)
             }
             onFailure(step, error)
         }
@@ -186,9 +259,12 @@ internal suspend fun runActivityProfileSync(
             }
         }
     }
-    return ProfileSyncResult(
-        failedSteps = synchronized(failureLock) { failedSteps.toSet() },
-    )
+    return synchronized(failureLock) {
+        ProfileSyncResult(
+            failedSteps = failedSteps.toSet(),
+            failures = failures.toList(),
+        )
+    }
 }
 
 internal enum class ProfileSyncRequestResult {
@@ -267,6 +343,14 @@ internal class ProfileSyncRequestGate {
     }
 }
 
+private fun LibraryPullResult.requireCompleted() {
+    when (this) {
+        LibraryPullResult.Success -> Unit
+        LibraryPullResult.Skipped -> error("Library pull was skipped for an inactive profile")
+        is LibraryPullResult.Failed -> throw error
+    }
+}
+
 object SyncManager {
     private val log = Logger.withTag("SyncManager")
     private val syncRequestGate = ProfileSyncRequestGate()
@@ -280,13 +364,15 @@ object SyncManager {
     private var periodicKAPlaySyncProfileId: Int? = null
     private var activityPullFreshness = ProfilePullFreshness()
     private var fullPullFreshness = ProfilePullFreshness()
+    private val _profileSyncStates = MutableStateFlow<Map<Int, KAPlaySyncState>>(emptyMap())
+    val profileSyncStates: StateFlow<Map<Int, KAPlaySyncState>> = _profileSyncStates.asStateFlow()
 
     private val profileSyncOperations = ProfileSyncOperations(
         pullAddons = { profileId -> AddonRepository.pullFromServer(profileId) },
         pullPlugins = { profileId -> PluginRepository.pullFromServer(profileId) },
         pullProfileSettings = { profileId -> ProfileSettingsSync.pull(profileId) },
         syncProviderCredentials = { profileId -> ProviderCredentialSync.syncFromRemote(profileId) },
-        pullLibrary = { profileId -> LibraryRepository.pullFromServer(profileId) },
+        pullLibrary = { profileId -> LibraryRepository.pullFromServer(profileId).requireCompleted() },
         refreshActiveWatchSource = { profileId ->
             val result = WatchProgressSourceCoordinator.refreshActiveSource(profileId = profileId, force = true)
             check(result.succeeded) {
@@ -299,7 +385,7 @@ object SyncManager {
         syncMediaServers = { profileId -> MediaServerSync.syncFromRemote(profileId) },
     )
     private val profileActivitySyncOperations = ProfileActivitySyncOperations(
-        pullLibrary = { profileId -> LibraryRepository.pullFromServer(profileId) },
+        pullLibrary = { profileId -> LibraryRepository.pullFromServer(profileId).requireCompleted() },
         pullWatchActivity = { profileId ->
             val result = WatchProgressSourceCoordinator.refreshActiveSource(profileId = profileId, force = false)
             check(result.succeeded) {
@@ -308,6 +394,18 @@ object SyncManager {
             }
         },
     )
+
+    private fun publishSyncState(profileId: Int, state: KAPlaySyncState) {
+        synchronized(pullStateLock) {
+            _profileSyncStates.value = _profileSyncStates.value + (profileId to state)
+        }
+    }
+
+    private fun finishSyncState(profileId: Int, result: ProfileSyncResult): KAPlaySyncState =
+        profileSyncStateFor(
+            result = result,
+            hasPendingChanges = LibraryRepository.hasPendingChanges(profileId),
+        )
 
     fun pullAllForProfile(profileId: Int) {
         startFullProfilePull(profileId = profileId, reason = "requested")
@@ -331,6 +429,9 @@ object SyncManager {
             }
         }
         foregroundJob?.cancel()
+        synchronized(pullStateLock) {
+            _profileSyncStates.value = emptyMap()
+        }
         stopPeriodicKAPlaySyncPull()
     }
 
@@ -408,6 +509,7 @@ object SyncManager {
             if (currentAuthState !is AuthState.Authenticated || currentAuthState.isAnonymous) return@launch
             if (ProfileRepository.activeProfileId != profileId) return@launch
 
+            publishSyncState(profileId, KAPlaySyncState(status = KAPlaySyncStatus.SYNCING))
             log.i { "Full profile sync started profile=$profileId reason=$reason" }
             WatchProgressSourceCoordinator.pauseAutomaticTransitions()
             val syncResult = try {
@@ -434,13 +536,18 @@ object SyncManager {
                     result = syncResult,
                 )
             }
-            if (!syncResult.succeeded) {
+            val finalState = finishSyncState(profileId, syncResult)
+            publishSyncState(profileId, finalState)
+            if (syncResult.succeeded) {
+                log.i {
+                    "Full profile sync succeeded profile=$profileId reason=$reason status=${finalState.status}"
+                }
+            } else {
                 log.w {
-                    "Full profile sync incomplete profile=$profileId reason=$reason " +
-                        "failedSteps=${syncResult.failedSteps}"
+                    "Full profile sync finished profile=$profileId reason=$reason status=${finalState.status} " +
+                        "failedSteps=${syncResult.failedSteps} code=${finalState.errorCode}"
                 }
             }
-            log.i { "Full profile sync completed profile=$profileId reason=$reason" }
         }
 
         when (result) {
@@ -482,6 +589,7 @@ object SyncManager {
             if (currentAuthState !is AuthState.Authenticated || currentAuthState.isAnonymous) return@launch
             if (ProfileRepository.activeProfileId != profileId) return@launch
 
+            publishSyncState(profileId, KAPlaySyncState(status = KAPlaySyncStatus.SYNCING))
             log.i { "Activity sync started profile=$profileId reason=$reason" }
             val syncResult = runActivityProfileSync(
                 profileId = profileId,
@@ -499,12 +607,18 @@ object SyncManager {
                     result = syncResult,
                 )
             }
-            if (!syncResult.succeeded) {
+            val finalState = finishSyncState(profileId, syncResult)
+            publishSyncState(profileId, finalState)
+            if (syncResult.succeeded) {
+                log.i {
+                    "Activity sync succeeded profile=$profileId reason=$reason status=${finalState.status}"
+                }
+            } else {
                 log.w {
-                    "Activity sync incomplete profile=$profileId reason=$reason failedSteps=${syncResult.failedSteps}"
+                    "Activity sync finished profile=$profileId reason=$reason status=${finalState.status} " +
+                        "failedSteps=${syncResult.failedSteps} code=${finalState.errorCode}"
                 }
             }
-            log.i { "Activity sync completed profile=$profileId reason=$reason" }
         }
 
         if (result == ProfileSyncRequestResult.Coalesced) {

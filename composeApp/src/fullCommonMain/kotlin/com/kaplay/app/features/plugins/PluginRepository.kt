@@ -171,7 +171,7 @@ actual object PluginRepository {
             initialized = true
         }.onFailure { error ->
             log.e(error) { "pullFromServer failed" }
-        }
+        }.getOrThrow()
     }
 
     actual suspend fun addRepository(rawUrl: String): AddPluginRepositoryResult {

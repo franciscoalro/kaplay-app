@@ -85,12 +85,12 @@ object CollectionSyncService {
                 isSyncingFromRemote = false
                 log.i { "pullFromServer — applied ${remoteCollections.size} collections from remote" }
             } else {
-                log.w { "pullFromServer — failed to parse remote collections JSON" }
+                error("Remote collections JSON is invalid")
             }
         }.onFailure { e ->
             isSyncingFromRemote = false
             log.e(e) { "pullFromServer — FAILED" }
-        }
+        }.getOrThrow()
     }
 
     fun triggerPush() {

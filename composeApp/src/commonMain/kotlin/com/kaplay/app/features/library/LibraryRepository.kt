@@ -50,6 +50,12 @@ import kaplay.composeapp.generated.resources.library_other
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 
+sealed interface LibraryPullResult {
+    data object Success : LibraryPullResult
+    data object Skipped : LibraryPullResult
+    data class Failed(val error: Throwable) : LibraryPullResult
+}
+
 object LibraryRepository {
     private const val pushDebounceMs = 500L
 
@@ -196,29 +202,34 @@ object LibraryRepository {
         ) != null
     }
 
+    internal fun hasPendingChanges(profileId: Int): Boolean =
+        localState.snapshot().let { snapshot ->
+            snapshot.token.profileId == profileId && snapshot.hasPendingPush
+        }
+
     suspend fun pullFromServer(
         profileId: Int,
         refreshIntent: TrackingRefreshIntent = TrackingRefreshIntent.AUTOMATIC,
-    ) {
+    ): LibraryPullResult {
         val operationToken = activeOperationToken(profileId) ?: run {
             log.d { "Skipping library pull for inactive profile $profileId" }
-            return
+            return LibraryPullResult.Skipped
         }
 
         activeLibraryProvider()?.let { provider ->
-            refreshLibraryProvider(
+            val result = refreshLibraryProvider(
                 provider = provider,
                 reason = "explicit pull",
                 intent = refreshIntent,
             )
-            if (!isActiveOperation(operationToken)) return
+            if (!isActiveOperation(operationToken)) return LibraryPullResult.Skipped
             publish()
-            return
+            return result
         }
 
-        kaplaySyncMutex.withLock {
-            val serializedToken = activeOperationToken(profileId) ?: return@withLock
-            val pullSnapshot = localState.markPullStarted(serializedToken) ?: return@withLock
+        return kaplaySyncMutex.withLock {
+            val serializedToken = activeOperationToken(profileId) ?: return@withLock LibraryPullResult.Skipped
+            val pullSnapshot = localState.markPullStarted(serializedToken) ?: return@withLock LibraryPullResult.Skipped
 
             try {
                 if (!pullSnapshot.deltaInitialized) {
@@ -231,7 +242,7 @@ object LibraryRepository {
                         pullSnapshot = pullSnapshot,
                         serverItems = serverItems,
                         cursorEventId = cursorBeforeSnapshot,
-                    ) ?: return@withLock
+                    ) ?: return@withLock LibraryPullResult.Skipped
                     persist(applyResult.snapshot)
                     publish()
                     if (applyResult.preservedLocalItems) {
@@ -242,10 +253,12 @@ object LibraryRepository {
                     }
                 }
                 pullLibraryDelta(serializedToken, profileId)
+                LibraryPullResult.Success
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
                 log.e(error) { "Failed to pull library from server" }
+                LibraryPullResult.Failed(error)
             }
         }
     }
@@ -680,19 +693,21 @@ object LibraryRepository {
         provider: TrackingLibraryProvider,
         reason: String,
         intent: TrackingRefreshIntent,
-    ) {
+    ): LibraryPullResult {
         log.i {
             "Tracking library refresh request provider=${provider.providerId.storageId} " +
                 "reason=$reason intent=$intent"
         }
-        try {
+        return try {
             provider.refresh(intent)
+            LibraryPullResult.Success
         } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {
             log.e(error) {
                 "Failed to refresh ${provider.providerId.storageId} library during $reason"
             }
+            LibraryPullResult.Failed(error)
         }
     }
 

@@ -23,24 +23,31 @@ object SupabaseLibrarySyncAdapter : LibrarySyncAdapter {
         profileId: Int,
         pageSize: Int,
     ): List<LibraryItem> =
-        collectOffsetPages(pageSize) { limit, offset ->
-            val params = buildJsonObject {
-                put("p_profile_id", profileId)
-                put("p_limit", limit)
-                put("p_offset", offset)
-            }
-            SupabaseProvider.client.postgrest
-                .rpc("sync_pull_library", params)
-                .decodeList<LibrarySyncItem>()
-                .map(LibrarySyncItem::toLibraryItem)
-        }
+        collectKeysetPages(
+            pageSize = pageSize,
+            fetchPage = { cursor: LibrarySnapshotCursor?, limit ->
+                val params = buildJsonObject {
+                    put("p_profile_index", profileId)
+                    put("p_limit", limit)
+                    cursor?.let {
+                        put("p_after_added_at", it.addedAt)
+                        put("p_after_content_id", it.contentId)
+                        put("p_after_content_type", it.contentType)
+                    }
+                }
+                SupabaseProvider.client.postgrest
+                    .rpc("sync_pull_library_v2", params)
+                    .decodeList<LibrarySyncItem>()
+            },
+            cursorOf = { item -> LibrarySnapshotCursor(item.addedAt, item.contentId, item.contentType) },
+        ).map(LibrarySyncItem::toLibraryItem)
 
     override suspend fun getDeltaCursor(profileId: Int): Long {
         val params = buildJsonObject {
-            put("p_profile_id", profileId)
+            put("p_profile_index", profileId)
         }
         return SupabaseProvider.client.postgrest
-            .rpc("sync_get_library_delta_cursor", params)
+            .rpc("sync_get_library_delta_cursor_v2", params)
             .decodeAs<Long>()
     }
 
@@ -50,12 +57,12 @@ object SupabaseLibrarySyncAdapter : LibrarySyncAdapter {
         limit: Int,
     ): List<LibraryDeltaEvent> {
         val params = buildJsonObject {
-            put("p_profile_id", profileId)
+            put("p_profile_index", profileId)
             put("p_since_event_id", sinceEventId)
             put("p_limit", limit)
         }
         return SupabaseProvider.client.postgrest
-            .rpc("sync_pull_library_delta", params)
+            .rpc("sync_pull_library_delta_v2", params)
             .decodeList<LibraryDeltaSyncItem>()
             .map { event ->
                 LibraryDeltaEvent(
@@ -72,11 +79,11 @@ object SupabaseLibrarySyncAdapter : LibrarySyncAdapter {
     ) {
         forEachMutationBatch(items, libraryMutationBatchSize) { batch ->
             val params = buildJsonObject {
-                put("p_profile_id", profileId)
+                put("p_profile_index", profileId)
                 put("p_items", json.encodeToJsonElement(batch.map(LibraryItem::toSyncItem)))
                 putSyncOriginClientId()
             }
-            SupabaseProvider.client.postgrest.rpc("sync_push_library_items", params)
+            SupabaseProvider.client.postgrest.rpc("sync_push_library_items_v2", params)
         }
     }
 
@@ -86,14 +93,20 @@ object SupabaseLibrarySyncAdapter : LibrarySyncAdapter {
     ) {
         forEachMutationBatch(keys, libraryMutationBatchSize) { batch ->
             val params = buildJsonObject {
-                put("p_profile_id", profileId)
+                put("p_profile_index", profileId)
                 put("p_keys", json.encodeToJsonElement(batch))
                 putSyncOriginClientId()
             }
-            SupabaseProvider.client.postgrest.rpc("sync_delete_library_items", params)
+            SupabaseProvider.client.postgrest.rpc("sync_delete_library_items_v2", params)
         }
     }
 }
+
+internal data class LibrarySnapshotCursor(
+    val addedAt: Long,
+    val contentId: String,
+    val contentType: String,
+)
 
 @Serializable
 internal data class LibrarySyncItem(

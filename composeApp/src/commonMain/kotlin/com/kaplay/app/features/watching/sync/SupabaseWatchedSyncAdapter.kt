@@ -21,10 +21,10 @@ object SupabaseWatchedSyncAdapter : WatchedSyncAdapter {
 
     override suspend fun getDeltaCursor(profileId: Int): Long {
         val params = buildJsonObject {
-            put("p_profile_id", profileId)
+            put("p_profile_index", profileId)
         }
         return SupabaseProvider.client.postgrest
-            .rpc("sync_get_watched_items_delta_cursor", params)
+            .rpc("sync_get_watched_items_delta_cursor_v2", params)
             .decodeAs<Long>()
     }
 
@@ -34,11 +34,11 @@ object SupabaseWatchedSyncAdapter : WatchedSyncAdapter {
         limit: Int,
     ): List<WatchedDeltaEvent> {
         val params = buildJsonObject {
-            put("p_profile_id", profileId)
+            put("p_profile_index", profileId)
             put("p_since_event_id", sinceEventId)
             put("p_limit", limit)
         }
-        val result = SupabaseProvider.client.postgrest.rpc("sync_pull_watched_items_delta", params)
+        val result = SupabaseProvider.client.postgrest.rpc("sync_pull_watched_items_delta_v2", params)
         return result.decodeList<WatchedDeltaSyncItem>().map { event ->
             WatchedDeltaEvent(
                 eventId = event.eventId,
@@ -57,22 +57,26 @@ object SupabaseWatchedSyncAdapter : WatchedSyncAdapter {
         profileId: Int,
         pageSize: Int,
     ): List<WatchedItem> {
-        val serverItems = mutableListOf<WatchedSyncItem>()
-        var page = 1
-
-        while (true) {
-            val params = buildJsonObject {
-                put("p_profile_id", profileId)
-                put("p_page", page)
-                put("p_page_size", pageSize)
-            }
-            val result = SupabaseProvider.client.postgrest.rpc("sync_pull_watched_items", params)
-            val pageItems = result.decodeList<WatchedSyncItem>()
-            serverItems += pageItems
-
-            if (pageItems.size < pageSize) break
-            page += 1
-        }
+        val serverItems = collectKeysetPages(
+            pageSize = pageSize,
+            fetchPage = { cursor: WatchedSnapshotCursor?, limit ->
+                val params = buildJsonObject {
+                    put("p_profile_index", profileId)
+                    put("p_limit", limit)
+                    cursor?.let {
+                        put("p_after_watched_at", it.watchedAt)
+                        put("p_after_content_id", it.contentId)
+                        put("p_after_content_type", it.contentType)
+                        put("p_after_season", it.season)
+                        put("p_after_episode", it.episode)
+                    }
+                }
+                SupabaseProvider.client.postgrest
+                    .rpc("sync_pull_watched_items_v2", params)
+                    .decodeList<WatchedSyncItem>()
+            },
+            cursorOf = WatchedSyncItem::snapshotCursor,
+        )
 
         return serverItems.map { syncItem ->
             WatchedItem(
@@ -100,31 +104,29 @@ object SupabaseWatchedSyncAdapter : WatchedSyncAdapter {
                 watchedAt = normalizeWatchedMarkedAtEpochMs(item.markedAtEpochMs),
             )
         }
-        val params = buildJsonObject {
-            put("p_profile_id", profileId)
-            put("p_items", json.encodeToJsonElement(syncItems))
-            putSyncOriginClientId()
+        forEachSyncMutationBatch(syncItems) { batch ->
+            val params = buildJsonObject {
+                put("p_profile_index", profileId)
+                put("p_items", json.encodeToJsonElement(batch))
+                putSyncOriginClientId()
+            }
+            SupabaseProvider.client.postgrest.rpc("sync_push_watched_items_v2", params)
         }
-        SupabaseProvider.client.postgrest.rpc("sync_push_watched_items", params)
     }
 
     override suspend fun delete(
         profileId: Int,
         items: Collection<WatchedItem>,
     ) {
-        val keys = items.map { item ->
-            WatchedDeleteKey(
-                contentId = item.id,
-                season = item.season,
-                episode = item.episode,
-            )
+        val keys = items.map(WatchedItem::toDeleteKey)
+        forEachSyncMutationBatch(keys) { batch ->
+            val params = buildJsonObject {
+                put("p_profile_index", profileId)
+                put("p_keys", json.encodeToJsonElement(batch))
+                putSyncOriginClientId()
+            }
+            SupabaseProvider.client.postgrest.rpc("sync_delete_watched_items_v2", params)
         }
-        val params = buildJsonObject {
-            put("p_profile_id", profileId)
-            put("p_keys", json.encodeToJsonElement(keys))
-            putSyncOriginClientId()
-        }
-        SupabaseProvider.client.postgrest.rpc("sync_delete_watched_items", params)
     }
 }
 
@@ -150,9 +152,35 @@ private data class WatchedDeltaSyncItem(
     @SerialName("watched_at") val watchedAt: Long = 0,
 )
 
+internal data class WatchedSnapshotCursor(
+    val watchedAt: Long,
+    val contentId: String,
+    val contentType: String,
+    val season: Int,
+    val episode: Int,
+)
+
+private fun WatchedSyncItem.snapshotCursor(): WatchedSnapshotCursor =
+    WatchedSnapshotCursor(
+        watchedAt = watchedAt,
+        contentId = contentId,
+        contentType = contentType,
+        season = season ?: -1,
+        episode = episode ?: -1,
+    )
+
 @Serializable
-private data class WatchedDeleteKey(
+internal data class WatchedDeleteKey(
     @SerialName("content_id") val contentId: String,
+    @SerialName("content_type") val contentType: String,
     val season: Int? = null,
     val episode: Int? = null,
 )
+
+internal fun WatchedItem.toDeleteKey(): WatchedDeleteKey =
+    WatchedDeleteKey(
+        contentId = id,
+        contentType = type,
+        season = season,
+        episode = episode,
+    )

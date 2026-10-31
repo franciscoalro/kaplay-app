@@ -38,6 +38,7 @@ import com.kaplay.app.features.watchprogress.ContinueWatchingPreferencesReposito
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import kotlin.concurrent.Volatile
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -136,10 +137,9 @@ object ProfileSettingsSync {
                 try {
                     val remoteBlob = runCatching {
                         json.decodeFromJsonElement(MobileProfileSettingsBlob.serializer(), remoteJson)
-                    }.getOrElse { error ->
+                    }.onFailure { error ->
                         log.e(error) { "pull(profileId=$profileId) — failed to decode remote settings blob" }
-                        return@withLock false
-                    }
+                    }.getOrThrow()
                     val remoteSignature = buildSignature(remoteBlob)
                     if (remoteSignature == localSignature) {
                         log.d { "pull(profileId=$profileId) — remote matches local" }
@@ -155,9 +155,11 @@ object ProfileSettingsSync {
 
                 log.i { "pull(profileId=$profileId) — applied remote settings blob" }
                 true
-            } catch (error: Exception) {
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
                 log.e(error) { "pull(profileId=$profileId) — FAILED" }
-                false
+                throw error
             } finally {
                 isServerSyncInFlight = false
             }
