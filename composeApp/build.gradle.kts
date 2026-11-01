@@ -315,6 +315,8 @@ fun runtimeConfigBoolean(key: String, default: Boolean): Boolean =
         else -> default
     }
 
+val debugBuild = requestedGradleTasks.any { it.contains("debug", ignoreCase = true) }
+
 val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generateRuntimeConfigs") {
     outputDir.set(generatedRuntimeConfigDir)
     localPropertiesFile.set(rootProject.layout.projectDirectory.file("local.properties"))
@@ -323,13 +325,13 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     supabaseUrl.set(
         runtimeConfigValue(
             "KAPLAY_SUPABASE_URL",
-            fallback = "https://iibureqvpurmbgqupnvl.supabase.co",
+            fallback = if (debugBuild) "" else "https://iibureqvpurmbgqupnvl.supabase.co",
         ),
     )
     supabaseAnonKey.set(
         runtimeConfigValue(
             "KAPLAY_SUPABASE_ANON_KEY",
-            fallback = "sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp",
+            fallback = if (debugBuild) "" else "sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp",
         ),
     )
     supabaseFallbackUrl.set(runtimeConfigValue("KAPLAY_SUPABASE_FALLBACK_URL"))
