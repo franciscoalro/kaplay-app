@@ -1,17 +1,7 @@
 package com.kaplay.app.features.profiles
 
-import com.kaplay.app.core.sync.KAPlaySyncState
 import com.kaplay.app.core.sync.ProfileSyncContractView
-import com.kaplay.app.core.sync.profileSyncContractView
 import com.kaplay.app.core.sync.ProfileSyncContractStatus
-
-internal fun profileSyncStatusText(
-    syncState: KAPlaySyncState?,
-    isCloudProfile: Boolean,
-): String = profileSyncStatusText(
-    contractView = profileSyncContractView("", 0, syncState),
-    isCloudProfile = isCloudProfile,
-)
 
 internal fun profileSyncStatusText(
     contractView: ProfileSyncContractView?,
