@@ -114,6 +114,7 @@ import com.kaplay.app.features.watching.domain.isReleasedBy
 import com.kaplay.app.features.collection.CollectionRepository
 import com.kaplay.app.features.profiles.ProfileRepository
 import com.kaplay.app.features.rewards.AdRewardController
+import com.kaplay.app.features.rewards.AdRewardState
 import com.kaplay.app.features.home.components.HomeCollectionRowSection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -1239,6 +1240,17 @@ fun HomeScreen(
     }
 }
 
+internal fun homeRewardLabel(
+    requiresAuthentication: Boolean,
+    rewardState: AdRewardState,
+): String = when {
+    requiresAuthentication -> "Entrar • 1h grátis"
+    rewardState.syncing -> "Sincronizando…"
+    rewardState.error != null -> "Tentar novamente"
+    rewardState.remainingMs > 0L -> "✨ ${((rewardState.remainingMs / 60_000L).coerceAtLeast(1L))}m sem anúncios"
+    else -> "🎁 1h grátis"
+}
+
 @Composable
 private fun HomeRewardButton(
     onRequestAuthentication: () -> Unit,
@@ -1248,16 +1260,16 @@ private fun HomeRewardButton(
     val authState by AuthRepository.state.collectAsStateWithLifecycle()
     val isAnonymous = (authState as? AuthState.Authenticated)?.isAnonymous == true
     val requiresAuthentication = authState !is AuthState.Authenticated || isAnonymous
-    val label = when {
-        requiresAuthentication -> "Entrar • 1h grátis"
-        rewardState.remainingMs > 0L -> "✨ ${((rewardState.remainingMs / 60_000L).coerceAtLeast(1L))}m sem anúncios"
-        else -> "🎁 1h grátis"
-    }
+    val label = homeRewardLabel(requiresAuthentication, rewardState)
     val enabled = !rewardState.syncing && rewardState.remainingMs <= 0L
     Surface(
         modifier = modifier.height(38.dp),
         enabled = enabled,
-        onClick = if (requiresAuthentication) onRequestAuthentication else AdRewardController::showRewarded,
+        onClick = when {
+            requiresAuthentication -> onRequestAuthentication
+            rewardState.error != null -> AdRewardController::refresh
+            else -> AdRewardController::showRewarded
+        },
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
         contentColor = MaterialTheme.colorScheme.onSurface,
