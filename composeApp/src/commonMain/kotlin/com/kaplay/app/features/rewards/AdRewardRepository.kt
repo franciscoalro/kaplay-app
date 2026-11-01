@@ -53,7 +53,10 @@ internal object AdRewardRepository {
         runCatching {
             val rows = SupabaseProvider.client.postgrest
                 .from(TABLE)
-                .select { filter { eq("user_id", userId) } }
+                .select { filter {
+                    eq("user_id", userId)
+                    eq("profile_index", profileIndex)
+                } }
                 .decodeList<RewardBalanceRow>()
             val remoteUntil = rows.maxOfOrNull { parseTimestamp(it.expiresAt) } ?: 0L
             val localUntil = RewardStorage.loadUntil(userId, profileIndex)
