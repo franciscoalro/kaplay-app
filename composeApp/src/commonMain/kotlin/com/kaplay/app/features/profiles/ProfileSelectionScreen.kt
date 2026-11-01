@@ -89,11 +89,13 @@ fun ProfileSelectionScreen(
     val syncStates by SyncManager.profileSyncStates.collectAsStateWithLifecycle()
     val authenticatedState = authState as? AuthState.Authenticated
     val isCloudProfile = authenticatedState?.isAnonymous == false
-    val syncContractView = profileSyncContractView(
-        userId = authenticatedState?.userId.orEmpty(),
-        profileIndex = activeProfileIndex ?: 0,
-        state = activeProfileIndex?.let(syncStates::get),
-    )
+    val syncContractView = activeProfileIndex?.let { profileIndex ->
+        profileSyncContractView(
+            userId = authenticatedState?.userId.orEmpty(),
+            profileIndex = profileIndex,
+            state = syncStates[profileIndex],
+        )
+    }
     val syncStatusText = profileSyncStatusText(syncContractView, isCloudProfile)
     val scope = rememberCoroutineScope()
     var pinDialogProfile by remember { mutableStateOf<KAPlayProfile?>(null) }
