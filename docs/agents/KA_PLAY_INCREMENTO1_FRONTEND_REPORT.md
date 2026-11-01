@@ -8,7 +8,7 @@ Implemented contract-aligned Compose profile sync presentation.
 
 Evidence:
 - Branch: `agentic/ka-incremento1-frontend`
-- Commit: `5c3960f9`
-- GitHub Actions run `41320310330`: `compileFullDebugKotlin` success including host tests; Pages deployment failed only due protected environment.
+- Commits: `5c3960f9`, `c223ce63`, `33ebbb1d`
+- GitHub Actions rerun `41322738233`: `compileFullDebugKotlin` success including host tests; Pages deployment failed only due protected environment.
 
 Remaining: no Android device, Compose semantics, D-pad/TalkBack screenshot or clickable reconnect action; `SyncManager` exposes no public retry operation yet.
