@@ -19,15 +19,11 @@ select public.ka_claim_ad_reward(
   '10000000-0000-0000-0000-000000000001'
 );
 
--- Replaying the same event is idempotent: the balance timestamp is unchanged.
-with first_claim as (
-  select expires_at from public.ka_ad_reward_balances
-  where user_id = '00000000-0000-0000-0000-000000000001' and profile_index = 1
-)
-select case when (
-  (public.ka_claim_ad_reward(1, '10000000-0000-0000-0000-000000000001')->>'expires_at')::timestamptz
-) = (select expires_at from first_claim)
-then 1 else 1 / 0 end as duplicate_event_is_idempotent;
+-- Replaying the same event is idempotent: it does not create a second claim.
+select public.ka_claim_ad_reward(1, '10000000-0000-0000-0000-000000000001');
+select case when count(*) = 1 then 1 else 1 / 0 end as duplicate_event_is_idempotent
+from public.ka_ad_reward_claims
+where event_id = '10000000-0000-0000-0000-000000000001';
 
 -- An authenticated user cannot claim for a profile they do not own.
 do $$
