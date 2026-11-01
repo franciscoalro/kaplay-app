@@ -49,6 +49,7 @@ files=(
   "supabase/proposed/20261031000003_ka_sync_rpcs_v2.sql"
   "supabase/tests/etapa15_sync_v2_test.sql"
   "supabase/tests/etapa18_rewards_test.sql"
+  "supabase/tests/etapa19_profile_sync_test.sql"
 )
 
 for relative in "${files[@]}"; do
