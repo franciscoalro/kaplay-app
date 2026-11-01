@@ -11,6 +11,7 @@ values
   ('00000000-0000-0000-0000-000000000002', 1, 'B one')
 on conflict (user_id, profile_index) do nothing;
 
+set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', false);
 
 -- A valid owned profile receives one hour.
@@ -21,6 +22,7 @@ select public.ka_claim_ad_reward(
 
 -- Replaying the same event is idempotent: it does not create a second claim.
 select public.ka_claim_ad_reward(1, '10000000-0000-0000-0000-000000000001');
+reset role;
 do $$
 declare
   claim_count integer;
@@ -34,6 +36,8 @@ begin
 end $$;
 
 -- An authenticated user cannot claim for a profile they do not own.
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', false);
 do $$
 begin
   begin
@@ -55,5 +59,6 @@ begin
     null;
   end;
 end $$;
+reset role;
 
 select 'rewards_ownership_idempotency=PASS' as assertion;

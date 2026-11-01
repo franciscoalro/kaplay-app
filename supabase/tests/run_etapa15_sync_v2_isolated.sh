@@ -11,6 +11,7 @@ container="ka-etapa15-sync-v2-$$"
 cleanup() {
   docker logs "$container" >"$report_dir/postgres.log" 2>&1 || true
   docker rm -f "$container" >>"$run_log" 2>&1 || true
+  sed -i 's/kaplay-test/[redacted]/g' "$run_log"
 }
 trap cleanup EXIT
 
@@ -40,8 +41,8 @@ fi
 
 files=(
   "supabase/tests/etapa15_bootstrap.sql"
-  "supabase/migrations/20261029000000_ka_profiles.sql"
   "supabase/migrations/20261028000000_ka_ad_rewards.sql"
+  "supabase/migrations/20261029000000_ka_profiles.sql"
   "supabase/migrations/20261101000004_ka_ad_rewards_ownership.sql"
   "supabase/proposed/20261031000001_ka_profile_identity_expand_v2.sql"
   "supabase/proposed/20261031000002_ka_sync_storage_uuid_v2.sql"
