@@ -47,6 +47,7 @@ files=(
   "supabase/proposed/20261031000001_ka_profile_identity_expand_v2.sql"
   "supabase/proposed/20261031000002_ka_sync_storage_uuid_v2.sql"
   "supabase/proposed/20261031000003_ka_sync_rpcs_v2.sql"
+  "supabase/proposed/20261102000001_ka_favorites_history_rpcs_v2.sql"
   "supabase/tests/etapa15_sync_v2_test.sql"
   "supabase/tests/etapa18_rewards_test.sql"
   "supabase/tests/etapa19_profile_sync_test.sql"

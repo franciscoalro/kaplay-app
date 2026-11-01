@@ -51,6 +51,34 @@ do $$ begin
 end $$;
 
 set role authenticated;
+-- Incremento 2 RED assertions: profile-scoped favorites/history contracts.
+select public.sync_push_favorites_v2(1, '[{"media_id":"fav-one"},{"media_id":"fav-two"}]'::jsonb, 'sql-test');
+select public.sync_push_history_v2(1, '[{"media_id":"hist-one","season":1,"episode":2,"watched_at":100}]'::jsonb, 'sql-test');
+do $$ begin
+  if (select count(*) from public.sync_pull_favorites_v2(1, 500)) <> 2 then raise exception 'favorites profile scope missing'; end if;
+  if (select count(*) from public.sync_pull_history_v2(1, 500)) <> 1 then raise exception 'history profile scope missing'; end if;
+end $$;
+create temp table favorite_event_count as select count(*) n from ka_sync.favorite_events;
+create temp table history_event_count as select count(*) n from ka_sync.history_events;
+select public.sync_push_favorites_v2(1, '[{"media_id":"fav-one"}]'::jsonb, 'sql-test-reconnect');
+select public.sync_push_history_v2(1, '[{"media_id":"hist-one","season":1,"episode":2,"watched_at":100}]'::jsonb, 'sql-test-reconnect');
+do $$ begin
+  if (select count(*) from ka_sync.favorite_events) <> (select n from favorite_event_count) then raise exception 'favorite reconnect replay emitted duplicate event'; end if;
+  if (select count(*) from ka_sync.history_events) <> (select n from history_event_count) then raise exception 'history reconnect replay emitted duplicate event'; end if;
+end $$;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+set request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","is_anonymous":false}';
+do $$ begin
+  begin perform public.sync_pull_favorites_v2(1,500); raise exception 'cross-user favorite accepted'; exception when sqlstate '42501' then null; end;
+  begin perform public.sync_pull_history_v2(1,500); raise exception 'cross-user history accepted'; exception when sqlstate '42501' then null; end;
+end $$;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","is_anonymous":true}';
+do $$ begin
+  begin perform public.sync_pull_favorites_v2(1,500); raise exception 'anonymous favorite read accepted'; exception when sqlstate '42501' then null; end;
+end $$;
+set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","is_anonymous":false}';
+
 select public.sync_push_watched_items_v2(1,
  '[{"content_id":"same","content_type":"movie","title":"Movie","watched_at":10},
    {"content_id":"same","content_type":"series","title":"Series","watched_at":10}]'::jsonb,
