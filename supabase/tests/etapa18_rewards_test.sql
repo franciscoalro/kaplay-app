@@ -21,9 +21,17 @@ select public.ka_claim_ad_reward(
 
 -- Replaying the same event is idempotent: it does not create a second claim.
 select public.ka_claim_ad_reward(1, '10000000-0000-0000-0000-000000000001');
-select case when count(*) = 1 then 1 else 1 / 0 end as duplicate_event_is_idempotent
-from public.ka_ad_reward_claims
-where event_id = '10000000-0000-0000-0000-000000000001';
+do $$
+declare
+  claim_count integer;
+begin
+  select count(*) into claim_count
+  from public.ka_ad_reward_claims
+  where event_id = '10000000-0000-0000-0000-000000000001';
+  if claim_count <> 1 then
+    raise exception 'duplicate event created % claims', claim_count;
+  end if;
+end $$;
 
 -- An authenticated user cannot claim for a profile they do not own.
 do $$
