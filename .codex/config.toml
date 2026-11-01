@@ -1,0 +1,29 @@
+# Configuração de perfis especializados Codex. O usuário precisa ter suporte a custom agents no cliente.
+# Nenhum perfil autoriza execução de release ou mudanças de produção.
+[agents.ka_delivery_lead]
+description = "Orquestrador KA Play: backlog, gates e entrega"
+config_file = "agents/ka_delivery_lead.toml"
+
+[agents.ka_supabase_sync]
+description = "Supabase sync/RLS e integridade de perfis"
+config_file = "agents/ka_supabase_sync.toml"
+
+[agents.ka_android_player]
+description = "Player Android, HLS/DASH/TLS e regressão"
+config_file = "agents/ka_android_player.toml"
+
+[agents.ka_appsec_reviewer]
+description = "Revisor independente de segurança e credenciais"
+config_file = "agents/ka_appsec_reviewer.toml"
+
+[agents.ka_qa_engineer]
+description = "Testes CI Android, QA ponta a ponta e evidências"
+config_file = "agents/ka_qa_engineer.toml"
+
+[agents.ka_release_engineer]
+description = "Versionamento, identidade de assinatura, GitHub Actions release"
+config_file = "agents/ka_release_engineer.toml"
+
+[agents.ka_ux_engineer]
+description = "UX Android TV/mobile, D-pad e acessibilidade"
+config_file = "agents/ka_ux_engineer.toml"
