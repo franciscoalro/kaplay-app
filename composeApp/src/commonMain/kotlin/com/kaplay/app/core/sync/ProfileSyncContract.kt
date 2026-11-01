@@ -10,12 +10,14 @@ internal enum class ProfileSyncContractStatus {
 }
 
 internal data class ProfileSyncContractView(
+    val userId: String,
     val profileIndex: Int,
     val status: ProfileSyncContractStatus,
     val errorCode: String? = null,
 )
 
 internal fun profileSyncContractView(
+    userId: String,
     profileIndex: Int,
     state: KAPlaySyncState?,
 ): ProfileSyncContractView {
@@ -28,6 +30,7 @@ internal fun profileSyncContractView(
         KAPlaySyncStatus.ERROR -> ProfileSyncContractStatus.ERROR
     }
     return ProfileSyncContractView(
+        userId = userId,
         profileIndex = profileIndex,
         status = status,
         errorCode = state?.errorCode,
