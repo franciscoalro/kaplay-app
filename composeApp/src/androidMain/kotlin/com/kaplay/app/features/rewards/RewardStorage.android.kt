@@ -11,14 +11,16 @@ internal actual object RewardStorage {
         preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
     }
 
-    actual fun loadUntil(userId: String): Long =
-        preferences?.getLong(PREFIX + userId, 0L) ?: 0L
+    actual fun key(userId: String, profileIndex: Int): String = "${PREFIX}${userId}_$profileIndex"
 
-    actual fun saveUntil(userId: String, untilEpochMs: Long) {
-        preferences?.edit()?.putLong(PREFIX + userId, untilEpochMs)?.apply()
+    actual fun loadUntil(userId: String, profileIndex: Int): Long =
+        preferences?.getLong(key(userId, profileIndex), 0L) ?: 0L
+
+    actual fun saveUntil(userId: String, profileIndex: Int, untilEpochMs: Long) {
+        preferences?.edit()?.putLong(key(userId, profileIndex), untilEpochMs)?.apply()
     }
 
-    actual fun clear(userId: String) {
-        preferences?.edit()?.remove(PREFIX + userId)?.apply()
+    actual fun clear(userId: String, profileIndex: Int) {
+        preferences?.edit()?.remove(key(userId, profileIndex))?.apply()
     }
 }

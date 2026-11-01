@@ -33,7 +33,8 @@ internal object AdRewardRepository {
 
     fun currentState(): AdRewardState {
         val userId = remoteUserId() ?: return AdRewardState()
-        val remaining = (RewardStorage.loadUntil(userId) - nowMs()).coerceAtLeast(0L)
+        val profileIndex = activeProfileIndex()
+        val remaining = (RewardStorage.loadUntil(userId, profileIndex) - nowMs()).coerceAtLeast(0L)
         return AdRewardState(remainingMs = remaining)
     }
 
@@ -42,18 +43,22 @@ internal object AdRewardRepository {
         else -> null
     }
 
+    private fun activeProfileIndex(): Int =
+        ProfileRepository.state.value.activeProfile?.profileIndex ?: 1
+
     suspend fun refresh(): Result<Long> = withContext(Dispatchers.Default) {
         val userId = remoteUserId()
             ?: return@withContext Result.failure(IllegalStateException("Entre na sua conta KA Play para ganhar recompensas"))
+        val profileIndex = activeProfileIndex()
         runCatching {
             val rows = SupabaseProvider.client.postgrest
                 .from(TABLE)
                 .select { filter { eq("user_id", userId) } }
                 .decodeList<RewardBalanceRow>()
             val remoteUntil = rows.maxOfOrNull { parseTimestamp(it.expiresAt) } ?: 0L
-            val localUntil = RewardStorage.loadUntil(userId)
+            val localUntil = RewardStorage.loadUntil(userId, profileIndex)
             val finalUntil = maxOf(remoteUntil, localUntil)
-            if (finalUntil > 0L) RewardStorage.saveUntil(userId, finalUntil)
+            if (finalUntil > 0L) RewardStorage.saveUntil(userId, profileIndex, finalUntil)
             finalUntil
         }.onFailure { log.w(it) { "Reward refresh failed" } }
     }
@@ -61,17 +66,18 @@ internal object AdRewardRepository {
     suspend fun claimAfterAd(eventId: String): Result<Long> = withContext(Dispatchers.Default) {
         val userId = remoteUserId()
             ?: return@withContext Result.failure(IllegalStateException("Faça login para salvar a recompensa"))
+        val profileIndex = activeProfileIndex()
         runCatching {
             val response = SupabaseProvider.client.postgrest.rpc(
                 RPC,
                 buildJsonObject {
-                    put("p_profile_index", ProfileRepository.state.value.activeProfile?.profileIndex ?: 1)
+                    put("p_profile_index", profileIndex)
                     put("p_event_id", eventId)
                 },
             )
             val expiresAt = json.decodeFromString<RewardClaimResponse>(response.data).expiresAt
             val authoritativeUntil = parseTimestamp(expiresAt)
-            RewardStorage.saveUntil(userId, authoritativeUntil)
+            RewardStorage.saveUntil(userId, profileIndex, authoritativeUntil)
             authoritativeUntil
         }.onFailure { log.w(it) { "Reward cloud sync failed; no reward granted" } }
     }
