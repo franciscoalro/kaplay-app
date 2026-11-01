@@ -31,8 +31,14 @@ create policy "ka_profiles_owner_access"
     on public.ka_profiles
     for all
     to authenticated
-    using ((select auth.uid()) = user_id)
-    with check ((select auth.uid()) = user_id);
+    using (
+        (select auth.uid()) = user_id
+        and coalesce((select (auth.jwt()->>'is_anonymous')::boolean), false) = false
+    )
+    with check (
+        (select auth.uid()) = user_id
+        and coalesce((select (auth.jwt()->>'is_anonymous')::boolean), false) = false
+    );
 
 create or replace function public.sync_pull_profiles()
 returns setof public.ka_profiles
@@ -61,6 +67,9 @@ as $$
 begin
     if (select auth.uid()) is null then
         raise exception using errcode = '42501', message = 'Authentication required';
+    end if;
+    if coalesce((select (auth.jwt()->>'is_anonymous')::boolean), false) then
+        raise exception using errcode = '42501', message = 'Anonymous sessions cannot sync profiles';
     end if;
     if p_client_max_profiles is null or p_client_max_profiles < 1 or p_client_max_profiles > 6 then
         raise exception using errcode = '22023', message = 'Invalid profile limit';

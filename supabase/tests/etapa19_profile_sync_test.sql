@@ -8,7 +8,8 @@
 -- Setup: two users with profiles pushed via sync_push_profiles
 insert into auth.users(id,email) values
   ('11111111-1111-1111-1111-111111111111','owner@example.test'),
-  ('22222222-2222-2222-2222-222222222222','other@example.test')
+  ('22222222-2222-2222-2222-222222222222','other@example.test'),
+  ('33333333-3333-3333-3333-333333333333','anonymous@example.test')
   on conflict (id) do nothing;
 
 -- User 1: push two profiles
@@ -72,8 +73,8 @@ reset role;
 -- Anonymous sessions may return no cloud rows, but never owned data.
 ------------------------------------------------------------
 set role authenticated;
-set request.jwt.claim.sub = '00000000-0000-0000-0000-000000000000';
-set request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000000","is_anonymous":true}';
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+set request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333","is_anonymous":true}';
 do $$
 declare
   visible_rows integer;
@@ -106,7 +107,7 @@ do $$
 begin
   if exists (
     select 1 from public.ka_profiles
-    where user_id = '00000000-0000-0000-0000-000000000000'
+    where user_id = '33333333-3333-3333-3333-333333333333'
   ) then
     raise exception 'ASSERTION 4 FAILED: anonymous profile was persisted';
   end if;
