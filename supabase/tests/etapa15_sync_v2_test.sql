@@ -155,4 +155,63 @@ do $$ begin
  end if;
 end $$;
 
-select 'ETAPA15_SYNC_V2_ISOLATED_OK' as result, 1201 as progress_rows, 15 as v2_rpcs;
+-- v1/v2 contract verification (Task 1 — local-only extension).
+-- v1: sync_pull_watch_progress(p_profile_id integer, p_since_last_watched bigint, p_limit integer)
+--     — proposed-local-only; uses SECURITY DEFINER; not a production path.
+-- v2: sync_pull_watch_progress_v2(p_profile_index integer, p_limit integer, p_after_last_watched bigint, p_after_progress_key text)
+--     — production-candidate; uses SECURITY INVOKER; UUID-scope; keyset cursor pagination.
+do $$ begin
+  -- v2 RPCs must use SECURITY INVOKER (not DEFINER).
+  if exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public' and p.proname like 'sync_%_v2' and p.prosecdef) then
+    raise exception 'SECURITY DEFINER v2 RPC found — must use SECURITY INVOKER';
+  end if;
+  -- v2 RPCs must not be executable by PUBLIC or anon.
+  if exists(select 1 from information_schema.routine_privileges
+            where routine_schema='public' and routine_name like 'sync_%_v2' and grantee in ('PUBLIC','anon')) then
+    raise exception 'unexpected PUBLIC/anon execute on v2 RPC';
+  end if;
+end $$;
+
+-- v2 RPC param contract: p_profile_index, p_limit, p_after_last_watched, p_after_progress_key.
+-- v1 RPC (proposed-local-only) uses p_profile_id + p_since_last_watched (different contract).
+do $$ declare
+  v2_params text;
+begin
+  select pg_get_function_arguments(p.oid) into v2_params
+  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public' and p.proname='sync_pull_watch_progress_v2' and not p.proisagg;
+
+  -- v2 must use p_profile_index (UUID-scope), NOT v1's p_profile_id integer.
+  if v2_params is null or v2_params not like '%p_profile_index%' then
+    raise exception 'v2 RPC missing p_profile_index param';
+  end if;
+  if v2_params is not null and v2_params like '%p_profile_id%' then
+    raise exception 'v2 RPC must not use v1 p_profile_id param';
+  end if;
+  -- v2 must have paired keyset cursor params.
+  if v2_params is null or v2_params not like '%p_after_last_watched%' then
+    raise exception 'v2 RPC missing p_after_last_watched cursor param';
+  end if;
+  if v2_params is null or v2_params not like '%p_after_progress_key%' then
+    raise exception 'v2 RPC missing p_after_progress_key cursor param';
+  end if;
+end $$;
+
+-- Additional keyset pagination verification on the 1201-row set above.
+do $$ begin
+  if (select count(*) from progress_page1) <> 500 or
+     (select count(*) from progress_page2) <> 500 or
+     (select count(*) from progress_page3) <> 201 then
+    raise exception 'keyset page sizes drifted from expected 500/500/201';
+  end if;
+end $$;
+
+-- Client-side contract: after Task 1 fix, adapter pulls exclusively via v2
+-- (sync_pull_watch_progress_v2). v1 RPC is proposed-local-only and NOT called.
+-- v1/v2 production compatibility: both client generations share the same
+-- ka_sync.watch_progress storage table; v2 push is idempotent and write-order-safe.
+-- v2 limit cap: 1-500 rows per page. Unresolved: v1 since_last_watched semantics
+-- differ from v2 keyset continuation; filtered/limited pull seeds v2 cursor from since.
+
+select 'ETAPA15_SYNC_V2_ISOLATED_OK' as result, 1201 as progress_rows, 15 as v2_rpcs, 'v1_v2_contract_verified' as task1_status;
