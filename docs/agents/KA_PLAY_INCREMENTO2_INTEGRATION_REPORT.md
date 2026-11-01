@@ -10,7 +10,7 @@
 ## Evidências
 
 - Isolado local: `bash supabase/tests/run_etapa15_sync_v2_isolated.sh` → `isolated_sql_status=PASS`.
-- CI integrado SQL/sync: run [41338901158](https://github.com/franciscoalro/kaplay-app/actions/runs/41338901158) → PostgreSQL isolado e sync host **success**.
+- CI integrado SQL/sync: run [41346203822](https://github.com/franciscoalro/kaplay-app/actions/runs/41346203822) → credential scan, PostgreSQL isolado e sync host **success**.
 - CI integrado Kotlin/host: run [41338931981](https://github.com/franciscoalro/kaplay-app/actions/runs/41338931981) → compile Full/Play Store, TLS checks e host tests **success**; somente Pages foi bloqueado por proteção de ambiente.
 - AppSec report: `docs/agents/KA_PLAY_INCREMENTO2_APPSEC_REPORT.md`.
 - QA report: `docs/agents/KA_PLAY_INCREMENTO2_QA_REPORT.md`.
