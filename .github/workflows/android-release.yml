@@ -74,13 +74,22 @@ jobs:
             exit 1
           fi
 
-          # Release-only configuration and audit documentation may be committed after the
-          # version bump; application source changes must still be the final bump boundary.
+          # Only release infrastructure and audit documentation may be committed after
+          # the version bump; any file that can affect the APK remains a hard failure.
+          allowed_after_bump='^(\.github/workflows/(android-release|update-store-source)\.yml|store\.json|scripts/(build-ios-ipa|generate-release-notes|prepare-ios-dependencies|release-metadata)\.sh|scripts/update-store-source\.py|docs/superpowers/)'
           unexpected_changes="$(
             git diff --name-only "${CURRENT_BUMP}..${RELEASE_COMMIT}" \
-              | grep -Ev '^(\.github/workflows/(android-release|update-store-source)\.yml|store\.json|scripts/(build-ios-ipa|generate-release-notes|prepare-ios-dependencies|release-metadata)\.sh|scripts/update-store-source\.py|composeApp/build\.gradle\.kts|docs/superpowers/)' \
+              | grep -Ev "${allowed_after_bump}" \
               || true
           )"
+
+          # Negative regression test: build configuration must never be allowlisted.
+          if printf '%s\n' 'composeApp/build.gradle.kts' | grep -Ev "${allowed_after_bump}" >/dev/null; then
+            echo "Release allowlist correctly rejects composeApp/build.gradle.kts"
+          else
+            echo "Release allowlist must reject composeApp/build.gradle.kts" >&2
+            exit 1
+          fi
           if [[ -n "${unexpected_changes}" ]]; then
             echo "The version bump must be the final application change before release." >&2
             echo "Unexpected files changed after the bump:" >&2
