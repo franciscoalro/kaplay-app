@@ -1,7 +1,16 @@
-name: KA Play Android build only
+name: KA Play Android Debug preview (connected or offline)
 
 on:
   workflow_dispatch:
+    inputs:
+      backend_mode:
+        description: 'connected requires a test Supabase project; offline-preview cannot authenticate'
+        required: true
+        default: connected
+        type: choice
+        options:
+          - connected
+          - offline-preview
   push:
     branches:
       - kaplay-rebrand
@@ -14,12 +23,94 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      # Build-time placeholders only. This job never claims backend integration.
-      KAPLAY_SUPABASE_URL: https://build-only.invalid
-      KAPLAY_SUPABASE_ANON_KEY: build-only-placeholder
+      BACKEND_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.backend_mode || 'offline-preview' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Resolve and preflight Debug backend
+        id: backend
+        shell: bash
+        env:
+          DEBUG_URL: ${{ secrets.KAPLAY_DEBUG_SUPABASE_URL }}
+          DEBUG_KEY: ${{ secrets.KAPLAY_DEBUG_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          case "$BACKEND_MODE" in
+            offline-preview)
+              {
+                echo 'KAPLAY_SUPABASE_URL=https://build-only.invalid'
+                echo 'KAPLAY_SUPABASE_ANON_KEY=build-only-placeholder'
+                echo 'KAPLAY_SUPABASE_FALLBACK_URL='
+              } >> "$GITHUB_ENV"
+              echo 'backend_verified=false' >> "$GITHUB_OUTPUT"
+              echo 'OFFLINE PREVIEW ONLY: cloud authentication and synchronization will not work.'
+              ;;
+            connected)
+              if [[ -z "$DEBUG_URL" || -z "$DEBUG_KEY" ]]; then
+                echo 'Missing KAPLAY_DEBUG_SUPABASE_URL or KAPLAY_DEBUG_SUPABASE_ANON_KEY repository secret. Refusing broken connected APK.' >&2
+                exit 1
+              fi
+              python3 - <<'PY'
+          import base64
+          import json
+          import os
+          from urllib.parse import urlsplit
+
+          url = os.environ["DEBUG_URL"]
+          key = os.environ["DEBUG_KEY"]
+          parsed = urlsplit(url)
+          hostname = (parsed.hostname or "").lower()
+          if (
+              url != url.strip()
+              or parsed.scheme != "https"
+              or not hostname.endswith(".supabase.co")
+              or hostname == "iibureqvpurmbgqupnvl.supabase.co"
+              or parsed.username is not None
+              or parsed.password is not None
+              or parsed.port not in (None, 443)
+              or parsed.path not in ("", "/")
+              or parsed.query
+              or parsed.fragment
+              or not hostname
+          ):
+              raise SystemExit("Only a non-production HTTPS *.supabase.co project URL is permitted for connected Debug builds.")
+          if url.endswith("/"):
+              raise SystemExit("Remove trailing slash from KAPLAY_DEBUG_SUPABASE_URL.")
+          if key != key.strip() or "\n" in key or "\r" in key:
+              raise SystemExit("Invalid whitespace in debug publishable/anon key.")
+          if key.startswith("sb_publishable_"):
+              pass
+          elif key.startswith("eyJ"):
+              try:
+                  payload = key.split(".")[1]
+                  claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+              except (ValueError, IndexError, UnicodeError) as exc:
+                  raise SystemExit("Invalid legacy anon key format.") from exc
+              if claims.get("role") != "anon":
+                  raise SystemExit("Legacy key must have role=anon; privileged keys are forbidden.")
+          else:
+              raise SystemExit("Only Supabase publishable or legacy anon keys are permitted.")
+          print("Development backend configuration accepted (production URL rejected).")
+          PY
+              http_code="$(curl --silent --show-error --connect-timeout 8 --max-time 20 --output /dev/null --write-out '%{http_code}' --header "apikey: $DEBUG_KEY" "$DEBUG_URL/auth/v1/health")"
+              if [[ "$http_code" != "200" ]]; then
+                echo "Isolated Supabase Auth health check returned HTTP $http_code (expected 200)." >&2
+                exit 1
+              fi
+              {
+                printf 'KAPLAY_SUPABASE_URL=%s\n' "$DEBUG_URL"
+                printf 'KAPLAY_SUPABASE_ANON_KEY=%s\n' "$DEBUG_KEY"
+                printf 'KAPLAY_SUPABASE_FALLBACK_URL=\n'
+              } >> "$GITHUB_ENV"
+              echo 'backend_verified=true' >> "$GITHUB_OUTPUT"
+              echo 'Isolated Auth endpoint reachable. Sign-in, RPCs and profile sync still require functional tests.'
+              ;;
+            *)
+              echo 'Unknown BACKEND_MODE (expected connected or offline-preview).' >&2
+              exit 1
+              ;;
+          esac
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -52,7 +143,7 @@ jobs:
           size=$(stat -c '%s' "$apk")
           mkdir -p build-artifacts
           cp "$apk" build-artifacts/ka-play-full-debug.apk
-          printf 'variant=fullDebug\npath=%s\nsize_bytes=%s\nsha256=%s\nfunctional_homologation=NOT_PERFORMED\n' "$apk" "$size" "$sha256" > build-artifacts/BUILD_METADATA.txt
+          printf 'variant=fullDebug\nbackend_mode=%s\npath=%s\nsize_bytes=%s\nsha256=%s\nfunctional_homologation=NOT_PERFORMED\n' "$BACKEND_MODE" "$apk" "$size" "$sha256" > build-artifacts/BUILD_METADATA.txt
           sha256sum build-artifacts/ka-play-full-debug.apk > build-artifacts/SHA256SUMS
           ls -lh build-artifacts
           cat build-artifacts/BUILD_METADATA.txt
@@ -64,6 +155,18 @@ jobs:
           pattern='service[_-]?role|sb_secret_|-----BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY-----'
           config=$(find composeApp/build/generated -type f -name 'SupabaseConfig.kt' -print -quit)
           test -n "$config"
+          if ! grep -Fq "const val URL = \"$KAPLAY_SUPABASE_URL\"" "$config"; then
+            echo 'Generated Supabase URL differs from validated backend configuration.' >&2
+            exit 1
+          fi
+          if ! grep -Fq "const val ANON_KEY = \"$KAPLAY_SUPABASE_ANON_KEY\"" "$config"; then
+            echo 'Generated Supabase key differs from validated backend configuration.' >&2
+            exit 1
+          fi
+          if ! grep -Fq 'const val FALLBACK_URL = ""' "$config"; then
+            echo 'Debug fallback must be empty; refusing possible cross-environment retry.' >&2
+            exit 1
+          fi
           if grep -Eiq "$pattern" "$config"; then
             echo 'Privileged credential material found in generated SupabaseConfig.kt' >&2
             exit 1
@@ -79,7 +182,7 @@ jobs:
       - name: Upload Full Debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ka-play-full-debug-build-only
+          name: ka-play-full-debug-${{ github.event_name == 'workflow_dispatch' && inputs.backend_mode == 'connected' && 'connected' || 'offline-preview' }}
           path: build-artifacts/
           if-no-files-found: error
           retention-days: 7
@@ -93,7 +196,7 @@ jobs:
       - name: Download Full Debug APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: ka-play-full-debug-build-only
+          name: ka-play-full-debug-${{ github.event_name == 'workflow_dispatch' && inputs.backend_mode == 'connected' && 'connected' || 'offline-preview' }}
           path: build-artifacts
 
       - name: Set up Android SDK
