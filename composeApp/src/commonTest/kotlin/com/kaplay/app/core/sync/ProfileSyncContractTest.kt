@@ -7,6 +7,7 @@ class ProfileSyncContractTest {
     @Test
     fun `contract preserves profile identity and sync error state`() {
         val view = profileSyncContractView(
+            userId = "user-a",
             profileIndex = 2,
             state = KAPlaySyncState(
                 status = KAPlaySyncStatus.ERROR,
@@ -14,6 +15,7 @@ class ProfileSyncContractTest {
             ),
         )
 
+        assertEquals("user-a", view.userId)
         assertEquals(2, view.profileIndex)
         assertEquals(ProfileSyncContractStatus.ERROR, view.status)
         assertEquals("PGRST202", view.errorCode)
@@ -23,7 +25,7 @@ class ProfileSyncContractTest {
     fun `missing state starts in loading`() {
         assertEquals(
             ProfileSyncContractStatus.LOADING,
-            profileSyncContractView(1, null).status,
+            profileSyncContractView("user-a", 1, null).status,
         )
     }
 }
