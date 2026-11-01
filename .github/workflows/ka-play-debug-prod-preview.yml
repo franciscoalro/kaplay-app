@@ -1,0 +1,120 @@
+name: KA Play Debug — Supabase production preview
+
+on:
+  push:
+    branches:
+      - preview/ka-play-debug-prod-20261101
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ka-play-prod-preview-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-debug-preview:
+    name: Build Debug APK with authorized Supabase backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      KAPLAY_SUPABASE_URL: https://iibureqvpurmbgqupnvl.supabase.co
+      KAPLAY_SUPABASE_ANON_KEY: sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp
+      KAPLAY_SUPABASE_FALLBACK_URL: ''
+    steps:
+      - name: Checkout snapshot
+        uses: actions/checkout@v4
+
+      - name: Verify explicit production preview identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = 'preview/ka-play-debug-prod-20261101'
+          test "$KAPLAY_SUPABASE_URL" = 'https://iibureqvpurmbgqupnvl.supabase.co'
+          [[ "$KAPLAY_SUPABASE_ANON_KEY" == sb_publishable_* ]]
+          test -z "$KAPLAY_SUPABASE_FALLBACK_URL"
+          echo 'Preview-only Debug build; no SQL migrations or release signing.'
+
+      - name: Preflight Supabase Auth reachability
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl --silent --show-error --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' --header "apikey: $KAPLAY_SUPABASE_ANON_KEY" "$KAPLAY_SUPABASE_URL/auth/v1/health")"
+          if [[ "$status" != 200 ]]; then
+            echo "Supabase Auth health failed: HTTP $status" >&2
+            exit 1
+          fi
+          echo 'Supabase Auth endpoint reachable. User login and RPCs are not yet homologated.'
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+
+      - name: Initialize local Android SDK properties
+        run: |
+          : > local.properties
+
+      - name: Assemble Full Debug only
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :androidApp:assembleFullDebug --no-daemon --stacktrace
+
+      - name: Verify compiled configuration and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$(find composeApp/build/generated -type f -name 'SupabaseConfig.kt' -print -quit)"
+          test -n "$config"
+          grep -Fq "const val URL = \"$KAPLAY_SUPABASE_URL\"" "$config"
+          grep -Fq "const val ANON_KEY = \"$KAPLAY_SUPABASE_ANON_KEY\"" "$config"
+          grep -Fq 'const val FALLBACK_URL = ""' "$config"
+          if grep -Ei 'service[_-]?role|sb_secret_|-----BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY-----' "$config" >/dev/null; then
+            echo 'Privileged credential found in generated Android config' >&2
+            exit 1
+          fi
+          apk="$(find androidApp/build/outputs/apk -type f -name '*.apk' -print -quit)"
+          test -s "$apk"
+          mkdir -p build-artifacts
+          cp "$apk" build-artifacts/ka-play-debug-prod-preview.apk
+          sha256sum build-artifacts/ka-play-debug-prod-preview.apk > build-artifacts/SHA256SUMS
+          {
+            echo 'artifact=ka-play-debug-prod-preview.apk'
+            echo 'application_id=com.kaplay.app.debug'
+            echo 'variant=fullDebug'
+            echo 'backend=authorized-production-preview'
+            echo 'production_database_writes_in_build=NONE'
+            echo 'release_signing=NOT_PERFORMED'
+            echo 'functional_homologation=NOT_PERFORMED'
+            echo "source_commit=$GITHUB_SHA"
+            echo "size_bytes=$(stat -c '%s' build-artifacts/ka-play-debug-prod-preview.apk)"
+          } > build-artifacts/BUILD_METADATA.txt
+          cat build-artifacts/BUILD_METADATA.txt
+
+      - name: Scan APK dex for privileged credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=build-artifacts/ka-play-debug-prod-preview.apk
+          while IFS= read -r dex; do
+            if unzip -p "$apk" "$dex" | strings | grep -Eiq 'service[_-]?role|sb_secret_|-----BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY-----'; then
+              echo "Privileged credential pattern found in APK dex: $dex" >&2
+              exit 1
+            fi
+          done < <(unzip -Z1 "$apk" | grep -E '^classes[0-9]*\.dex$')
+
+      - name: Upload user-installable Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ka-play-debug-prod-preview
+          path: build-artifacts/
+          if-no-files-found: error
+          retention-days: 7
