@@ -160,14 +160,16 @@ reset role;
 set role authenticated;
 set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","is_anonymous":false}';
-do $$ begin
-  perform 1 from public.ka_profiles
-  where user_id = '22222222-2222-2222-2222-222222222222'
-    and profile_index = 1
-    and name = 'OtherProfile';
-  raise exception 'ASSERTION 6 FAILED: direct SELECT returned cross-user row via RLS';
-exception when no_data_found then null;
-         when sqlstate '42501' then null;
+do $$
+begin
+  if exists (
+    select 1 from public.ka_profiles
+    where user_id = '22222222-2222-2222-2222-222222222222'
+      and profile_index = 1
+      and name = 'OtherProfile'
+  ) then
+    raise exception 'ASSERTION 6 FAILED: direct SELECT returned cross-user row via RLS';
+  end if;
 end $$;
 reset role;
 
