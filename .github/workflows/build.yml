@@ -99,6 +99,7 @@ jobs:
             --tests 'com.kaplay.app.features.streams.StreamAutoPlaySelectorTest' \
             --tests 'com.kaplay.app.features.trakt.TraktAuthRepositoryTest' \
             --tests 'com.kaplay.app.features.rewards.RewardStorageTest' \
+            --tests 'com.kaplay.app.features.rewards.RewardClaimGateTest' \
             --no-daemon --no-parallel --max-workers=2 --stacktrace
 
       - name: Upload Gradle build log
