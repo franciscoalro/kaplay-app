@@ -100,15 +100,17 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
-          packages: 'platform-tools platforms;android-35 system-images;android-35;default;x86_64'
+          packages: 'platform-tools platforms;android-34 system-images;android-34;default;x86_64'
 
       - name: Run isolated emulator and capture first screen
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
-          target: google_apis
+          api-level: 34
+          target: default
           arch: x86_64
           profile: pixel_2
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
+          disable-animations: true
           script: |
             adb install -r build-artifacts/ka-play-full-debug.apk
             adb shell am force-stop com.kaplay.app.debug || true
