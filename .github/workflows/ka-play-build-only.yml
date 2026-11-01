@@ -83,3 +83,46 @@ jobs:
           path: build-artifacts/
           if-no-files-found: error
           retention-days: 7
+
+  preview-screenshot:
+    name: isolated profile preview screenshot
+    needs: build-only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Download Full Debug APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ka-play-full-debug-build-only
+          path: build-artifacts
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: 'platform-tools platforms;android-35 system-images;android-35;google_apis;x86_64'
+
+      - name: Run isolated emulator and capture first screen
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          script: |
+            adb install -r build-artifacts/ka-play-full-debug.apk
+            adb shell am force-stop com.kaplay.app.debug || true
+            adb shell monkey -p com.kaplay.app.debug 1 || true
+            sleep 8
+            mkdir -p preview-screenshots
+            adb exec-out screencap -p > preview-screenshots/profile-selection-debug.png
+            adb shell dumpsys package com.kaplay.app.debug | grep -E 'versionName|versionCode' > preview-screenshots/package.txt || true
+
+      - name: Upload isolated preview screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ka-play-profile-preview-screenshots
+          path: preview-screenshots/
+          if-no-files-found: warn
+          retention-days: 7
