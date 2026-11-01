@@ -16,4 +16,4 @@ The Kotlin contract preserves `LOADING`, `SYNCING`, `SYNCED`, `PENDING`, `OFFLIN
 
 ## Acceptance
 
-Isolated PostgreSQL tests must prove same-user profile access, cross-user rejection, anonymous rejection, stable RPC errors, and profile-index isolation. Host tests must prove state mapping and profile identity preservation. GitHub Actions artifacts are the source of evidence; production Supabase is never contacted.
+Isolated PostgreSQL tests must prove same-user profile access, cross-user rejection, anonymous isolation (rejection or empty cloud result), stable RPC errors, and profile-index isolation. Host tests must prove state mapping and profile identity preservation. GitHub Actions artifacts are the source of evidence; production Supabase is never contacted.
