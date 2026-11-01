@@ -15,6 +15,12 @@ internal fun profileSyncStatusText(
         ProfileSyncContractStatus.OFFLINE -> "Sem conexão • dados locais preservados"
         ProfileSyncContractStatus.ERROR -> "Falha na nuvem • reconectar"
         ProfileSyncContractStatus.PENDING -> "Alterações pendentes • sincronizar"
-        ProfileSyncContractStatus.LOADING -> "Nuvem pronta"
+        ProfileSyncContractStatus.LOADING -> "Verificando sincronização…"
     }
 }
+
+internal fun profileSyncStatusAction(status: ProfileSyncContractStatus?): String? =
+    when (status) {
+        ProfileSyncContractStatus.ERROR -> "Tentar novamente"
+        else -> null
+    }

@@ -575,6 +575,9 @@ internal fun AppGate(
                     interactionEnabled = !profileSelectionLoading,
                     onBack = onBack,
                     activeProfileIndex = if (autoSkipProfileSelection) null else profileState.activeProfile?.profileIndex,
+                    onRetrySync = if (autoSkipProfileSelection) null else {
+                        { profileState.activeProfile?.profileIndex?.let(SyncManager::pullAllForProfile) }
+                    },
                     contentVisible = !profileSelectionTransitionActive,
                     modifier = Modifier.fillMaxSize(),
                 )
