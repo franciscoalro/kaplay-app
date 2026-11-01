@@ -48,6 +48,22 @@ begin
   end;
 end $$;
 
+-- The 25th claim in a rolling 24-hour window is rejected.
+do $$
+declare
+  i integer;
+begin
+  for i in 2..24 loop
+    perform public.ka_claim_ad_reward(1, md5('quota-' || i)::uuid);
+  end loop;
+  begin
+    perform public.ka_claim_ad_reward(1, md5('quota-25')::uuid);
+    raise exception 'daily quota unexpectedly accepted a 25th claim';
+  exception when sqlstate 'P0001' then
+    null;
+  end;
+end $$;
+
 -- A different authenticated user cannot replay another user's event.
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', false);
 do $$
