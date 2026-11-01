@@ -97,6 +97,7 @@ jobs:
             --tests 'com.kaplay.app.features.player.PlayerPlaybackNetworkingSecurityTest' \
             --tests 'com.kaplay.app.features.player.VideoQualityTest' \
             --tests 'com.kaplay.app.features.streams.StreamAutoPlaySelectorTest' \
+            --tests 'com.kaplay.app.features.trakt.TraktAuthRepositoryTest' \
             --no-daemon --no-parallel --max-workers=2 --stacktrace
 
       - name: Upload Gradle build log
