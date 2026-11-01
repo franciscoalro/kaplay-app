@@ -12,4 +12,10 @@ class HomeRewardLabelTest {
         assertEquals("🎁 1h grátis", homeRewardLabel(false, AdRewardState()))
         assertEquals("Entrar • 1h grátis", homeRewardLabel(true, AdRewardState()))
     }
+
+    @Test
+    fun `retry remains enabled when an existing reward has a sync error`() {
+        assertEquals(true, homeRewardEnabled(AdRewardState(remainingMs = 60_000L, error = "offline")))
+        assertEquals(false, homeRewardEnabled(AdRewardState(syncing = true)))
+    }
 }
