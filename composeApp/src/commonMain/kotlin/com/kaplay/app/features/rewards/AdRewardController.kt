@@ -19,6 +19,7 @@ internal object AdRewardController {
     val state: StateFlow<AdRewardState> = _state.asStateFlow()
     private var initialized = false
     private var lastInterstitialAtMs = 0L
+    private val rewardedClaimGate = RewardClaimGate()
     private const val interstitialCooldownMs = 3L * 60L * 1_000L
 
     fun initialize() {
@@ -73,19 +74,25 @@ internal object AdRewardController {
             KAPlayToastController.show(message)
             return
         }
+        if (!rewardedClaimGate.tryEnter()) return
         _state.value = _state.value.copy(syncing = true, error = null)
         val eventId = Uuid.random().toString()
         RewardedAdsPlatform.show(
             onCompleted = {
                 scope.launch {
-                    val result = AdRewardRepository.claimAfterAd(eventId)
-                    _state.value = AdRewardRepository.currentState().copy(
-                        syncing = false,
-                        error = result.exceptionOrNull()?.message,
-                    )
+                    try {
+                        val result = AdRewardRepository.claimAfterAd(eventId)
+                        _state.value = AdRewardRepository.currentState().copy(
+                            syncing = false,
+                            error = result.exceptionOrNull()?.message,
+                        )
+                    } finally {
+                        rewardedClaimGate.leave()
+                    }
                 }
             },
             onDismissed = {
+                rewardedClaimGate.leave()
                 _state.value = AdRewardRepository.currentState().copy(syncing = false)
             },
         )
