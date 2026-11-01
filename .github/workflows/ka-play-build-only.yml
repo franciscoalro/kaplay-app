@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - kaplay-rebrand
+      - agentic/ka-play-production-toolkit-20261101
 
 permissions:
   contents: read
