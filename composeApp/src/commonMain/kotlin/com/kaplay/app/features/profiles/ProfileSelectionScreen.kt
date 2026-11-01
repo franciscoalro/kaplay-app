@@ -39,6 +39,7 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -81,6 +82,7 @@ fun ProfileSelectionScreen(
     onBack: (() -> Unit)? = null,
     interactionEnabled: Boolean = true,
     activeProfileIndex: Int? = null,
+    onRetrySync: (() -> Unit)? = null,
     contentVisible: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -189,12 +191,24 @@ fun ProfileSelectionScreen(
                     },
                 )
 
-                Text(
-                    text = syncStatusText,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Row(
                     modifier = Modifier.padding(top = 8.dp),
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = syncStatusText,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    profileSyncStatusAction(syncContractView?.status)?.let { actionLabel ->
+                        if (onRetrySync != null) {
+                            TextButton(onClick = onRetrySync) {
+                                Text(actionLabel)
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(if (isTabletLayout) 28.dp else 48.dp))
 

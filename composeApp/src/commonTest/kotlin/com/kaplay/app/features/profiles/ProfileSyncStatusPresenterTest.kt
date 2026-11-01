@@ -20,6 +20,23 @@ class ProfileSyncStatusPresenterTest {
     }
 
     @Test
+    fun `loading sync state explains verification and offers retry only after an error`() {
+        assertEquals(
+            "Verificando sincronização…",
+            profileSyncStatusText(
+                ProfileSyncContractView(
+                    userId = "user-a",
+                    profileIndex = 1,
+                    status = ProfileSyncContractStatus.LOADING,
+                ),
+                isCloudProfile = true,
+            ),
+        )
+        assertEquals(null, profileSyncStatusAction(ProfileSyncContractStatus.LOADING))
+        assertEquals("Tentar novamente", profileSyncStatusAction(ProfileSyncContractStatus.ERROR))
+    }
+
+    @Test
     fun `profile sync presenter consumes shared identity contract`() {
         assertEquals(
             "Falha na nuvem • reconectar",
