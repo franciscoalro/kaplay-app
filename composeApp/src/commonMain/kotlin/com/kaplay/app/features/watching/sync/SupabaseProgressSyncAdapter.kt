@@ -64,6 +64,9 @@ object SupabaseProgressSyncAdapter : ProgressSyncAdapter {
         sinceLastWatched: Long?,
         limit: Int?,
     ): List<ProgressSyncRecord> {
+        require(limit == null || limit in 1..supabaseSyncPageSize) {
+            "Progress sync limit must be between 1 and $supabaseSyncPageSize"
+        }
         val serverEntries = collectKeysetPages(
             fetchPage = { cursor: ProgressSnapshotCursor?, pageLimit ->
                 val effectiveLimit = limit?.coerceIn(1, supabaseSyncPageSize) ?: pageLimit
@@ -162,10 +165,15 @@ internal fun filterProgressSyncRecords(
     records: List<ProgressSyncRecord>,
     sinceLastWatched: Long?,
     limit: Int?,
-): List<ProgressSyncRecord> = records.asSequence()
-    .filter { sinceLastWatched == null || it.lastWatched > sinceLastWatched }
-    .let { sequence -> limit?.let { sequence.take(it.coerceAtLeast(0)) } ?: sequence }
-    .toList()
+): List<ProgressSyncRecord> {
+    require(limit == null || limit in 1..supabaseSyncPageSize) {
+        "Progress sync limit must be between 1 and $supabaseSyncPageSize"
+    }
+    return records.asSequence()
+        .filter { sinceLastWatched == null || it.lastWatched > sinceLastWatched }
+        .let { sequence -> limit?.let(sequence::take) ?: sequence }
+        .toList()
+}
 
 internal fun buildProgressPullParams(
     profileId: Int,
