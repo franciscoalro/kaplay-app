@@ -1,0 +1,67 @@
+name: KA Play Debug APK export in downloadable parts
+
+on:
+  push:
+    branches:
+      - preview/ka-play-debug-prod-apk-export-20261101
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  export-debug-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Retrieve previously validated Debug APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ka-play-debug-prod-preview
+          run-id: 41336247783
+          github-token: ${{ github.token }}
+          path: original
+
+      - name: Verify and split APK without modification
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=original/ka-play-debug-prod-preview.apk
+          test -s "$apk"
+          grep -Fq 'application_id=com.kaplay.app.debug' original/BUILD_METADATA.txt
+          grep -Fq 'backend=authorized-production-preview' original/BUILD_METADATA.txt
+          (cd original && sha256sum -c SHA256SUMS)
+          mkdir -p pieces
+          sha256sum "$apk" | awk '{print $1}' > pieces/EXPECTED_SHA256.txt
+          split --bytes=60000000 --numeric-suffixes=0 --suffix-length=2 "$apk" pieces/part-
+          test "$(find pieces -maxdepth 1 -name 'part-*' | wc -l)" -eq 3
+          ls -lh pieces/
+
+      - name: Upload APK part 00
+        uses: actions/upload-artifact@v4
+        with:
+          name: ka-play-prod-preview-part-00
+          path: |
+            pieces/part-00
+            pieces/EXPECTED_SHA256.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Upload APK part 01
+        uses: actions/upload-artifact@v4
+        with:
+          name: ka-play-prod-preview-part-01
+          path: pieces/part-01
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Upload APK part 02
+        uses: actions/upload-artifact@v4
+        with:
+          name: ka-play-prod-preview-part-02
+          path: pieces/part-02
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
