@@ -14,9 +14,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      # Build-time placeholders only. This job never claims backend integration.
-      KAPLAY_SUPABASE_URL: https://build-only.invalid
-      KAPLAY_SUPABASE_ANON_KEY: build-only-placeholder
+      # Debug preview is explicitly authorized to use the public Supabase endpoint.
+      # This is the publishable/anon key only; no service-role credential is used.
+      KAPLAY_SUPABASE_URL: https://iibureqvpurmbgqupnvl.supabase.co
+      KAPLAY_SUPABASE_ANON_KEY: sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp
     steps:
       - name: Checkout
         uses: actions/checkout@v4
