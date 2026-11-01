@@ -102,10 +102,14 @@ class SupabaseSyncPagingTest {
             "v2 cursor must pair p_after_last_watched + p_after_progress_key",
         )
 
-        // Seeded cursor: both present, mirroring the SQL CHECK constraint.
-        val seeded = buildProgressPullParams(profileId = 7, sinceLastWatched = 5_000, limit = 100)
-        assertTrue(seeded.containsKey("p_after_last_watched"), "expected p_after_last_watched cursor")
-        assertTrue(seeded.containsKey("p_after_progress_key"), "expected p_after_progress_key cursor")
+        // A since timestamp is a filter, not a v2 keyset cursor. The v2 SQL
+        // cursor walks older rows (DESC ordering), so encoding since here would
+        // invert the legacy v1 `last_watched > since` contract.
+        val filtered = buildProgressPullParams(profileId = 7, sinceLastWatched = 5_000, limit = 100)
+        assertTrue(
+            !filtered.containsKey("p_after_last_watched") && !filtered.containsKey("p_after_progress_key"),
+            "since must not be encoded as a descending keyset cursor",
+        )
     }
 
     @Test
@@ -113,6 +117,6 @@ class SupabaseSyncPagingTest {
         val params = buildProgressPullParams(profileId = 7, sinceLastWatched = 5_000, limit = 100)
 
         assertEquals(100, params.getValue("p_limit").toString().toInt())
-        assertEquals(5_000L, params.getValue("p_after_last_watched").toString().toLong())
+        assertTrue(!params.containsKey("p_after_last_watched"))
     }
 }
