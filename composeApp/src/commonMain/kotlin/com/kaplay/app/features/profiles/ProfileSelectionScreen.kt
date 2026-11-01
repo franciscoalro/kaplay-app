@@ -59,6 +59,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.kaplay.app.core.auth.AuthRepository
+import com.kaplay.app.core.auth.AuthState
+import com.kaplay.app.core.sync.SyncManager
 import com.kaplay.app.core.ui.KAPlayBackButton
 import com.kaplay.app.core.ui.KAPlayToastHost
 import com.kaplay.app.core.ui.LocalVerticalBarPadding
@@ -81,6 +84,13 @@ fun ProfileSelectionScreen(
     modifier: Modifier = Modifier,
 ) {
     val profileState by ProfileRepository.state.collectAsStateWithLifecycle()
+    val authState by AuthRepository.state.collectAsStateWithLifecycle()
+    val syncStates by SyncManager.profileSyncStates.collectAsStateWithLifecycle()
+    val isCloudProfile = (authState as? AuthState.Authenticated)?.isAnonymous == false
+    val syncStatusText = profileSyncStatusText(
+        activeProfileIndex?.let(syncStates::get),
+        isCloudProfile,
+    )
     val scope = rememberCoroutineScope()
     var pinDialogProfile by remember { mutableStateOf<KAPlayProfile?>(null) }
     var isEditMode by remember { mutableStateOf(false) }
@@ -171,6 +181,13 @@ fun ProfileSelectionScreen(
                         alpha = titleAlpha.value
                         translationY = titleOffset.value
                     },
+                )
+
+                Text(
+                    text = syncStatusText,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
 
                 Spacer(modifier = Modifier.height(if (isTabletLayout) 28.dp else 48.dp))
