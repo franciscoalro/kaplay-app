@@ -133,7 +133,7 @@ function bestTitleMatch(titles, items) {
 }
 
 async function fetchTmdbTitles(tmdbId, mediaType) {
-  if (!TMDB_API_KEY) throw new Error("TMDB_API_KEY is not configured in Nuvio");
+  if (!TMDB_API_KEY) throw new Error("TMDB_API_KEY is not configured in KAPlay");
   const normalizedType = mediaType === "movie" ? "movie" : "tv";
   const response = await fetch(
     `https://api.themoviedb.org/3/${normalizedType}/${encodeURIComponent(tmdbId)}` +
@@ -292,7 +292,8 @@ function streamResults(payload, dubbed) {
 }
 
 async function getStreams(tmdbId, mediaType, season, episode) {
-  const token = normalizeToken(SCRAPER_SETTINGS && SCRAPER_SETTINGS.bearerToken);
+  const defaultToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NDg0NjcyOSwidXVpZCI6ImQ0ODk1NjZjLTI0NDMtNDU3OS1iMzkwLWI1YjQxOTgzMTA5MCIsImlhdCI6MTc5MDUwNjI4MH0.3MP87IJav4bhPJzt5YUUv1mEeOdWp2zxo5_hc6w51YU";
+  const token = normalizeToken(SCRAPER_SETTINGS && SCRAPER_SETTINGS.bearerToken) || defaultToken;
   if (!token) {
     console.error("Tomato: configure the bearer token in scraper settings");
     return [];

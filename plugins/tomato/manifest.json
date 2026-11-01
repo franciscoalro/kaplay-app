@@ -1,20 +1,312 @@
 {
-  "name": "Tomato for Nuvio",
-  "version": "1.0.0",
-  "description": "Nuvio QuickJS port of the Tomato anime stream provider.",
-  "author": "KA Play / Nuvio port",
+  "name": "KAPlay Provedores BR",
+  "version": "1.3.0",
+  "description": "Repositório com 17 provedores nacionais portados do CloudStream para KAPlay.",
+  "author": "KAPlay Team",
   "scrapers": [
     {
       "id": "tomato",
       "name": "Tomato",
-      "description": "Resolves Tomato anime streams from TMDB titles.",
+      "description": "Streams e episódios de animes Tomato.",
       "version": "1.0.0",
       "filename": "tomato.js",
-      "supportedTypes": ["movie", "tv"],
-      "contentLanguage": ["pt-BR"],
-      "formats": ["hls"],
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls"
+      ],
       "enabled": true,
       "hasSettings": true
+    },
+    {
+      "id": "animefire",
+      "name": "AnimeFire",
+      "description": "Animes dublados e legendados da API AnimeFire.",
+      "version": "1.0.0",
+      "filename": "animefire.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "supercine",
+      "name": "SuperCine",
+      "description": "Filmes e séries via API de embed SuperCine.",
+      "version": "1.0.0",
+      "filename": "supercine.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "animesorion",
+      "name": "AnimesOrion",
+      "description": "Acervo de animes do AnimesOrion.",
+      "version": "1.0.0",
+      "filename": "animesorion.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "veloplaytv",
+      "name": "VeloPlayTV",
+      "description": "Canais, séries e filmes VeloPlay com login automático.",
+      "version": "1.0.0",
+      "filename": "veloplaytv.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "cinegato",
+      "name": "CineGato",
+      "description": "Filmes e séries populares do CineGato.",
+      "version": "1.0.0",
+      "filename": "cinegato.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "pobreflix",
+      "name": "Pobreflix",
+      "description": "Filmes e séries atualizadas do Pobreflix.",
+      "version": "1.0.0",
+      "filename": "pobreflix.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "netcine",
+      "name": "NetCine",
+      "description": "Catálogo do NetCine de filmes e séries dubladas.",
+      "version": "1.0.0",
+      "filename": "netcine.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "redecanais",
+      "name": "RedeCanais",
+      "description": "Acervo tradicional do RedeCanais de filmes e animes.",
+      "version": "1.0.0",
+      "filename": "redecanais.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "topanimes",
+      "name": "TopAnimes",
+      "description": "Animes e lançamentos do TopAnimes.",
+      "version": "1.0.0",
+      "filename": "topanimes.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "megafilmeshd",
+      "name": "MegaFilmesHD",
+      "description": "Filmes clássicos e lançamentos do MegaFilmesHD.",
+      "version": "1.0.0",
+      "filename": "megafilmeshd.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "saraflix",
+      "name": "Saraflix",
+      "description": "Filmes e séries do Saraflix.",
+      "version": "1.0.0",
+      "filename": "saraflix.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls",
+        "mp4"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "cinevision",
+      "name": "CineVision",
+      "description": "Catálogo do CineVision.",
+      "version": "1.0.0",
+      "filename": "cinevision.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "contentLanguage": [
+        "pt-BR"
+      ],
+      "formats": [
+        "hls"
+      ],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "ppcine",
+      "name": "PPCine",
+      "description": "Filmes, séries e animes do PPCine.",
+      "version": "1.0.0",
+      "filename": "ppcine.js",
+      "supportedTypes": ["movie", "tv"],
+      "contentLanguage": ["pt-BR"],
+      "formats": ["hls", "mp4"],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "filmefilms",
+      "name": "FilmeFilms",
+      "description": "Fontes do Servidor 14 / FilmeFilms.",
+      "version": "1.0.0",
+      "filename": "filmefilms.js",
+      "supportedTypes": ["movie", "tv"],
+      "contentLanguage": ["pt-BR"],
+      "formats": ["hls", "mp4"],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "planetafilmes",
+      "name": "PlanetaFilmes",
+      "description": "Fontes torrent do PlanetaFilmes.",
+      "version": "2.0.0",
+      "filename": "planetafilmes.js",
+      "supportedTypes": ["movie", "tv"],
+      "contentLanguage": ["pt-BR"],
+      "formats": ["torrent"],
+      "enabled": true,
+      "hasSettings": false
+    },
+    {
+      "id": "comandotorrents",
+      "name": "ComandoTorrents",
+      "description": "Fontes torrent do ComandoTorrents.",
+      "version": "1.0.0",
+      "filename": "comandotorrents.js",
+      "supportedTypes": ["movie", "tv"],
+      "contentLanguage": ["pt-BR"],
+      "formats": ["torrent"],
+      "enabled": true,
+      "hasSettings": false
     }
   ]
 }

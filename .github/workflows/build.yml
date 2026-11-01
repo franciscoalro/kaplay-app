@@ -1,13 +1,19 @@
-name: nuvio-build
+name: kaplay-build
 
 on:
   push:
     branches:
       - '**'
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Build and upload the signed release APK'
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
-  group: nuvio-build-${{ github.ref }}
+  group: kaplay-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -53,7 +59,7 @@ jobs:
           echo "sdk.dir=$sdk_dir" | sed 's#\\#/#g' > local.properties
           echo "sdk.dir=$sdk_dir" > local.properties
 
-      - name: Compile Nuvio full debug Kotlin
+      - name: Compile KAPlay full debug Kotlin
         id: compile
         run: |
           chmod +x ./gradlew
@@ -62,6 +68,36 @@ jobs:
           status=${PIPESTATUS[0]}
           echo "status=$status" >> "$GITHUB_ENV"
           exit "$status"
+
+      - name: Compile KAPlay Play Store debug Kotlin
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :androidApp:compilePlaystoreDebugKotlin \
+            --no-daemon --no-parallel --max-workers=2 --stacktrace
+
+      - name: Verify playback TLS hardening patterns
+        run: |
+          set -eu
+          player_dir="composeApp/src/androidMain/kotlin/com/kaplay/app/features/player"
+          forbidden='trustAllManager|checkServerTrusted|HostnameVerifier|hostnameVerifier|sslSocketFactory|SSLContext|TrustManager'
+          if grep -RInE "$forbidden" "$player_dir"; then
+            echo "Forbidden permissive/custom playback TLS pattern detected" >&2
+            exit 1
+          fi
+          echo "No forbidden playback TLS patterns found"
+
+      - name: Run Android host unit tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :composeApp:testAndroidHostTest \
+            --tests 'com.kaplay.app.features.tomato.TomatoProviderTest' \
+            --tests 'com.kaplay.app.core.network.NetworkStatusRepositoryTest' \
+            --tests 'com.kaplay.app.features.player.PlayerScreenRuntimeStateTest' \
+            --tests 'com.kaplay.app.features.player.PlaybackRequestSecurityPolicyTest' \
+            --tests 'com.kaplay.app.features.player.PlayerPlaybackNetworkingSecurityTest' \
+            --tests 'com.kaplay.app.features.player.VideoQualityTest' \
+            --tests 'com.kaplay.app.features.streams.StreamAutoPlaySelectorTest' \
+            --no-daemon --no-parallel --max-workers=2 --stacktrace
 
       - name: Upload Gradle build log
         if: always()
@@ -79,24 +115,25 @@ jobs:
 
   assemble-full-release:
     name: assembleFullRelease
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release == true }}
     runs-on: ubuntu-latest
     needs: compile-full-debug
     env:
       GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -XX:+UseG1GC -Dorg.gradle.workers.max=2
       KOTLIN_COMPILER_EXECUTION_STRATEGY: in-process
-      NUVIO_SUPABASE_URL: ${{ secrets.NUVIO_SUPABASE_URL }}
-      NUVIO_SUPABASE_ANON_KEY: ${{ secrets.NUVIO_SUPABASE_ANON_KEY }}
-      NUVIO_SUPABASE_FALLBACK_URL: ${{ secrets.NUVIO_SUPABASE_FALLBACK_URL }}
+      KAPLAY_SUPABASE_URL: ${{ secrets.KAPLAY_SUPABASE_URL }}
+      KAPLAY_SUPABASE_ANON_KEY: ${{ secrets.KAPLAY_SUPABASE_ANON_KEY }}
+      KAPLAY_SUPABASE_FALLBACK_URL: ${{ secrets.KAPLAY_SUPABASE_FALLBACK_URL }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-      NUVIO_RELEASE_STORE_FILE: ${{ secrets.NUVIO_RELEASE_STORE_FILE }}
-      NUVIO_RELEASE_STORE_PASSWORD: ${{ secrets.NUVIO_RELEASE_STORE_PASSWORD }}
-      NUVIO_RELEASE_KEY_ALIAS: ${{ secrets.NUVIO_RELEASE_KEY_ALIAS }}
-      NUVIO_RELEASE_KEY_PASSWORD: ${{ secrets.NUVIO_RELEASE_KEY_PASSWORD }}
-      NUVIO_RELEASE_KEYSTORE_B64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_B64 }}
+      KAPLAY_RELEASE_STORE_FILE: ${{ secrets.KAPLAY_RELEASE_STORE_FILE }}
+      KAPLAY_RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
+      KAPLAY_RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
+      KAPLAY_RELEASE_KEY_PASSWORD: ${{ secrets.KAPLAY_RELEASE_KEY_PASSWORD }}
+      KAPLAY_RELEASE_KEYSTORE_B64: ${{ secrets.KAPLAY_RELEASE_KEYSTORE_B64 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -127,44 +164,31 @@ jobs:
         run: |
           yes | "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
 
-      - name: Resolve release keystore (secret or generate fresh)
+      - name: Resolve persistent release keystore
         run: |
-          store_file=""
-          store_pass=""
-          key_alias=""
-          key_pass=""
-
-          if [ -n "$NUVIO_RELEASE_KEYSTORE_B64" ]; then
-            # Use the supplied keystore from repo secrets
-            store_file="${NUVIO_RELEASE_STORE_FILE:-release.jks}"
-            mkdir -p "$(dirname "$store_file")"
-            echo "$NUVIO_RELEASE_KEYSTORE_B64" | base64 -d > "$store_file"
-            store_pass="${NUVIO_RELEASE_STORE_PASSWORD:-${NUVIO_RELEASE_STORE_PASSWORD:-}}"
-            key_alias="${NUVIO_RELEASE_KEY_ALIAS:-}"
-            key_pass="${NUVIO_RELEASE_KEY_PASSWORD:-}"
-          else
-            # No keystore secret -> generate a fresh one so the APK is signed
-            store_file="${HOME}/nuvio-release.jks"
-            store_pass="nuvio-$(date +%s)"
-            key_alias="nuvio"
-            key_pass="$store_pass"
-            keytool -genkeypair -v \
-              -keystore "$store_file" \
-              -storepass "$store_pass" \
-              -alias "$key_alias" \
-              -keypass "$key_pass" \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Nuvio, OU=Build, O=Nuvio, L=Dev, S=Dev, C=BR" >/dev/null 2>&1 || true
+          set -euo pipefail
+          if [[ -z "${KAPLAY_RELEASE_KEYSTORE_B64:-}" ]]; then
+            echo "KAPLAY_RELEASE_KEYSTORE_B64 is required; refusing ephemeral release signing." >&2
+            exit 1
           fi
+          for required in KAPLAY_RELEASE_STORE_PASSWORD KAPLAY_RELEASE_KEY_ALIAS KAPLAY_RELEASE_KEY_PASSWORD; do
+            if [[ -z "${!required:-}" ]]; then
+              echo "${required} is required for release signing." >&2
+              exit 1
+            fi
+          done
 
+          store_file="${RUNNER_TEMP}/kaplay-release.jks"
+          printf '%s' "$KAPLAY_RELEASE_KEYSTORE_B64" | base64 --decode > "$store_file"
+          test -s "$store_file"
           {
             echo "sdk.dir=${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
-            echo "NUVIO_RELEASE_STORE_FILE=$store_file"
-            echo "NUVIO_RELEASE_STORE_PASSWORD=$store_pass"
-            echo "NUVIO_RELEASE_KEY_ALIAS=$key_alias"
-            echo "NUVIO_RELEASE_KEY_PASSWORD=$key_pass"
+            echo "KAPLAY_RELEASE_STORE_FILE=$store_file"
+            echo "KAPLAY_RELEASE_STORE_PASSWORD=$KAPLAY_RELEASE_STORE_PASSWORD"
+            echo "KAPLAY_RELEASE_KEY_ALIAS=$KAPLAY_RELEASE_KEY_ALIAS"
+            echo "KAPLAY_RELEASE_KEY_PASSWORD=$KAPLAY_RELEASE_KEY_PASSWORD"
           } > local.properties
-          echo "local.properties generated; keystore=$store_file"
+          echo "local.properties generated with persistent release keystore."
 
       - name: Assemble full release APK
         id: assemble
@@ -187,7 +211,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: nuvio-full-release-apk
+          name: kaplay-full-release-apk
           path: |
             androidApp/build/outputs/apk/full/release/*.apk
           if-no-files-found: error

@@ -2,8 +2,8 @@
 .kotlin
 .gradle
 **/build/
-!composeApp/src/**/kotlin/com/nuvio/app/core/build/
-!composeApp/src/**/kotlin/com/nuvio/app/core/build/**
+!composeApp/src/**/kotlin/com/kaplay/app/core/build/
+!composeApp/src/**/kotlin/com/kaplay/app/core/build/**
 xcuserdata
 !src/**/build/
 local.properties
@@ -34,6 +34,7 @@ PERFORMANCE_FINDINGS.md
 scripts/*
 !scripts/sign-ios-device-app.py
 iosApp/Configuration/DeviceSigning.local.json
+.worktrees/
 
 # Local MPVKit iOS build environment (sparse APFS image, see MPVKit docs)
 .mpvkit-build.sparseimage

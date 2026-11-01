@@ -1,0 +1,252 @@
+package com.kaplay.app.features.settings
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kaplay.app.core.auth.AuthRepository
+import com.kaplay.app.core.auth.AuthState
+import com.kaplay.app.core.build.AppFeaturePolicy
+import com.kaplay.app.core.ui.KAPlayPrimaryButton
+import com.kaplay.app.core.ui.KAPlayStatusModal
+import com.kaplay.app.core.ui.KAPlaySurfaceCard
+import com.kaplay.app.core.ui.KAPlayTokens
+import com.kaplay.app.core.ui.kaplay
+import kotlinx.coroutines.launch
+import kaplay.composeapp.generated.resources.Res
+import kaplay.composeapp.generated.resources.action_cancel
+import kaplay.composeapp.generated.resources.compose_settings_page_account
+import kaplay.composeapp.generated.resources.auth_account_deletion_failed
+import kaplay.composeapp.generated.resources.settings_account_delete_account
+import kaplay.composeapp.generated.resources.settings_account_delete_account_description
+import kaplay.composeapp.generated.resources.settings_account_delete_confirm_message
+import kaplay.composeapp.generated.resources.settings_account_delete_confirm_title
+import kaplay.composeapp.generated.resources.settings_account_email
+import kaplay.composeapp.generated.resources.settings_account_not_signed_in
+import kaplay.composeapp.generated.resources.settings_account_sign_out
+import kaplay.composeapp.generated.resources.settings_account_sign_out_confirm_message
+import kaplay.composeapp.generated.resources.settings_account_sign_out_confirm_title
+import kaplay.composeapp.generated.resources.settings_account_status
+import kaplay.composeapp.generated.resources.settings_account_status_anonymous
+import kaplay.composeapp.generated.resources.settings_account_status_signed_in
+import org.jetbrains.compose.resources.stringResource
+
+internal fun LazyListScope.accountSettingsContent(
+    isTablet: Boolean,
+) {
+    item {
+        AccountSettingsBody(isTablet = isTablet)
+    }
+}
+
+@Composable
+private fun AccountSettingsBody(
+    isTablet: Boolean,
+) {
+    val authState by AuthRepository.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    var showSignOutConfirm by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var isDeletingAccount by remember { mutableStateOf(false) }
+    var deleteErrorMessage by remember { mutableStateOf<String?>(null) }
+    val deleteAccountFallbackMessage = stringResource(Res.string.auth_account_deletion_failed)
+    val canDeleteAccount = AppFeaturePolicy.accountDeletionEnabled && authState is AuthState.Authenticated
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        KAPlaySurfaceCard {
+            Text(
+                text = stringResource(Res.string.compose_settings_page_account),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+
+            when (val state = authState) {
+                is AuthState.Authenticated -> {
+                    AccountInfoRow(
+                        label = stringResource(Res.string.settings_account_status),
+                        value = if (state.isAnonymous) {
+                            stringResource(Res.string.settings_account_status_anonymous)
+                        } else {
+                            stringResource(Res.string.settings_account_status_signed_in)
+                        },
+                        valueColor = MaterialTheme.colorScheme.primary,
+                    )
+                    state.email?.takeUnless { state.isAnonymous }?.let { email ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        AccountInfoRow(
+                            label = stringResource(Res.string.settings_account_email),
+                            value = email,
+                        )
+                    }
+                }
+                else -> {
+                    Text(
+                        text = stringResource(Res.string.settings_account_not_signed_in),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        KAPlayPrimaryButton(
+            text = stringResource(Res.string.settings_account_sign_out),
+            onClick = { showSignOutConfirm = true },
+        )
+
+        if (canDeleteAccount) {
+            DeleteAccountCard(
+                errorMessage = deleteErrorMessage,
+                onDeleteClick = {
+                    deleteErrorMessage = null
+                    showDeleteConfirm = true
+                },
+            )
+        }
+    }
+
+    KAPlayStatusModal(
+        title = stringResource(Res.string.settings_account_sign_out_confirm_title),
+        message = stringResource(Res.string.settings_account_sign_out_confirm_message),
+        isVisible = showSignOutConfirm,
+        confirmText = stringResource(Res.string.settings_account_sign_out),
+        dismissText = stringResource(Res.string.action_cancel),
+        onConfirm = {
+            showSignOutConfirm = false
+            scope.launch { AuthRepository.signOut() }
+        },
+        onDismiss = { showSignOutConfirm = false },
+    )
+
+    KAPlayStatusModal(
+        title = stringResource(Res.string.settings_account_delete_confirm_title),
+        message = stringResource(Res.string.settings_account_delete_confirm_message),
+        isVisible = showDeleteConfirm,
+        isBusy = isDeletingAccount,
+        destructive = true,
+        confirmText = stringResource(Res.string.settings_account_delete_account),
+        dismissText = stringResource(Res.string.action_cancel),
+        onConfirm = {
+            if (isDeletingAccount) return@KAPlayStatusModal
+            isDeletingAccount = true
+            scope.launch {
+                val result = AuthRepository.deleteAccount()
+                isDeletingAccount = false
+                showDeleteConfirm = false
+                deleteErrorMessage = if (result.isSuccess) {
+                    null
+                } else {
+                    AuthRepository.error.value
+                        ?: result.exceptionOrNull()?.message
+                        ?: deleteAccountFallbackMessage
+                }
+            }
+        },
+        onDismiss = {
+            if (!isDeletingAccount) {
+                showDeleteConfirm = false
+            }
+        },
+    )
+}
+
+@Composable
+private fun DeleteAccountCard(
+    errorMessage: String?,
+    onDeleteClick: () -> Unit,
+) {
+    val tokens = MaterialTheme.kaplay
+
+    KAPlaySurfaceCard {
+        Text(
+            text = stringResource(Res.string.settings_account_delete_account),
+            style = MaterialTheme.typography.titleMedium,
+            color = tokens.colors.textPrimary,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(Res.string.settings_account_delete_account_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = tokens.colors.textMuted,
+        )
+        errorMessage?.let { message ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = tokens.colors.danger,
+            )
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        Button(
+            onClick = onDeleteClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(KAPlayTokens.Space.s48 + KAPlayTokens.Space.s4),
+            shape = tokens.shapes.button,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = tokens.colors.danger,
+                contentColor = tokens.colors.textInverse,
+            ),
+        ) {
+            Text(
+                text = stringResource(Res.string.settings_account_delete_account),
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AccountInfoRow(
+    label: String,
+    value: String,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = valueColor,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.End,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}

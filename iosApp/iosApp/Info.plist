@@ -39,16 +39,16 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.nuvio.app.auth</string>
+			<string>com.kaplay.app.auth</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>nuvio</string>
+				<string>kaplay</string>
 				<string>stremio</string>
 			</array>
 		</dict>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Nuvio connects to media servers on your local network.</string>
+	<string>KAPlay connects to media servers on your local network.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

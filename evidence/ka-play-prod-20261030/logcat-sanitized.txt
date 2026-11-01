@@ -1,0 +1,300 @@
+10-30 16:36:20.287 E/WatchedRepository(10032): Details: "Searched for the function public.sync_pull_watched_items with parameters p_page, p_page_size, p_profile_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:36:20.287 E/WatchedRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/sync_pull_watched_items
+10-30 16:36:20.287 E/WatchedRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:36:20.287 E/WatchedRepository(10032):         Http Method: POST
+10-30 16:36:20.287 E/WatchedRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:36:20.287 E/WatchedRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:36:20.287 E/WatchedRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:36:20.287 E/WatchedRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:36:20.287 E/WatchedRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:36:20.287 E/WatchedRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:36:20.287 E/WatchedRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:36:20.287 E/WatchedRepository(10032): 	at yf1.run(SourceFile:118)
+10-30 16:36:20.288 W/ProgressSourceCoordinator(10032): Source refresh incomplete for profile 1: source=KAPLAY_SYNC progress=false watched=false
+10-30 16:36:20.289 I/WatchedRepository(10032): Watched source activation unchanged source=KAPLAY_SYNC generation=1 items=0 loaded=true
+10-30 16:36:20.300 I/WatchedRepository(10032): Watched source activation unchanged source=KAPLAY_SYNC generation=1 items=0 loaded=true
+10-30 16:36:20.300 I/WatchedRepository(10032): Watched refresh request profile=1 requestedSource=KAPLAY_SYNC effectiveSource=KAPLAY_SYNC forceSnapshot=true profileGeneration=1 sourceGeneration=1
+10-30 16:36:20.494 W/WatchProgressRepository(10032): Watch progress cursor unavailable during snapshot refresh:         Could not find the function public.sync_get_watch_progress_delta_cursor(p_profile_id) in the schema cache
+10-30 16:36:20.494 W/WatchProgressRepository(10032): Code: PGRST202
+10-30 16:36:20.494 W/WatchProgressRepository(10032): Hint: null
+10-30 16:36:20.494 W/WatchProgressRepository(10032): Details: "Searched for the function public.sync_get_watch_progress_delta_cursor with parameter p_profile_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:36:20.494 W/WatchProgressRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/sync_get_watch_progress_delta_cursor
+10-30 16:36:20.494 W/WatchProgressRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:36:20.494 W/WatchProgressRepository(10032):         Http Method: POST
+10-30 16:36:20.700 E/WatchProgressRepository(10032): Failed to refresh KAPlay watch progress
+10-30 16:36:20.700 E/WatchProgressRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.sync_pull_watch_progress(p_profile_id) in the schema cache
+10-30 16:36:20.700 E/WatchProgressRepository(10032): Code: PGRST202
+10-30 16:36:20.700 E/WatchProgressRepository(10032): Hint: null
+10-30 16:36:20.700 E/WatchProgressRepository(10032): Details: "Searched for the function public.sync_pull_watch_progress with parameter p_profile_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:36:20.700 E/WatchProgressRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/sync_pull_watch_progress
+10-30 16:36:20.700 E/WatchProgressRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:36:20.700 E/WatchProgressRepository(10032):         Http Method: POST
+10-30 16:36:20.700 E/WatchProgressRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:36:20.700 E/WatchProgressRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:36:20.700 E/WatchProgressRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:36:20.700 E/WatchProgressRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:36:20.700 E/WatchProgressRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:36:20.700 E/WatchProgressRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:36:20.700 E/WatchProgressRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:36:20.700 E/WatchProgressRepository(10032): 	at yf1.run(SourceFile:118)
+10-30 16:36:20.750 E/WatchedRepository(10032): Failed to refresh watched items from KAPLAY_SYNC
+10-30 16:36:20.750 E/WatchedRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.sync_pull_watched_items(p_page, p_page_size, p_profile_id) in the schema cache
+10-30 16:36:20.750 E/WatchedRepository(10032): Code: PGRST202
+10-30 16:36:20.750 E/WatchedRepository(10032): Hint: null
+10-30 16:36:20.750 E/WatchedRepository(10032): Details: "Searched for the function public.sync_pull_watched_items with parameters p_page, p_page_size, p_profile_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:36:20.750 E/WatchedRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/sync_pull_watched_items
+10-30 16:36:20.750 E/WatchedRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:36:20.750 E/WatchedRepository(10032):         Http Method: POST
+10-30 16:36:20.750 E/WatchedRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:36:20.750 E/WatchedRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:36:20.750 E/WatchedRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:36:20.750 E/WatchedRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:36:20.750 E/WatchedRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:36:20.750 E/WatchedRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:36:20.750 E/WatchedRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:36:20.750 E/WatchedRepository(10032): 	at yf1.run(SourceFile:118)
+10-30 16:36:20.751 W/ProgressSourceCoordinator(10032): Source refresh incomplete for profile 1: source=KAPLAY_SYNC progress=false watched=false
+10-30 16:36:21.207 I/SyncManager(10032): Activity sync started profile=1 reason=foreground
+10-30 16:36:21.210 I/WatchedRepository(10032): Watched source activation unchanged source=KAPLAY_SYNC generation=1 items=0 loaded=true
+10-30 16:36:21.212 D/WatchProgressRepository(10032): Watch progress delta sync start: profile=1 entries=0 deltaInitialized=false cursor=0 lastPush=0
+10-30 16:36:21.213 D/WatchProgressRepository(10032): Watch progress delta not initialized for profile 1; requesting cursor before snapshot
+10-30 16:36:21.224 I/WatchedRepository(10032): Watched source activation unchanged source=KAPLAY_SYNC generation=1 items=0 loaded=true
+10-30 16:36:21.225 I/WatchedRepository(10032): Watched refresh request profile=1 requestedSource=KAPLAY_SYNC effectiveSource=KAPLAY_SYNC forceSnapshot=false profileGeneration=1 sourceGeneration=1
+10-30 16:36:21.447 E/LibraryRepository(10032): Failed to pull library from server
+10-30 16:36:21.447 E/LibraryRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.sync_get_library_delta_cursor(p_profile_id) in the schema cache
+10-30 16:36:21.447 E/LibraryRepository(10032): Code: PGRST202
+10-30 16:36:21.447 E/LibraryRepository(10032): Hint: null
+10-30 16:36:21.447 E/LibraryRepository(10032): Details: "Searched for the function public.sync_get_library_delta_cursor with parameter p_profile_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:36:21.447 E/LibraryRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/sync_get_library_delta_cursor
+10-30 16:36:21.447 E/LibraryRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:36:21.447 E/LibraryRepository(10032):         Http Method: POST
+10-30 16:36:21.447 E/LibraryRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:36:21.447 E/LibraryRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:36:21.447 E/LibraryRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:36:21.447 E/LibraryRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:36:21.447 E/LibraryRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:36:21.447 E/LibraryRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:36:21.447 E/LibraryRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:36:21.447 E/LibraryRepository(10032): 	at yf1.run(SourceFile:118)
+10-30 16:36:21.476 W/WatchProgressRepository(10032): Watch progress delta cursor unavailable, falling back to full pull:         Could not find the function public.sync_get_watch_progress_delta_cursor(p_profile_id) in the schema cache
+10-30 16:36:21.476 W/WatchProgressRepository(10032): Code: PGRST202
+10-30 16:36:21.476 W/WatchProgressRepository(10032): Hint: null
+10-30 16:36:21.476 W/WatchProgressRepository(10032): Details: "Searched for the function public.sync_get_watch_progress_delta_cursor with parameter p_profile_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:36:21.476 W/WatchProgressRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/sync_get_watch_progress_delta_cursor
+10-30 16:36:21.476 W/WatchProgressRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:36:21.476 W/WatchProgressRepository(10032):         Http Method: POST
+10-30 16:36:21.476 D/WatchProgressRepository(10032): Watch progress delta cursor unavailable for profile 1; using snapshot fallback
+10-30 16:36:21.676 E/WatchedRepository(10032): Failed to refresh watched items from KAPLAY_SYNC
+10-30 16:36:21.676 E/WatchedRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.sync_pull_watched_items(p_page, p_page_size, p_profile_id) in the schema cache
+10-30 16:36:21.676 E/WatchedRepository(10032): Code: PGRST202
+10-30 16:36:21.676 E/WatchedRepository(10032): Hint: null
+10-30 16:36:21.676 E/WatchedRepository(10032): Details: "Searched for the function public.sync_pull_watched_items with parameters p_page, p_page_size, p_profile_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:36:21.676 E/WatchedRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/sync_pull_watched_items
+10-30 16:36:21.676 E/WatchedRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:36:21.676 E/WatchedRepository(10032):         Http Method: POST
+10-30 16:36:21.676 E/WatchedRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:36:21.676 E/WatchedRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:36:21.676 E/WatchedRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:36:21.676 E/WatchedRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:36:21.676 E/WatchedRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:36:21.676 E/WatchedRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:36:21.676 E/WatchedRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:36:21.676 E/WatchedRepository(10032): 	at yf1.run(SourceFile:118)
+10-30 16:36:21.695 E/WatchProgressRepository(10032): Failed to refresh KAPlay watch progress
+10-30 16:36:21.695 E/WatchProgressRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.sync_pull_watch_progress(p_profile_id) in the schema cache
+10-30 16:36:21.695 E/WatchProgressRepository(10032): Code: PGRST202
+10-30 16:36:21.695 E/WatchProgressRepository(10032): Hint: null
+10-30 16:36:21.695 E/WatchProgressRepository(10032): Details: "Searched for the function public.sync_pull_watch_progress with parameter p_profile_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:36:21.695 E/WatchProgressRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/sync_pull_watch_progress
+10-30 16:36:21.695 E/WatchProgressRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:36:21.695 E/WatchProgressRepository(10032):         Http Method: POST
+10-30 16:36:21.695 E/WatchProgressRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:36:21.695 E/WatchProgressRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:36:21.695 E/WatchProgressRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:36:21.695 E/WatchProgressRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:36:21.695 E/WatchProgressRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:36:21.695 E/WatchProgressRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:36:21.695 E/WatchProgressRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:36:21.695 E/WatchProgressRepository(10032): 	at yf1.run(SourceFile:118)
+10-30 16:36:21.696 W/ProgressSourceCoordinator(10032): Source refresh incomplete for profile 1: source=KAPLAY_SYNC progress=false watched=false
+10-30 16:36:21.696 E/SyncManager(10032): Activity sync step failed profile=1 step=ActiveWatchSource
+10-30 16:36:21.696 E/SyncManager(10032): java.lang.IllegalStateException: Active watch source refresh was incomplete: progress=false watched=false
+10-30 16:36:21.696 E/SyncManager(10032): 	at l04.invokeSuspend(SourceFile:471)
+10-30 16:36:21.696 E/SyncManager(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:36:21.696 E/SyncManager(10032): 	at qn7.e(SourceFile:7)
+10-30 16:36:21.696 E/SyncManager(10032): 	at k0.resumeWith(SourceFile:23)
+10-30 16:36:21.696 E/SyncManager(10032): 	at sb0.resumeWith(SourceFile:33)
+10-30 16:36:21.696 E/SyncManager(10032): 	at m52.run(SourceFile:114)
+10-30 16:36:21.696 E/SyncManager(10032): 	at yf1.run(SourceFile:118)
+10-30 16:36:21.697 W/SyncManager(10032): Activity sync incomplete profile=1 reason=foreground failedSteps=[ActiveWatchSource]
+10-30 16:36:21.697 I/SyncManager(10032): Activity sync completed profile=1 reason=foreground
+10-30 16:36:22.026 D/ProfileInstaller(10032): Skipping profile installation for com.kaplay.app
+10-30 16:36:26.594 W/MemberAccessRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.get_my_member_access without parameters in the schema cache
+10-30 16:36:26.594 W/MemberAccessRepository(10032): Code: PGRST202
+10-30 16:36:26.594 W/MemberAccessRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Content-Type=[application/json], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:36:26.594 W/MemberAccessRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:36:26.594 W/MemberAccessRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:36:26.594 W/MemberAccessRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:36:26.594 W/MemberAccessRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:36:26.594 W/MemberAccessRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:36:36.915 I/com.kaplay.app(10032): NativeAlloc concurrent copying GC freed 95996(4096KB) AllocSpace objects, 3(60KB) LOS objects, 32% free, 12MB/18MB, paused 155us total 117.097ms
+10-30 16:37:08.808 I/com.kaplay.app(10032): Compiler allocated 4568KB to compile w4 ef.F(int)
+10-30 16:37:08.862 I/AccessibilityNodeInfoDumper(10476): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@b75a; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(948, 664 - 1036, 752); packageName: com.kaplay.app; className: android.view.View; text: null; error: null; maxTextLength: -1; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+10-30 16:37:08.880 I/AccessibilityNodeInfoDumper(10476): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@ba80; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(948, 1439 - 1036, 1527); packageName: com.kaplay.app; className: android.view.View; text: null; error: null; maxTextLength: -1; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+10-30 16:37:08.896 I/AccessibilityNodeInfoDumper(10476): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@c012; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(948, 2214 - 1036, 2302); packageName: com.kaplay.app; className: android.view.View; text: null; error: null; maxTextLength: -1; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+10-30 16:37:08.961 I/com.kaplay.app(10032): Compiler allocated 4590KB to compile w4 ef.F(int)
+10-30 16:37:38.056 I/AccessibilityNodeInfoDumper(10689): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@d86f; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(88, 2411 - 187, 2503); packageName: com.kaplay.app; className: android.view.View; text: null; error: null; maxTextLength: -1; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+10-30 16:37:38.056 I/AccessibilityNodeInfoDumper(10689): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@d90a; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(226, 2410 - 457, 2459); packageName: com.kaplay.app; className: android.widget.TextView; text: Integrações; error: null; maxTextLength: -1; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_NEXT_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SET_SELECTION - null]
+10-30 16:37:38.059 I/AccessibilityNodeInfoDumper(10689): Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@d948; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(226, 2465 - 839, 2503); packageName: com.kaplay.app; className: android.widget.TextView; text: Gerenciar integrações disponíveis; error: null; maxTextLength: -1; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: true; visible: false; actions: [AccessibilityAction: ACTION_NEXT_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY - null, AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null, AccessibilityAction: ACTION_SET_SELECTION - null]
+10-30 16:38:12.306 I/com.kaplay.app(10032): Compiler allocated 4776KB to compile java.lang.Object vs4.invoke(java.lang.Object, java.lang.Object)
+10-30 16:38:12.403 I/com.kaplay.app(10032): Compiler allocated 6659KB to compile void ld4.o(ld5, ht2, o13, c23, c23, c23, m13, o13, o13, o13, m13, u42, e81, int)
+10-30 16:38:20.991 I/com.kaplay.app(10032): Compiler allocated 4604KB to compile w4 ef.F(int)
+10-30 16:38:21.033 I/com.kaplay.app(10032): Compiler allocated 4834KB to compile w4 ef.F(int)
+10-30 16:38:24.101 I/com.kaplay.app(10032): Compiler allocated 10032KB to compile void e74.g(cw, boolean, ku, o13, m13, e81, int, int)
+10-30 16:38:24.267 I/com.kaplay.app(10032): Compiler allocated 11MB to compile void zv4.e(ld5, boolean, ht2, o13, o13, o13, o13, o13, m13, u42, c23, m13, e81, int)
+10-30 16:38:24.678 E/AvatarRepository(10032): Failed to fetch avatar catalog
+10-30 16:38:24.678 E/AvatarRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.get_avatar_catalog without parameters in the schema cache
+10-30 16:38:24.678 E/AvatarRepository(10032): Code: PGRST202
+10-30 16:38:24.678 E/AvatarRepository(10032): Hint: null
+10-30 16:38:24.678 E/AvatarRepository(10032): Details: "Searched for the function public.get_avatar_catalog without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:38:24.678 E/AvatarRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/get_avatar_catalog
+10-30 16:38:24.678 E/AvatarRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Content-Type=[application/json], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:38:24.678 E/AvatarRepository(10032):         Http Method: POST
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at tk.R0(SourceFile:24)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at sk.run(SourceFile:3)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at android.os.Handler.handleCallback(Handler.java:883)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at android.os.Looper.loop(Looper.java:214)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at android.app.ActivityThread.main(ActivityThread.java:7356)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at java.lang.reflect.Method.invoke(Native Method)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:492)
+10-30 16:38:24.678 E/AvatarRepository(10032): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:930)
+10-30 16:38:48.129 E/AvatarRepository(10032): Failed to fetch avatar catalog
+10-30 16:38:48.129 E/AvatarRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.get_avatar_catalog without parameters in the schema cache
+10-30 16:38:48.129 E/AvatarRepository(10032): Code: PGRST202
+10-30 16:38:48.129 E/AvatarRepository(10032): Hint: null
+10-30 16:38:48.129 E/AvatarRepository(10032): Details: "Searched for the function public.get_avatar_catalog without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:38:48.129 E/AvatarRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/get_avatar_catalog
+10-30 16:38:48.129 E/AvatarRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Content-Type=[application/json], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:38:48.129 E/AvatarRepository(10032):         Http Method: POST
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at tk.R0(SourceFile:24)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at sk.run(SourceFile:3)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at android.os.Handler.handleCallback(Handler.java:883)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at android.os.Looper.loop(Looper.java:214)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at android.app.ActivityThread.main(ActivityThread.java:7356)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at java.lang.reflect.Method.invoke(Native Method)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:492)
+10-30 16:38:48.129 E/AvatarRepository(10032): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:930)
+10-30 16:43:49.981 E/AvatarRepository(10032): Failed to fetch avatar catalog
+10-30 16:43:49.981 E/AvatarRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.get_avatar_catalog without parameters in the schema cache
+10-30 16:43:49.981 E/AvatarRepository(10032): Code: PGRST202
+10-30 16:43:49.981 E/AvatarRepository(10032): Hint: null
+10-30 16:43:49.981 E/AvatarRepository(10032): Details: "Searched for the function public.get_avatar_catalog without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:43:49.981 E/AvatarRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/get_avatar_catalog
+10-30 16:43:49.981 E/AvatarRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Content-Type=[application/json], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:43:49.981 E/AvatarRepository(10032):         Http Method: POST
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at tk.R0(SourceFile:24)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at sk.run(SourceFile:3)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at android.os.Handler.handleCallback(Handler.java:883)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at android.os.Looper.loop(Looper.java:214)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at android.app.ActivityThread.main(ActivityThread.java:7356)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at java.lang.reflect.Method.invoke(Native Method)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:492)
+10-30 16:43:49.981 E/AvatarRepository(10032): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:930)
+10-30 16:44:20.149 I/com.kaplay.app(10032): Compiler allocated 4166KB to compile java.lang.Object hz0.invoke(java.lang.Object, java.lang.Object, java.lang.Object)
+10-30 16:44:20.508 E/AvatarRepository(10032): Failed to fetch avatar catalog
+10-30 16:44:20.508 E/AvatarRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.get_avatar_catalog without parameters in the schema cache
+10-30 16:44:20.508 E/AvatarRepository(10032): Code: PGRST202
+10-30 16:44:20.508 E/AvatarRepository(10032): Hint: null
+10-30 16:44:20.508 E/AvatarRepository(10032): Details: "Searched for the function public.get_avatar_catalog without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:44:20.508 E/AvatarRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/get_avatar_catalog
+10-30 16:44:20.508 E/AvatarRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Content-Type=[application/json], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:44:20.508 E/AvatarRepository(10032):         Http Method: POST
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at tk.R0(SourceFile:24)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at sk.run(SourceFile:3)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at android.os.Handler.handleCallback(Handler.java:883)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at android.os.Looper.loop(Looper.java:214)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at android.app.ActivityThread.main(ActivityThread.java:7356)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at java.lang.reflect.Method.invoke(Native Method)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:492)
+10-30 16:44:20.508 E/AvatarRepository(10032): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:930)
+10-30 16:46:26.711 E/AvatarRepository(10032): Failed to fetch avatar catalog
+10-30 16:46:26.711 E/AvatarRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.get_avatar_catalog without parameters in the schema cache
+10-30 16:46:26.711 E/AvatarRepository(10032): Code: PGRST202
+10-30 16:46:26.711 E/AvatarRepository(10032): Hint: null
+10-30 16:46:26.711 E/AvatarRepository(10032): Details: "Searched for the function public.get_avatar_catalog without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:46:26.711 E/AvatarRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/get_avatar_catalog
+10-30 16:46:26.711 E/AvatarRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Content-Type=[application/json], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:46:26.711 E/AvatarRepository(10032):         Http Method: POST
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at tk.R0(SourceFile:24)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at sk.run(SourceFile:3)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at android.os.Handler.handleCallback(Handler.java:883)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at android.os.Looper.loop(Looper.java:214)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at android.app.ActivityThread.main(ActivityThread.java:7356)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at java.lang.reflect.Method.invoke(Native Method)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:492)
+10-30 16:46:26.711 E/AvatarRepository(10032): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:930)
+10-30 16:46:30.963 E/AvatarRepository(10032): Failed to fetch avatar catalog
+10-30 16:46:30.963 E/AvatarRepository(10032): io.github.jan.supabase.postgrest.exception.PostgrestRestException:         Could not find the function public.get_avatar_catalog without parameters in the schema cache
+10-30 16:46:30.963 E/AvatarRepository(10032): Code: PGRST202
+10-30 16:46:30.963 E/AvatarRepository(10032): Hint: null
+10-30 16:46:30.963 E/AvatarRepository(10032): Details: "Searched for the function public.get_avatar_catalog without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache."
+10-30 16:46:30.963 E/AvatarRepository(10032):         URL: https://<REDACTED_HOST>/rest/v1/rpc/get_avatar_catalog
+10-30 16:46:30.963 E/AvatarRepository(10032):         Headers: {Authorization=[Bearer <REDACTED> (len=1840)], Content-Type=[application/json], Prefer=[], Content-Profile=[public], apikey=[<REDACTED> (len=46)], X-Client-Info=[supabase-kt/3.4.1], X-Supabase-Client-Platform=[Android], X-Supabase-Client-Platform-Version=[10], User-Agent=[KAPlayMobile/0.9.18], Accept=[application/json]}
+10-30 16:46:30.963 E/AvatarRepository(10032):         Http Method: POST
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at io.github.jan.supabase.postgrest.PostgrestImpl.parseErrorResponse(SourceFile:197)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:5)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at io.github.jan.supabase.auth.AuthenticatedSupabaseApiKt$authenticatedSupabaseApi$3.invoke(SourceFile:10)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi.rawRequest$suspendImpl(SourceFile:136)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at io.github.jan.supabase.network.SupabaseApi$rawRequest$1.invokeSuspend(Unknown Source:12)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at sb0.resumeWith(SourceFile:8)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at m52.run(SourceFile:114)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at tk.R0(SourceFile:24)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at sk.run(SourceFile:3)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at android.os.Handler.handleCallback(Handler.java:883)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at android.os.Handler.dispatchMessage(Handler.java:100)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at android.os.Looper.loop(Looper.java:214)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at android.app.ActivityThread.main(ActivityThread.java:7356)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at java.lang.reflect.Method.invoke(Native Method)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:492)
+10-30 16:46:30.963 E/AvatarRepository(10032): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:930)
+10-30 16:46:31.084 I/com.kaplay.app(10032): Background concurrent copying GC freed 152706(5261KB) AllocSpace objects, 0(0B) LOS objects, 27% free, 15MB/21MB, paused 43us total 223.955ms

@@ -1,0 +1,5 @@
+variant=fullDebug
+path=androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk
+size_bytes=167450158
+sha256=4afc2a0ff98781a3c2b182be9dc3f55b1a039ddb2dac3bb891e96670a68aa456
+functional_homologation=NOT_PERFORMED

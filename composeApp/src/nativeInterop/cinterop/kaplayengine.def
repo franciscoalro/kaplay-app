@@ -1,0 +1,3 @@
+headers = kaplay_engine/kaplay_engine.h
+package = com.kaplay.app.features.p2p.native
+staticLibraries = libCKAPlayEngine.a

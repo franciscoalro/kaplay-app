@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
-        android:name="com.nuvio.app.NuvioApplication"
+        android:name="com.kaplay.app.KAPlayApplication"
         android:allowBackup="false"
         android:enableOnBackInvokedCallback="false"
         android:icon="@mipmap/ic_launcher"
@@ -20,20 +20,20 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:localeConfig="@xml/locale_config"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Nuvio">
+        android:theme="@style/Theme.KAPlay">
         <meta-data
             android:name="io.sentry.auto-init"
             android:value="false" />
 
         <activity
             android:exported="true"
-            android:name="com.nuvio.app.MainActivity"
+            android:name="com.kaplay.app.MainActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.Nuvio.Splash" />
+            android:theme="@style/Theme.KAPlay.Splash" />
 
         <activity
-            android:name="com.nuvio.app.LinkActivity"
+            android:name="com.kaplay.app.LinkActivity"
             android:excludeFromRecents="true"
             android:exported="true"
             android:noHistory="true"
@@ -46,7 +46,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:scheme="nuvio"
+                    android:scheme="kaplay"
                     android:host="auth"
                     android:path="/simkl" />
             </intent-filter>
@@ -57,7 +57,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:scheme="nuvio"
+                    android:scheme="kaplay"
                     android:host="auth"
                     android:path="/trakt" />
             </intent-filter>
@@ -67,7 +67,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="nuvio" />
+                <data android:scheme="kaplay" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -85,20 +85,20 @@
 
                 <data
                     android:scheme="https"
-                    android:host="nuvio.tv"
+                    android:host="kaplay.tv"
                     android:pathPrefix="/party/" />
             </intent-filter>
         </activity>
 
         <activity
-            android:name="com.nuvio.app.launcher.AppIconDefault"
+            android:name="com.kaplay.app.launcher.AppIconDefault"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
             android:label="@string/app_name"
             android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.Nuvio.Splash">
+            android:theme="@style/Theme.KAPlay.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -106,14 +106,14 @@
         </activity>
 
         <activity
-            android:name="com.nuvio.app.launcher.AppIconArcticBlue"
+            android:name="com.kaplay.app.launcher.AppIconArcticBlue"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_arctic_blue"
             android:label="@string/app_name"
             android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.Nuvio.Splash.ArcticBlue">
+            android:theme="@style/Theme.KAPlay.Splash.ArcticBlue">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -121,14 +121,14 @@
         </activity>
 
         <activity
-            android:name="com.nuvio.app.launcher.AppIconEmerald"
+            android:name="com.kaplay.app.launcher.AppIconEmerald"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_emerald"
             android:label="@string/app_name"
             android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.Nuvio.Splash.Emerald">
+            android:theme="@style/Theme.KAPlay.Splash.Emerald">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -136,14 +136,14 @@
         </activity>
 
         <activity
-            android:name="com.nuvio.app.launcher.AppIconRoseGold"
+            android:name="com.kaplay.app.launcher.AppIconRoseGold"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_rose_gold"
             android:label="@string/app_name"
             android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.Nuvio.Splash.RoseGold">
+            android:theme="@style/Theme.KAPlay.Splash.RoseGold">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -151,14 +151,14 @@
         </activity>
 
         <activity
-            android:name="com.nuvio.app.launcher.AppIconCopper"
+            android:name="com.kaplay.app.launcher.AppIconCopper"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_copper"
             android:label="@string/app_name"
             android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.Nuvio.Splash.Copper">
+            android:theme="@style/Theme.KAPlay.Splash.Copper">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -166,14 +166,14 @@
         </activity>
 
         <activity
-            android:name="com.nuvio.app.launcher.AppIconGraphite"
+            android:name="com.kaplay.app.launcher.AppIconGraphite"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_graphite"
             android:label="@string/app_name"
             android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.Nuvio.Splash.Graphite">
+            android:theme="@style/Theme.KAPlay.Splash.Graphite">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -181,17 +181,17 @@
         </activity>
 
         <service
-            android:name="com.nuvio.app.features.player.PlayerNowPlayingService"
+            android:name="com.kaplay.app.features.player.PlayerNowPlayingService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback"
             android:stopWithTask="false" />
 
         <receiver
-            android:name="com.nuvio.app.features.player.PlayerNowPlayingActionReceiver"
+            android:name="com.kaplay.app.features.player.PlayerNowPlayingActionReceiver"
             android:exported="false" />
 
         <receiver
-            android:name="com.nuvio.app.features.downloads.DownloadsNotificationActionReceiver"
+            android:name="com.kaplay.app.features.downloads.DownloadsNotificationActionReceiver"
             android:exported="false" />
 
         <provider
