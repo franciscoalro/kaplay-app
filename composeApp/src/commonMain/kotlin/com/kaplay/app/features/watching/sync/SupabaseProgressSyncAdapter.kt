@@ -64,34 +64,32 @@ object SupabaseProgressSyncAdapter : ProgressSyncAdapter {
         sinceLastWatched: Long?,
         limit: Int?,
     ): List<ProgressSyncRecord> {
-        val serverEntries = if (sinceLastWatched != null || limit != null) {
-            SupabaseProvider.client.postgrest
-                .rpc(
-                    "sync_pull_watch_progress",
-                    buildProgressPullParams(profileId, sinceLastWatched, limit),
-                )
-                .decodeList<WatchProgressSyncEntry>()
-        } else {
-            collectKeysetPages(
-                fetchPage = { cursor: ProgressSnapshotCursor?, pageLimit ->
-                    val params = buildJsonObject {
-                        put("p_profile_index", profileId)
-                        put("p_limit", pageLimit)
-                        cursor?.let {
-                            put("p_after_last_watched", it.lastWatched)
-                            put("p_after_progress_key", it.progressKey)
+        val serverEntries = collectKeysetPages(
+            fetchPage = { cursor: ProgressSnapshotCursor?, pageLimit ->
+                val effectiveLimit = limit?.coerceIn(1, supabaseSyncPageSize) ?: pageLimit
+                val params = buildJsonObject {
+                    put("p_profile_index", profileId)
+                    put("p_limit", effectiveLimit)
+                    when {
+                        cursor != null -> {
+                            put("p_after_last_watched", cursor.lastWatched)
+                            put("p_after_progress_key", cursor.progressKey)
+                        }
+                        sinceLastWatched != null -> {
+                            put("p_after_last_watched", sinceLastWatched)
+                            put("p_after_progress_key", "")
                         }
                     }
-                    SupabaseProvider.client.postgrest
-                        .rpc("sync_pull_watch_progress_v2", params)
-                        .decodeList<WatchProgressSyncEntry>()
-                },
-                cursorOf = { entry ->
-                    ProgressSnapshotCursor(entry.lastWatched, entry.progressKey)
-                },
-            )
-        }
-        return serverEntries.map { entry ->
+                }
+                SupabaseProvider.client.postgrest
+                    .rpc("sync_pull_watch_progress_v2", params)
+                    .decodeList<WatchProgressSyncEntry>()
+            },
+            cursorOf = { entry ->
+                ProgressSnapshotCursor(entry.lastWatched, entry.progressKey)
+            },
+        )
+        val records = serverEntries.map { entry ->
             ProgressSyncRecord(
                 progressKey = entry.progressKey,
                 contentId = entry.contentId,
@@ -104,6 +102,7 @@ object SupabaseProgressSyncAdapter : ProgressSyncAdapter {
                 lastWatched = entry.lastWatched,
             )
         }
+        return filterProgressSyncRecords(records, sinceLastWatched, limit)
     }
 
     override suspend fun push(
@@ -155,14 +154,37 @@ internal data class ProgressSnapshotCursor(
     val progressKey: String,
 )
 
+/**
+ * Builds param object for sync_pull_watch_progress_v2 (v2 contract).
+ *
+ * v2: p_profile_index (UUID-scope, not v1's p_profile_id integer).
+ * Cursor params p_after_last_watched / p_after_progress_key are paired
+ * (both present or both absent) per the SQL CHECK constraint.
+ * The v1 RPC sync_pull_watch_progress is NOT called.
+ */
+internal fun filterProgressSyncRecords(
+    records: List<ProgressSyncRecord>,
+    sinceLastWatched: Long?,
+    limit: Int?,
+): List<ProgressSyncRecord> = records.asSequence()
+    .filter { sinceLastWatched == null || it.lastWatched > sinceLastWatched }
+    .let { sequence -> limit?.let { sequence.take(it.coerceAtLeast(0)) } ?: sequence }
+    .toList()
+
 internal fun buildProgressPullParams(
     profileId: Int,
     sinceLastWatched: Long?,
     limit: Int?,
 ): JsonObject = buildJsonObject {
-    put("p_profile_id", profileId)
-    put("p_since_last_watched", sinceLastWatched?.let(::JsonPrimitive) ?: JsonNull)
+    put("p_profile_index", profileId)
     put("p_limit", limit?.let(::JsonPrimitive) ?: JsonNull)
+    when {
+        sinceLastWatched != null -> {
+            put("p_after_last_watched", JsonPrimitive(sinceLastWatched))
+            put("p_after_progress_key", JsonPrimitive(""))
+        }
+        // Both cursor params absent = first page (no cursor)
+    }
 }
 
 @Serializable
