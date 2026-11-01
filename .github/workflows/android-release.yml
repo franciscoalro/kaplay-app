@@ -171,8 +171,6 @@ jobs:
             KAPLAY_RELEASE_STORE_PASSWORD
             KAPLAY_RELEASE_KEY_ALIAS
             KAPLAY_RELEASE_KEY_PASSWORD
-            TRAKT_CLIENT_ID
-            TRAKT_CLIENT_SECRET
           )
           for property_name in "${required_properties[@]}"; do
             if ! grep -Eq "^${property_name}=.+" local.properties; then
@@ -180,6 +178,15 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Verify generated Trakt config is secret-free
+        run: |
+          set -euo pipefail
+          grep -Fq 'const val CLIENT_SECRET = ""' composeApp/build.gradle.kts
+          if grep -Fq 'TRAKT_CLIENT_SECRET' composeApp/build.gradle.kts; then
+            echo "Trakt client secret must not be embedded in generated APK config." >&2
+            exit 1
+          fi
 
       - name: Build full release APKs
         run: ./gradlew :androidApp:assembleFullRelease -Pkaplay.app.versionName="${RELEASE_VERSION}" --stacktrace
