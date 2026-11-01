@@ -2,6 +2,7 @@ package com.kaplay.app.features.watching.sync
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class SupabaseProgressSyncAdapterTest {
     @Test
@@ -23,6 +24,13 @@ class SupabaseProgressSyncAdapterTest {
         val records = listOf(record("a", 100), record("b", 200))
 
         assertEquals(records, filterProgressSyncRecords(records, sinceLastWatched = null, limit = null))
+    }
+
+    @Test
+    fun `non-positive limits are rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            filterProgressSyncRecords(emptyList(), sinceLastWatched = null, limit = 0)
+        }
     }
 
     private fun record(key: String, lastWatched: Long) = ProgressSyncRecord(
