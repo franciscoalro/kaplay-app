@@ -145,9 +145,7 @@ class LibraryTrackingUiTest {
         android.os.SystemClock.sleep(350)
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val bitmap = instrumentation.uiAutomation.takeScreenshot()
-        val output = File(instrumentation.targetContext.getExternalFilesDir(null), name)
-        output.parentFile?.mkdirs()
-        output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        File(instrumentation.targetContext.cacheDir, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
 }

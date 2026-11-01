@@ -125,10 +125,7 @@ jobs:
             adb shell dumpsys package com.kaplay.app.debug | grep -E 'versionName|versionCode' > preview-screenshots/package.txt || true
             adb shell uiautomator dump /sdcard/window.xml >/dev/null 2>&1 || true
             adb pull /sdcard/window.xml preview-screenshots/window.xml >/dev/null 2>&1 || true
-            if grep -Eqi "isn't responding|is not responding|Close app|Settings" preview-screenshots/window.xml 2>/dev/null; then
-              echo 'Invalid preview: system ANR dialog detected' >&2
-              exit 1
-            fi
+            if grep -Eqi "isn't responding|is not responding|Close app|Settings" preview-screenshots/window.xml 2>/dev/null; then echo 'Invalid preview: system ANR dialog detected' >&2; exit 1; fi
 
       - name: Upload isolated preview screenshot
         if: always()
@@ -176,7 +173,8 @@ jobs:
           script: |
             ./gradlew :androidApp:connectedFullDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kaplay.android.LibraryTrackingUiTest -Pandroid.testInstrumentationRunnerArguments.libraryScreenshots=true --no-daemon
             mkdir -p compose-screenshots
-            adb pull /sdcard/Android/data/com.kaplay.app.debug/files/. compose-screenshots/
+            for screenshot in library-manage.png library-create.png library-edit.png library-delete.png; do adb exec-out run-as com.kaplay.app.debug cat "cache/$screenshot" > "compose-screenshots/$screenshot" || true; done
+            test -s compose-screenshots/library-manage.png
 
       - name: Upload Compose screenshots
         if: always()
