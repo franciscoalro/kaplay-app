@@ -34,4 +34,12 @@ class TraktAuthRepositoryTest {
             )
         }
     }
+
+    @Test
+    fun `callback state must be present and equal to the pending state`() {
+        assertEquals(true, isValidTraktCallbackState("expected", "expected"))
+        assertEquals(false, isValidTraktCallbackState("expected", ""))
+        assertEquals(false, isValidTraktCallbackState("expected", "other"))
+        assertEquals(false, isValidTraktCallbackState("", "expected"))
+    }
 }
