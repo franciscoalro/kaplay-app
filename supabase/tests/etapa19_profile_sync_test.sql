@@ -88,9 +88,18 @@ end $$;
 -- ASSERTION 4: anonymous write isolation
 ------------------------------------------------------------
 do $$
+declare
+  rejected boolean := false;
 begin
-  perform public.sync_push_profiles(6,
-    '[{"profile_index":1,"name":"AnonTest"}]'::jsonb, 'etapa19-anon');
+  begin
+    perform public.sync_push_profiles(6,
+      '[{"profile_index":1,"name":"AnonTest"}]'::jsonb, 'etapa19-anon');
+  exception when others then
+    rejected := true;
+  end;
+  if not rejected then
+    raise exception 'ASSERTION 4 FAILED: anonymous push was not rejected';
+  end if;
 end $$;
 reset role;
 do $$
