@@ -73,12 +73,46 @@ class SupabaseSyncPagingTest {
         assertTrue(movie != series)
     }
 
+    // Task 1 (v1/v2 progress contract): the v1 RPC sync_pull_watch_progress used
+    // p_profile_id + p_since_last_watched semantics and is NOT a verified production
+    // path. All progress pulls now go through the v2 RPC sync_pull_watch_progress_v2
+    // (UUID-scope, p_profile_index). These tests lock the v2 param contract.
+
     @Test
-    fun `legacy progress params include explicit nulls`() {
+    fun `pull v2 params use profile_index not v1 profile_id`() {
         val params = buildProgressPullParams(profileId = 7, sinceLastWatched = null, limit = null)
 
-        assertEquals(setOf("p_profile_id", "p_since_last_watched", "p_limit"), params.keys)
-        assertEquals("null", params.getValue("p_since_last_watched").toString())
-        assertEquals("null", params.getValue("p_limit").toString())
+        assertTrue(
+            params.containsKey("p_profile_index"),
+            "v2 RPC requires p_profile_index (UUID-scope), got ${params.keys}",
+        )
+        assertTrue(
+            !params.containsKey("p_profile_id"),
+            "v2 RPC must not use v1 p_profile_id; got ${params.keys}",
+        )
+    }
+
+    @Test
+    fun `pull v2 cursor params are paired or both absent`() {
+        // Null cursor (first page): both after_* params absent.
+        val first = buildProgressPullParams(profileId = 7, sinceLastWatched = null, limit = null)
+        assertEquals(
+            first.containsKey("p_after_last_watched"),
+            first.containsKey("p_after_progress_key"),
+            "v2 cursor must pair p_after_last_watched + p_after_progress_key",
+        )
+
+        // Seeded cursor: both present, mirroring the SQL CHECK constraint.
+        val seeded = buildProgressPullParams(profileId = 7, sinceLastWatched = 5_000, limit = 100)
+        assertTrue(seeded.containsKey("p_after_last_watched"), "expected p_after_last_watched cursor")
+        assertTrue(seeded.containsKey("p_after_progress_key"), "expected p_after_progress_key cursor")
+    }
+
+    @Test
+    fun `pull v2 params preserve explicit limit and since`() {
+        val params = buildProgressPullParams(profileId = 7, sinceLastWatched = 5_000, limit = 100)
+
+        assertEquals(100, params.getValue("p_limit").toString().toInt())
+        assertEquals(5_000L, params.getValue("p_after_last_watched").toString().toLong())
     }
 }
