@@ -87,7 +87,9 @@ jobs:
           api-level: 35
           arch: x86_64
           profile: pixel_6
-          script: ./gradlew :androidApp:connectedFullDebugAndroidTest --no-daemon
+          script: ./gradlew :androidApp:connectedFullDebugAndroidTest \
+            -Pandroid.testInstrumentationRunnerArguments.isolated_base_url="$KAPLAY_SUPABASE_URL" \
+            --no-daemon
 
       - name: Upload integration reports
         if: always()
