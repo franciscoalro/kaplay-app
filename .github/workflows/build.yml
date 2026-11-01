@@ -102,6 +102,7 @@ jobs:
             --tests 'com.kaplay.app.features.rewards.RewardClaimGateTest' \
             --tests 'com.kaplay.app.features.home.HomeRewardLabelTest' \
             --tests 'com.kaplay.app.features.profiles.ProfileSyncStatusPresenterTest' \
+            --tests 'com.kaplay.app.core.sync.ProfileSyncContractTest' \
             --no-daemon --no-parallel --max-workers=2 --stacktrace
 
       - name: Upload Gradle build log
