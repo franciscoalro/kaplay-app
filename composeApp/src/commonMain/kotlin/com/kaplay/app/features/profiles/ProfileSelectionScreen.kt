@@ -62,6 +62,7 @@ import coil3.compose.AsyncImage
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.AuthState
 import com.kaplay.app.core.sync.SyncManager
+import com.kaplay.app.core.sync.profileSyncContractView
 import com.kaplay.app.core.ui.KAPlayBackButton
 import com.kaplay.app.core.ui.KAPlayToastHost
 import com.kaplay.app.core.ui.LocalVerticalBarPadding
@@ -86,11 +87,14 @@ fun ProfileSelectionScreen(
     val profileState by ProfileRepository.state.collectAsStateWithLifecycle()
     val authState by AuthRepository.state.collectAsStateWithLifecycle()
     val syncStates by SyncManager.profileSyncStates.collectAsStateWithLifecycle()
-    val isCloudProfile = (authState as? AuthState.Authenticated)?.isAnonymous == false
-    val syncStatusText = profileSyncStatusText(
-        activeProfileIndex?.let(syncStates::get),
-        isCloudProfile,
+    val authenticatedState = authState as? AuthState.Authenticated
+    val isCloudProfile = authenticatedState?.isAnonymous == false
+    val syncContractView = profileSyncContractView(
+        userId = authenticatedState?.userId.orEmpty(),
+        profileIndex = activeProfileIndex ?: 0,
+        state = activeProfileIndex?.let(syncStates::get),
     )
+    val syncStatusText = profileSyncStatusText(syncContractView, isCloudProfile)
     val scope = rememberCoroutineScope()
     var pinDialogProfile by remember { mutableStateOf<KAPlayProfile?>(null) }
     var isEditMode by remember { mutableStateOf(false) }
