@@ -173,8 +173,10 @@ jobs:
           script: |
             ./gradlew :androidApp:connectedFullDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kaplay.android.LibraryTrackingUiTest -Pandroid.testInstrumentationRunnerArguments.libraryScreenshots=true --no-daemon
             mkdir -p compose-screenshots
-            for screenshot in library-manage.png library-create.png library-edit.png library-delete.png; do adb exec-out run-as com.kaplay.app.debug cat "cache/$screenshot" > "compose-screenshots/$screenshot" || true; done
-            test -s compose-screenshots/library-manage.png
+            adb shell pm list packages | grep kaplay > compose-screenshots/packages.txt || true
+            for pkg in $(adb shell pm list packages | sed 's/package://' | grep kaplay || true); do for screenshot in library-manage.png library-create.png library-edit.png library-delete.png; do adb exec-out run-as "$pkg" cat "cache/$screenshot" > "compose-screenshots/$pkg-$screenshot" 2>/dev/null || true; done; done
+            find compose-screenshots -type f -name '*.png' -size +100c -exec sh -c 'for f do xxd -p -l 8 "$f" | grep -qi '^89504e470d0a1a0a$' || rm -f "$f"; done' sh {} +
+            test -s "$(find compose-screenshots -name 'library-manage.png' -size +100c -print -quit)"
 
       - name: Upload Compose screenshots
         if: always()
