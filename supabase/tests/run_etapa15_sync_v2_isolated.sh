@@ -27,14 +27,14 @@ run docker run -d --name "$container" \
 
 ready=false
 for _ in $(seq 1 60); do
-  if docker exec "$container" pg_isready -U postgres -d kaplay_sync_test >>"$run_log" 2>&1; then
+  if docker exec "$container" psql -U postgres -d kaplay_sync_test -v ON_ERROR_STOP=1 -c 'select 1' >>"$run_log" 2>&1; then
     ready=true
     break
   fi
   sleep 1
 done
 if [[ "$ready" != true ]]; then
-  echo "Postgres did not become ready" | tee -a "$run_log" >&2
+  echo "Postgres did not become query-ready" | tee -a "$run_log" >&2
   exit 1
 fi
 
