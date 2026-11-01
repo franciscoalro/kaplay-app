@@ -276,7 +276,7 @@ object TraktAuthRepository : TrackingAuthProvider {
 
         val expectedState = authState.pendingAuthorizationState
         val callbackState = parsedUrl.parameters["state"].orEmpty().trim()
-        if (!expectedState.isNullOrBlank() && callbackState != expectedState) {
+        if (!isValidTraktCallbackState(expectedState, callbackState)) {
             clearPendingAuthorization()
             persist(profileId)
             publish(
@@ -539,6 +539,18 @@ object TraktAuthRepository : TrackingAuthProvider {
     }
 
     private fun localizedString(resource: StringResource): String = runBlocking { getString(resource) }
+}
+
+internal fun isValidTraktCallbackState(expectedState: String?, callbackState: String): Boolean {
+    val expected = expectedState?.trim().orEmpty()
+    val actual = callbackState.trim()
+    if (expected.isEmpty() || actual.isEmpty() || expected.length != actual.length) return false
+
+    var difference = 0
+    expected.indices.forEach { index ->
+        difference = difference or (expected[index].code xor actual[index].code)
+    }
+    return difference == 0
 }
 
 internal enum class TraktTokenRefreshResponseAction {
