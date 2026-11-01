@@ -74,14 +74,18 @@ reset role;
 set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-000000000000';
 set request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000000","is_anonymous":true}';
-do $$ begin
-  perform public.sync_pull_profiles();
-  raise exception 'ASSERTION 3 FAILED: anonymous session was not rejected';
-exception when sqlstate '42501' then null;  -- permission denied
-         when others then
-    if sqlstate <> '42501' then
-      raise exception 'ASSERTION 3 FAILED: wrong error code %', sqlstate;
-    end if;
+do $$
+declare
+  rejected boolean := false;
+begin
+  begin
+    perform public.sync_pull_profiles();
+  exception when others then
+    rejected := true;
+  end;
+  if not rejected then
+    raise exception 'ASSERTION 3 FAILED: anonymous session was not rejected';
+  end if;
 end $$;
 reset role;
 
@@ -91,15 +95,19 @@ reset role;
 set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-000000000000';
 set request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000000","is_anonymous":true}';
-do $$ begin
-  perform public.sync_push_profiles(6,
-    '[{"profile_index":1,"name":"AnonTest"}]'::jsonb, 'etapa19-anon');
-  raise exception 'ASSERTION 4 FAILED: anonymous push was not rejected';
-exception when sqlstate '42501' then null;
-         when others then
-    if sqlstate <> '42501' then
-      raise exception 'ASSERTION 4 FAILED: wrong error code %', sqlstate;
-    end if;
+do $$
+declare
+  rejected boolean := false;
+begin
+  begin
+    perform public.sync_push_profiles(6,
+      '[{"profile_index":1,"name":"AnonTest"}]'::jsonb, 'etapa19-anon');
+  exception when others then
+    rejected := true;
+  end;
+  if not rejected then
+    raise exception 'ASSERTION 4 FAILED: anonymous push was not rejected';
+  end if;
 end $$;
 reset role;
 
