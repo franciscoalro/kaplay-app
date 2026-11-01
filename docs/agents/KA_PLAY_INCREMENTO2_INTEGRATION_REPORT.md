@@ -22,4 +22,10 @@
 - Android instrumentado exige secrets de backend isolado ausentes.
 - Conflitos de escrita de perfis e filtro local de progresso permanecem fora deste slice.
 
+## APK Debug
+
+Run [41341327563](https://github.com/franciscoalro/kaplay-app/actions/runs/41341327563) gerou o Full Debug com endpoint Supabase autorizado explicitamente no workflow. Artefato `ka-play-full-debug-build-only`; SHA-256 `a1bb48b0ed674eb9ff903ce34d806c5b55c3b6bc020e645dc3a0802725f0ffdb`; `com.kaplay.app.debug`, versionName `0.9.20`, versionCode `193`. O scan de credenciais privilegiadas passou.
+
+A captura do emulador foi produzida, mas mostra `System UI isn't responding`; não é uma screenshot válida da Biblioteca/perfil e não será apresentada como evidência visual da UI.
+
 Produção continua NO-GO para migrations/publicação. Nenhuma migration foi executada no Supabase de produção, nenhum APK Release foi assinado e não houve publicação automática.
