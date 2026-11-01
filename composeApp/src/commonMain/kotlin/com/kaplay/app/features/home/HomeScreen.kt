@@ -1240,6 +1240,9 @@ fun HomeScreen(
     }
 }
 
+internal fun homeRewardEnabled(rewardState: AdRewardState): Boolean =
+    !rewardState.syncing && (rewardState.remainingMs <= 0L || rewardState.error != null)
+
 internal fun homeRewardLabel(
     requiresAuthentication: Boolean,
     rewardState: AdRewardState,
@@ -1261,7 +1264,7 @@ private fun HomeRewardButton(
     val isAnonymous = (authState as? AuthState.Authenticated)?.isAnonymous == true
     val requiresAuthentication = authState !is AuthState.Authenticated || isAnonymous
     val label = homeRewardLabel(requiresAuthentication, rewardState)
-    val enabled = !rewardState.syncing && rewardState.remainingMs <= 0L
+    val enabled = homeRewardEnabled(rewardState)
     Surface(
         modifier = modifier.height(38.dp),
         enabled = enabled,
