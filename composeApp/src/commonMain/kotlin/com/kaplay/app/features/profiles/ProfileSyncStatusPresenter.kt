@@ -14,10 +14,11 @@ internal fun profileSyncStatusText(
 )
 
 internal fun profileSyncStatusText(
-    contractView: ProfileSyncContractView,
+    contractView: ProfileSyncContractView?,
     isCloudProfile: Boolean,
 ): String {
     if (!isCloudProfile) return "Local"
+    if (contractView == null) return "Selecione um perfil"
     return when (contractView.status) {
         ProfileSyncContractStatus.SYNCING -> "Sincronizando na nuvem…"
         ProfileSyncContractStatus.SYNCED -> "Nuvem sincronizada"
