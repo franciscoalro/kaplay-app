@@ -25,6 +25,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Scan tracked evidence for raw credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -n -E '-----BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY-----|^[0-9a-f-]{36}[[:space:]]+[0-9]+[[:space:]]+[A-Za-z0-9_-]{16,}[[:space:]]+' -- evidence; then
+            echo 'Raw credential material found in tracked evidence' >&2
+            exit 1
+          fi
+
       - name: Run isolated PostgreSQL assertions
         shell: bash
         run: |
