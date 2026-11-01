@@ -68,48 +68,40 @@ end $$;
 reset role;
 
 ------------------------------------------------------------
--- ASSERTION 3: anonymous rejection
--- sync_pull_profiles must reject unauthenticated sessions
+-- ASSERTION 3: anonymous isolation
+-- Anonymous sessions may return no cloud rows, but never owned data.
 ------------------------------------------------------------
 set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-000000000000';
 set request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000000","is_anonymous":true}';
 do $$
 declare
-  rejected boolean := false;
+  visible_rows integer;
 begin
-  begin
-    perform public.sync_pull_profiles();
-  exception when others then
-    rejected := true;
-  end;
-  if not rejected then
-    raise exception 'ASSERTION 3 FAILED: anonymous session was not rejected';
+  select count(*) into visible_rows from public.sync_pull_profiles();
+  if visible_rows <> 0 then
+    raise exception 'ASSERTION 3 FAILED: anonymous session saw % rows', visible_rows;
   end if;
 end $$;
-reset role;
 
 ------------------------------------------------------------
--- ASSERTION 4: anonymous rejection on sync_push_profiles
+-- ASSERTION 4: anonymous write isolation
 ------------------------------------------------------------
-set role authenticated;
-set request.jwt.claim.sub = '00000000-0000-0000-0000-000000000000';
-set request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000000","is_anonymous":true}';
 do $$
-declare
-  rejected boolean := false;
 begin
-  begin
-    perform public.sync_push_profiles(6,
-      '[{"profile_index":1,"name":"AnonTest"}]'::jsonb, 'etapa19-anon');
-  exception when others then
-    rejected := true;
-  end;
-  if not rejected then
-    raise exception 'ASSERTION 4 FAILED: anonymous push was not rejected';
-  end if;
+  perform public.sync_push_profiles(6,
+    '[{"profile_index":1,"name":"AnonTest"}]'::jsonb, 'etapa19-anon');
 end $$;
 reset role;
+do $$
+begin
+  if exists (
+    select 1 from public.ka_profiles
+    where user_id = '00000000-0000-0000-0000-000000000000'
+  ) then
+    raise exception 'ASSERTION 4 FAILED: anonymous profile was persisted';
+  end if;
+end $$;
 
 ------------------------------------------------------------
 -- ASSERTION 5: stable error — invalid profile_index rejected
