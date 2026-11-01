@@ -75,10 +75,6 @@ object SupabaseProgressSyncAdapter : ProgressSyncAdapter {
                             put("p_after_last_watched", cursor.lastWatched)
                             put("p_after_progress_key", cursor.progressKey)
                         }
-                        sinceLastWatched != null -> {
-                            put("p_after_last_watched", sinceLastWatched)
-                            put("p_after_progress_key", "")
-                        }
                     }
                 }
                 SupabaseProvider.client.postgrest
@@ -178,13 +174,9 @@ internal fun buildProgressPullParams(
 ): JsonObject = buildJsonObject {
     put("p_profile_index", profileId)
     put("p_limit", limit?.let(::JsonPrimitive) ?: JsonNull)
-    when {
-        sinceLastWatched != null -> {
-            put("p_after_last_watched", JsonPrimitive(sinceLastWatched))
-            put("p_after_progress_key", JsonPrimitive(""))
-        }
-        // Both cursor params absent = first page (no cursor)
-    }
+    // `sinceLastWatched` is applied after the descending v2 snapshot is read;
+    // it must not be encoded as an `after` cursor because v2 walks older rows.
+    // Both cursor params remain absent on the first page.
 }
 
 @Serializable
