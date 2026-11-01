@@ -114,13 +114,8 @@ jobs:
           disable-animations: true
           script: |
             sleep 30
-            for attempt in 1 2 3; do
-              if adb shell pm path android >/dev/null 2>&1 && adb install -r build-artifacts/ka-play-full-debug.apk; then
-                break
-              fi
-              if [ "$attempt" = 3 ]; then exit 1; fi
-              sleep 20
-            done
+            sleep 20
+            adb install -r build-artifacts/ka-play-full-debug.apk
             adb shell am force-stop com.kaplay.app.debug || true
             adb shell monkey -p com.kaplay.app.debug 1 || true
             sleep 12
