@@ -30,7 +30,10 @@ jobs:
           test -s "$apk"
           grep -Fq 'application_id=com.kaplay.app.debug' original/BUILD_METADATA.txt
           grep -Fq 'backend=authorized-production-preview' original/BUILD_METADATA.txt
-          (cd original && sha256sum -c SHA256SUMS)
+          expected="$(awk 'NR==1 {print $1}' original/SHA256SUMS)"
+          actual="$(sha256sum "$apk" | awk '{print $1}')"
+          test "$actual" = "$expected"
+          echo "Original APK checksum verified before splitting."
           mkdir -p pieces
           sha256sum "$apk" | awk '{print $1}' > pieces/EXPECTED_SHA256.txt
           split --bytes=60000000 --numeric-suffixes=0 --suffix-length=2 "$apk" pieces/part-
