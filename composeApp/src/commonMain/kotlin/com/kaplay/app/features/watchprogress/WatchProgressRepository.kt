@@ -250,6 +250,7 @@ object WatchProgressRepository {
     private val entriesLock = SynchronizedObject()
     private var entriesByProgressKey: MutableMap<String, WatchProgressEntry> = mutableMapOf()
     private var dirtyProgressKeys: MutableSet<String> = mutableSetOf()
+    private var pendingDeleteEntriesByKey: MutableMap<String, WatchProgressEntry> = mutableMapOf()
     private var metadataResolutionJob: Job? = null
     private val metadataResolutionRetryCoordinator = MetadataResolutionRetryCoordinator()
     private val providerMetadataOverlay = ProviderProgressMetadataOverlay()
@@ -363,6 +364,7 @@ object WatchProgressRepository {
             deltaInitialized = storedPayload.deltaInitialized
             replaceLocalEntries(storedPayload.entries)
             replaceDirtyProgressKeys(storedPayload.dirtyProgressKeys)
+            replacePendingDeleteEntries(storedPayload.pendingDeleteEntries)
         } else {
             lastSuccessfulPushEpochMs = 0L
             deltaCursorEventId = 0L
@@ -1422,6 +1424,8 @@ object WatchProgressRepository {
             dirtyProgressKeys.mapNotNull(entriesByProgressKey::get)
         }.filterNot { ServerItemRef.isServerId(it.parentMetaId) }
         if (entries.isNotEmpty()) pushEntriesToServer(profileId, entries)
+        val pendingDeletes = pendingDeleteEntriesSnapshot()
+        if (pendingDeletes.isNotEmpty()) pushDeleteToServer(pendingDeletes, profileId)
     }
 
     private fun pushScrobbleToServer(entry: WatchProgressEntry, profileId: Int) {
@@ -1459,16 +1463,27 @@ object WatchProgressRepository {
         }
     }
 
-    private fun pushDeleteToServer(entries: Collection<WatchProgressEntry>) {
+    private fun pushDeleteToServer(
+        entries: Collection<WatchProgressEntry>,
+        profileId: Int = currentProfileId,
+    ) {
         if (activeSource.providerId != null) return
-        val entries = entries.filterNot { ServerItemRef.isServerId(it.parentMetaId) }
-        val profileId = currentProfileId
+        val filteredEntries = entries.filterNot { ServerItemRef.isServerId(it.parentMetaId) }
+        if (filteredEntries.isEmpty()) return
+        synchronized(entriesLock) {
+            filteredEntries.forEach { entry -> pendingDeleteEntriesByKey[entry.resolvedProgressKey()] = entry }
+        }
+        persist()
         accountScopeSnapshot().launch {
             runCatching {
-                if (entries.isEmpty()) return@runCatching
-                syncAdapter.delete(profileId = profileId, entries = entries)
-            }.onFailure { e ->
-                log.e(e) { "Failed to push watch progress delete" }
+                syncAdapter.delete(profileId = profileId, entries = filteredEntries)
+                synchronized(entriesLock) {
+                    filteredEntries.forEach { entry -> pendingDeleteEntriesByKey.remove(entry.resolvedProgressKey()) }
+                }
+                persist()
+            }.onFailure { error ->
+                log.e(error) { "Failed to push watch progress delete" }
+                scheduleRemoteRetry(profileId)
             }
         }
     }
@@ -1494,6 +1509,7 @@ object WatchProgressRepository {
                 deltaCursorEventId = deltaCursorEventId,
                 deltaInitialized = deltaInitialized,
                 dirtyProgressKeys = dirtyProgressKeysSnapshot(),
+                pendingDeleteEntries = pendingDeleteEntriesSnapshot(),
             ),
         )
     }
@@ -1632,6 +1648,7 @@ object WatchProgressRepository {
         synchronized(entriesLock) {
             entriesByProgressKey.clear()
             dirtyProgressKeys.clear()
+            pendingDeleteEntriesByKey.clear()
         }
     }
 
@@ -1644,6 +1661,17 @@ object WatchProgressRepository {
         synchronized(entriesLock) {
             dirtyProgressKeys = keys
                 .filterTo(mutableSetOf()) { key -> key in entriesByProgressKey }
+        }
+    }
+
+    private fun pendingDeleteEntriesSnapshot(): List<WatchProgressEntry> =
+        synchronized(entriesLock) {
+            pendingDeleteEntriesByKey.values.toList()
+        }
+
+    private fun replacePendingDeleteEntries(entries: Collection<WatchProgressEntry>) {
+        synchronized(entriesLock) {
+            pendingDeleteEntriesByKey = entries.associateByTo(mutableMapOf()) { it.resolvedProgressKey() }
         }
     }
 

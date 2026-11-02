@@ -38,6 +38,23 @@ class WatchProgressRulesTest {
     }
 
     @Test
+    fun `codec persists pending delete entries across restart`() {
+        val deleted = entry(videoId = "deleted-video", progressKey = "deleted-key")
+
+        val payload = WatchProgressCodec.encodePayload(
+            entries = emptyList(),
+            lastSuccessfulPushEpochMs = 0L,
+            deltaCursorEventId = 0L,
+            deltaInitialized = false,
+            pendingDeleteEntries = listOf(deleted),
+        )
+
+        val decoded = WatchProgressCodec.decodePayload(payload)
+
+        assertEquals(listOf("deleted-key"), decoded.pendingDeleteEntries.map { it.resolvedProgressKey() })
+    }
+
+    @Test
     fun `codec ignores corrupt payload`() {
         assertTrue(WatchProgressCodec.decodeEntries("{not json").isEmpty())
     }
