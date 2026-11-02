@@ -19,6 +19,8 @@ import com.kaplay.app.features.tracking.WatchProgressSource
 import com.kaplay.app.features.tracking.effectiveLibrarySourceMode
 import com.kaplay.app.features.tracking.effectiveWatchProgressSource
 import com.kaplay.app.features.watchprogress.WatchProgressSourceCoordinator
+import com.kaplay.app.features.watchprogress.WatchProgressRepository
+import com.kaplay.app.features.watched.WatchedRepository
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CancellationException
@@ -404,7 +406,9 @@ object SyncManager {
     private fun finishSyncState(profileId: Int, result: ProfileSyncResult): KAPlaySyncState =
         profileSyncStateFor(
             result = result,
-            hasPendingChanges = LibraryRepository.hasPendingChanges(profileId),
+            hasPendingChanges = LibraryRepository.hasPendingChanges(profileId) ||
+                WatchProgressRepository.hasPendingCloudChanges(profileId) ||
+                WatchedRepository.hasPendingCloudChanges(profileId),
         )
 
     fun pullAllForProfile(profileId: Int) {
