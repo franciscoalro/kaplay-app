@@ -393,6 +393,24 @@ object WatchedRepository {
             }
         }
         return try {
+            if (effectiveSource.providerId == null) {
+                // Keep offline/failed watched marks until the server confirms their replay.
+                val pendingMarks = itemsStore.read { kaplayItems, _, dirtyKAPlayKeys, _ ->
+                    kaplayItems.filterKeys { key -> key in dirtyKAPlayKeys }.values
+                        .filterNot(ServerWatched::isServerItem)
+                        .toList()
+                }
+                if (pendingMarks.isNotEmpty()) {
+                    if (!isActiveOperation(operation)) return false
+                    syncAdapter.push(profileId = profileId, items = pendingMarks)
+                    recordSuccessfulPush(
+                        profileId = profileId,
+                        operationGeneration = operation.profileGeneration,
+                        items = pendingMarks,
+                    )
+                    log.i { "Recovered pending watched marks profile=$profileId count=${pendingMarks.size}" }
+                }
+            }
             effectiveSource.providerId?.let { providerId ->
                 val provider = TrackingProviderRegistry.watchedProvider(providerId)
                     ?: run {
