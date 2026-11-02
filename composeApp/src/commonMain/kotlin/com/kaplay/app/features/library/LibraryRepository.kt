@@ -250,7 +250,9 @@ object LibraryRepository {
                     }
                     syncAdapter.pushItems(profileId, pendingUpserts)
                     syncAdapter.deleteItems(profileId, pendingDeletes)
-                    pullSnapshot = localState.markPushCompleted(pullSnapshot)\n                        ?: return@withLock LibraryPullResult.Skipped\n                    persist(pullSnapshot)
+                    pullSnapshot = localState.markPushCompleted(pullSnapshot)
+                        ?: return@withLock LibraryPullResult.Skipped
+                    persist(pullSnapshot)
                     log.i {
                         "Recovered pending library writes profile=$profileId " +
                             "upserts=${pendingUpserts.size} deletes=${pendingDeletes.size}"
