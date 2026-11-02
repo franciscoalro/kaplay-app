@@ -41,7 +41,7 @@ jobs:
           : > local.properties
 
       - name: Build Full Debug APK
-        run: ./gradlew clean :androidApp:assembleFullDebug --no-daemon
+        run: ./gradlew :androidApp:assembleFullDebug --no-daemon
 
       - name: Verify APK identity and v2 RPC contract
         shell: bash
