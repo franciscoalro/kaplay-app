@@ -142,7 +142,7 @@ object LibraryRepository {
         }
         TrackingProviderRegistry.connectedLibraryProviders().forEach(TrackingLibraryProvider::prepare)
         activeLibraryProvider()?.let(::refreshLibraryProviderAsync)
-        retryPendingPush(activeProfileId)
+        retryPendingPush(ProfileRepository.activeProfileId)
     }
 
     /** Replays the persisted local queue; a pull or local UI state is not treated as remote confirmation. */
