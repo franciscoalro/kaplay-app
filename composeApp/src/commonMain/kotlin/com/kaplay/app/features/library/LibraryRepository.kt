@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.AuthState
 import com.kaplay.app.core.tracking.ensureTrackingProvidersRegistered
+import com.kaplay.app.core.sync.pendingSyncRetryDelayMs
 import com.kaplay.app.features.library.sync.LibrarySyncAdapter
 import com.kaplay.app.features.library.sync.SupabaseLibrarySyncAdapter
 import com.kaplay.app.features.library.sync.consumeCursorPages
@@ -70,6 +71,8 @@ object LibraryRepository {
     private val kaplaySyncMutex = Mutex()
     private val persistenceLock = SynchronizedObject()
     private val lastPersistedRevisionByProfile = mutableMapOf<Int, Long>()
+    private val retryLock = SynchronizedObject()
+    private val pushRetryAttemptsByProfile = mutableMapOf<Int, Int>()
     internal var syncAdapter: LibrarySyncAdapter = SupabaseLibrarySyncAdapter
 
     init {
@@ -117,6 +120,13 @@ object LibraryRepository {
                 .drop(1)
                 .collectLatest { publish() }
         }
+        syncScope.launch {
+            AuthRepository.state.collectLatest { authState ->
+                if (authState is AuthState.Authenticated && !authState.isAnonymous) {
+                    retryPendingPush(ProfileRepository.activeProfileId)
+                }
+            }
+        }
     }
 
     fun ensureLoaded() {
@@ -132,6 +142,15 @@ object LibraryRepository {
         }
         TrackingProviderRegistry.connectedLibraryProviders().forEach(TrackingLibraryProvider::prepare)
         activeLibraryProvider()?.let(::refreshLibraryProviderAsync)
+        retryPendingPush(activeProfileId)
+    }
+
+    /** Replays the persisted local queue; a pull or local UI state is not treated as remote confirmation. */
+    fun retryPendingPush(profileId: Int = ProfileRepository.activeProfileId) {
+        val snapshot = localState.snapshot()
+        if (snapshot.token.profileId == profileId && snapshot.hasPendingPush) {
+            pushToServer(snapshot, delayMs = 0L)
+        }
     }
 
     fun onProfileChanged(profileId: Int) {
@@ -142,6 +161,7 @@ object LibraryRepository {
         TrackingProviderRegistry.libraryProviders().forEach(TrackingLibraryProvider::onProfileChanged)
         TrackingProviderRegistry.connectedLibraryProviders().forEach(TrackingLibraryProvider::prepare)
         activeLibraryProvider()?.let(::refreshLibraryProviderAsync)
+        retryPendingPush(profileId)
     }
 
     fun clearLocalState() {
@@ -596,15 +616,27 @@ object LibraryRepository {
                     syncAdapter.pushItems(profileId, upsertItems)
                     syncAdapter.deleteItems(profileId, snapshot.pendingDeleteKeys.filterNot { ServerItemRef.isServerId(it.contentId) })
                     localState.markPushCompleted(snapshot)?.let(::persist)
+                    synchronized(retryLock) { pushRetryAttemptsByProfile.remove(profileId) }
                     log.i {
                         "Library delta push completed profile=$profileId " +
                             "upserts=${upsertItems.size} deletes=${snapshot.pendingDeleteKeys.size}"
                     }
                 }.onFailure { error ->
                     if (error is CancellationException) throw error
+                    val retryAttempt = synchronized(retryLock) {
+                        val next = (pushRetryAttemptsByProfile[profileId] ?: 0) + 1
+                        pushRetryAttemptsByProfile[profileId] = next
+                        next
+                    }
                     log.e(error) {
-                        "Failed to push library delta profile=$profileId " +
+                        "Failed to push library delta profile=$profileId attempt=$retryAttempt " +
                             "upserts=${snapshot.pendingUpsertKeys.size} deletes=${snapshot.pendingDeleteKeys.size}"
+                    }
+                    if (retryAttempt <= 5) {
+                        syncScope.launch {
+                            delay(pendingSyncRetryDelayMs(retryAttempt - 1))
+                            retryPendingPush(profileId)
+                        }
                     }
                 }
             }

@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.AuthState
 import com.kaplay.app.core.tracking.ensureTrackingProvidersRegistered
+import com.kaplay.app.core.sync.pendingSyncRetryDelayMs
 import com.kaplay.app.features.addons.AddonManifest
 import com.kaplay.app.features.addons.AddonRepository
 import com.kaplay.app.features.addons.AddonsUiState
@@ -257,6 +258,8 @@ object WatchProgressRepository {
     private var deltaCursorEventId = 0L
     private var deltaInitialized = false
     private val remoteWriteDeduplicator = RemoteProgressWriteDeduplicator()
+    private val remoteRetryLock = SynchronizedObject()
+    private val remoteRetryAttemptsByProfile = mutableMapOf<Int, Int>()
     internal var syncAdapter: ProgressSyncAdapter = SupabaseProgressSyncAdapter
 
     init {
@@ -279,6 +282,13 @@ object WatchProgressRepository {
                 retryMetadataResolutionWhenAddonMetaProvidersReady(state)
             }
         }
+        syncScope.launch {
+            AuthRepository.state.collectLatest { authState ->
+                if (authState is AuthState.Authenticated && !authState.isAnonymous) {
+                    retryPendingRemoteWrites(ProfileRepository.activeProfileId)
+                }
+            }
+        }
 
     }
 
@@ -296,6 +306,7 @@ object WatchProgressRepository {
             )
             loadFromDisk(ProfileRepository.activeProfileId)
         }
+        retryPendingRemoteWrites(ProfileRepository.activeProfileId)
     }
 
     fun onProfileChanged(profileId: Int) {
@@ -308,6 +319,7 @@ object WatchProgressRepository {
         )
         loadFromDisk(profileId)
         TrackingProviderRegistry.progressProviders().forEach(TrackingProgressProvider::onProfileChanged)
+        retryPendingRemoteWrites(profileId)
     }
 
     fun clearLocalState() {
@@ -1401,19 +1413,48 @@ object WatchProgressRepository {
         return storedEntries.resolveIdentityForUpsert(entry)
     }
 
+    fun retryPendingRemoteWrites(profileId: Int = ProfileRepository.activeProfileId) {
+        if (!hasLoaded || currentProfileId != profileId) loadFromDisk(profileId)
+        val authState = AuthRepository.state.value
+        if (authState !is AuthState.Authenticated || authState.isAnonymous) return
+        if (activeSource.providerId != null) return
+        val entries = synchronized(entriesLock) {
+            dirtyProgressKeys.mapNotNull(entriesByProgressKey::get)
+        }.filterNot { ServerItemRef.isServerId(it.parentMetaId) }
+        if (entries.isNotEmpty()) pushEntriesToServer(profileId, entries)
+    }
+
     private fun pushScrobbleToServer(entry: WatchProgressEntry, profileId: Int) {
         if (ServerItemRef.isServerId(entry.parentMetaId)) return
+        pushEntriesToServer(profileId = profileId, entries = listOf(entry))
+    }
+
+    private fun pushEntriesToServer(profileId: Int, entries: Collection<WatchProgressEntry>) {
+        if (entries.isEmpty()) return
         val operationGeneration = profileGeneration.takeIf { profileId == currentProfileId }
         accountScopeSnapshot().launch {
             runCatching {
-                syncAdapter.push(profileId = profileId, entries = listOf(entry))
+                syncAdapter.push(profileId = profileId, entries = entries)
                 recordSuccessfulPush(
                     profileId = profileId,
                     operationGeneration = operationGeneration,
-                    entries = listOf(entry),
+                    entries = entries,
                 )
-            }.onFailure { e ->
-                log.e(e) { "Failed to push watch progress scrobble" }
+                synchronized(remoteRetryLock) { remoteRetryAttemptsByProfile.remove(profileId) }
+            }.onFailure { error ->
+                if (error is CancellationException) throw error
+                val retryAttempt = synchronized(remoteRetryLock) {
+                    val next = (remoteRetryAttemptsByProfile[profileId] ?: 0) + 1
+                    remoteRetryAttemptsByProfile[profileId] = next
+                    next
+                }
+                log.e(error) { "Failed to push watch progress profile=$profileId attempt=$retryAttempt entries=${entries.size}" }
+                if (retryAttempt <= 5) {
+                    syncScope.launch {
+                        delay(pendingSyncRetryDelayMs(retryAttempt - 1))
+                        retryPendingRemoteWrites(profileId)
+                    }
+                }
             }
         }
     }

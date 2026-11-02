@@ -3,6 +3,7 @@ package com.kaplay.app.features.watched
 import co.touchlab.kermit.Logger
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.AuthState
+import com.kaplay.app.core.sync.pendingSyncRetryDelayMs
 import com.kaplay.app.core.tracking.ensureTrackingProvidersRegistered
 import com.kaplay.app.features.details.MetaDetails
 import com.kaplay.app.features.details.MetaVideo
@@ -21,6 +22,7 @@ import com.kaplay.app.features.watching.sync.WatchedSyncAdapter
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -152,10 +154,13 @@ object WatchedRepository {
     private var kaplayHasLoadedRemote: Boolean = false
     private var providersLoadedFromRemote: MutableSet<TrackingProviderId> = mutableSetOf()
     private var lastSuccessfulPushEpochMs: Long = 0L
+    private val remoteRetryLock = SynchronizedObject()
+    private val remoteRetryAttemptsByProfile = mutableMapOf<Int, Int>()
     private var deltaCursorEventId: Long = 0L
     private var deltaInitialized: Boolean = false
     internal var syncAdapter: WatchedSyncAdapter = SupabaseWatchedSyncAdapter
     private var extraKeysObserverJob: Job? = null
+    private var authObserverJob: Job? = null
 
     fun ensureLoaded() {
         ensureTrackingProvidersRegistered()
@@ -171,11 +176,24 @@ object WatchedRepository {
             )
         }
         startExtraKeysObserverIfNeeded()
+        syncScopeAuthObserver()
+    }
+
+    private fun syncScopeAuthObserver() {
+        if (authObserverJob?.isActive == true) return
+        authObserverJob = accountScopeSnapshot().launch {
+            AuthRepository.state.collectLatest { authState ->
+                if (authState is AuthState.Authenticated && !authState.isAnonymous) {
+                    retryPendingRemoteWrites(ProfileRepository.activeProfileId)
+                }
+            }
+        }
     }
 
     fun onProfileChanged(profileId: Int) {
         if (profileId == currentProfileId && hasLoaded) return
         loadFromDisk(profileId)
+        retryPendingRemoteWrites(profileId)
     }
 
     fun clearLocalState() {
@@ -187,6 +205,7 @@ object WatchedRepository {
         }
         previousAccountJob.cancel()
         extraKeysObserverJob = null
+        authObserverJob = null
         hasLoaded = false
         currentProfileId = 1
         profileGeneration += 1L
@@ -1044,6 +1063,37 @@ object WatchedRepository {
      */
     fun baseFullyWatchedSeriesKeys(): Set<String> = fullyWatchedSeriesKeysForSource(activeSource)
 
+    private fun scheduleRemoteRetry(profileId: Int) {
+        val retryAttempt = synchronized(remoteRetryLock) {
+            val next = (remoteRetryAttemptsByProfile[profileId] ?: 0) + 1
+            remoteRetryAttemptsByProfile[profileId] = next
+            next
+        }
+        if (retryAttempt <= 5) {
+            accountScopeSnapshot().launch {
+                delay(pendingSyncRetryDelayMs(retryAttempt - 1))
+                retryPendingRemoteWrites(profileId)
+            }
+        }
+    }
+
+    fun retryPendingRemoteWrites(profileId: Int = ProfileRepository.activeProfileId) {
+        if (!hasLoaded || currentProfileId != profileId) loadFromDisk(profileId)
+        val authState = AuthRepository.state.value
+        if (authState !is AuthState.Authenticated || authState.isAnonymous) return
+        if (activeSource.providerId != null || profileId != currentProfileId) return
+        val pendingItems = itemsStore.read { kaplayItems, _, dirtyKAPlayKeys, _ ->
+            dirtyKAPlayKeys.mapNotNull { key -> kaplayItems[key] }
+        }
+        if (pendingItems.isNotEmpty()) {
+            pushMarksToServer(
+                items = pendingItems,
+                trackerHistorySync = WatchedTrackerHistorySync.Skip,
+                source = activeSource,
+            )
+        }
+    }
+
     private fun pushMarksToServer(
         items: Collection<WatchedItem>,
         trackerHistorySync: WatchedTrackerHistorySync,
@@ -1067,9 +1117,13 @@ object WatchedRepository {
                         operationGeneration = operationGeneration,
                         items = items,
                     )
+                    synchronized(remoteRetryLock) { remoteRetryAttemptsByProfile.remove(profileId) }
+                } else if (source.providerId == null) {
+                    scheduleRemoteRetry(profileId)
                 }
             }.onFailure { e ->
                 log.e(e) { "Failed to push watched items" }
+                scheduleRemoteRetry(profileId)
             }
         }
     }

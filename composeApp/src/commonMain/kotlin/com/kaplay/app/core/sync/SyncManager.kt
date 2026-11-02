@@ -18,7 +18,9 @@ import com.kaplay.app.features.tracking.TrackingSettingsRepository
 import com.kaplay.app.features.tracking.WatchProgressSource
 import com.kaplay.app.features.tracking.effectiveLibrarySourceMode
 import com.kaplay.app.features.tracking.effectiveWatchProgressSource
+import com.kaplay.app.features.watchprogress.WatchProgressRepository
 import com.kaplay.app.features.watchprogress.WatchProgressSourceCoordinator
+import com.kaplay.app.features.watched.WatchedRepository
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CancellationException
@@ -379,6 +381,8 @@ object SyncManager {
                 "Active watch source refresh was incomplete: " +
                     "progress=${result.progressRefreshed} watched=${result.watchedHistoryRefreshed}"
             }
+            WatchProgressRepository.retryPendingRemoteWrites(profileId)
+            WatchedRepository.retryPendingRemoteWrites(profileId)
         },
         pullCollections = { profileId -> CollectionSyncService.pullFromServer(profileId) },
         pullHomeCatalogSettings = { profileId -> HomeCatalogSettingsSyncService.pullFromServer(profileId) },
@@ -392,6 +396,8 @@ object SyncManager {
                 "Active watch source refresh was incomplete: " +
                     "progress=${result.progressRefreshed} watched=${result.watchedHistoryRefreshed}"
             }
+            WatchProgressRepository.retryPendingRemoteWrites(profileId)
+            WatchedRepository.retryPendingRemoteWrites(profileId)
         },
     )
 

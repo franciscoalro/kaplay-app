@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - kaplay-rebrand
+      - agentic/ka-play-production-toolkit-20261101
     paths:
       - 'composeApp/src/commonMain/kotlin/com/kaplay/app/core/sync/**'
       - 'composeApp/src/commonMain/kotlin/com/kaplay/app/features/library/**'
