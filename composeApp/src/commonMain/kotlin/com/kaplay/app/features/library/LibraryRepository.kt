@@ -232,6 +232,30 @@ object LibraryRepository {
             val pullSnapshot = localState.markPullStarted(serializedToken) ?: return@withLock LibraryPullResult.Skipped
 
             try {
+                // Recover cloud writes that failed while RPCs were unavailable or the app was offline.
+                // Upload before pulling: reinstalling without this acknowledgment would lose local-only data.
+                if (pullSnapshot.hasPendingPush) {
+                    val authState = AuthRepository.state.value
+                    check(authState is AuthState.Authenticated && !authState.isAnonymous) {
+                        "Registered session required to back up pending library changes"
+                    }
+                    val itemsByKey = pullSnapshot.items.associateBy { item ->
+                        libraryItemKey(item.id, item.type)
+                    }
+                    val pendingUpserts = pullSnapshot.pendingUpsertKeys.mapNotNull { key ->
+                        itemsByKey[libraryItemKey(key.contentId, key.contentType)]
+                    }.filterNot { ServerItemRef.isServerId(it.id) }
+                    val pendingDeletes = pullSnapshot.pendingDeleteKeys.filterNot { key ->
+                        ServerItemRef.isServerId(key.contentId)
+                    }
+                    syncAdapter.pushItems(profileId, pendingUpserts)
+                    syncAdapter.deleteItems(profileId, pendingDeletes)
+                    localState.markPushCompleted(pullSnapshot)?.let(::persist)
+                    log.i {
+                        "Recovered pending library writes profile=$profileId " +
+                            "upserts=${pendingUpserts.size} deletes=${pendingDeletes.size}"
+                    }
+                }
                 if (!pullSnapshot.deltaInitialized) {
                     val cursorBeforeSnapshot = syncAdapter.getDeltaCursor(profileId)
                     val serverItems = syncAdapter.pullSnapshot(
