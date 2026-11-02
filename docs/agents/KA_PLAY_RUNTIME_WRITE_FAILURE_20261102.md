@@ -39,3 +39,20 @@ Screenshot after the action: `ka-favorite-after.png` (captured from the forwarde
 This is concrete evidence that the local favorite mutation is recorded but the connected runtime did not persist it remotely. The server explicitly advertises `sync_push_library_items_v2` while the running process requested `sync_push_library_items`.
 
 The checked source adapter contains the v2 call, and the downloaded APK dex contains `sync_push_library_items_v2`; therefore the next investigation must identify why the installed process still emits the v1 endpoint (stale process/package, artifact mismatch, or another runtime adapter path). No production SQL, migration, deletion, or workaround was executed.
+
+## Fresh package retest
+
+The old `com.kaplay.app.debug` package was removed only after explicit operator confirmation because its signing key conflicted with the new CI APK. The new APK installed successfully as version `0.9.20` / code `193`.
+
+With the fresh package and the same existing profile, the favorite action produced:
+
+```text
+LibraryRepository: Saving local library item item=tomato:6945 type=tv profile=1
+LibraryRepository: Failed to push library delta profile=1 attempt=1 upserts=1 deletes=0
+HttpRequestTimeoutException: Request timeout has expired [url=https://<redacted>/rest/v1/rpc/sync_push_library_items_v2, request_timeout=10000 ms]
+LibraryRepository: Failed to push library delta profile=1 attempt=2 upserts=1 deletes=0
+LibraryRepository: Failed to push library delta profile=1 attempt=3 upserts=1 deletes=0
+LibraryRepository: Failed to push library delta profile=1 attempt=4 upserts=1 deletes=0
+```
+
+This confirms the stale-v1 issue was removed: the fresh APK calls the v2 endpoint and retains the local mutation while the connected request times out. A host-side HTTPS probe reached the Supabase host in `0.099s` and the emulator reached the host by ICMP/TCP, so the remaining failure is specific to the authenticated v2 request or connected RPC execution, not DNS alone.
