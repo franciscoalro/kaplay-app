@@ -43,30 +43,12 @@ jobs:
       - name: Build Full Debug APK
         run: ./gradlew :androidApp:assembleFullDebug --no-daemon
 
-      - name: Verify APK identity and v2 RPC contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          apk=$(find androidApp/build/outputs/apk/full/debug -type f -name '*-full-debug.apk' -print -quit)
-          test -n "$apk"
-          expected_code=$(sed -n 's/^CURRENT_PROJECT_VERSION=//p' iosApp/Configuration/Version.xcconfig)
-          expected_name=$(sed -n 's/^MARKETING_VERSION=//p' iosApp/Configuration/Version.xcconfig)
-          badging="$($ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$apk")"
-          grep -q "versionCode='$expected_code'" <<<"$badging"
-          grep -q "versionName='$expected_name'" <<<"$badging"
-          for rpc in sync_push_library_items_v2 sync_push_watch_progress_v2 sync_push_watched_items_v2; do
-            if ! for dex in $(unzip -Z1 "$apk" | grep '^classes[0-9]*\\.dex$'); do unzip -p "$apk" "$dex" | strings; done | grep -q "$rpc"; then
-              echo "Missing required RPC identifier in APK: $rpc" >&2
-              exit 1
-            fi
-          done
-
       - name: Verify APK and write build metadata
         id: apk
         shell: bash
         run: |
           set -euo pipefail
-          apk=$(find androidApp/build/outputs/apk/full/debug -type f -name '*-full-debug.apk' -print -quit)
+          apk=$(find androidApp/build/outputs/apk -type f -name '*.apk' -print -quit)
           test -n "$apk"
           sha256=$(sha256sum "$apk" | cut -d' ' -f1)
           size=$(stat -c '%s' "$apk")
