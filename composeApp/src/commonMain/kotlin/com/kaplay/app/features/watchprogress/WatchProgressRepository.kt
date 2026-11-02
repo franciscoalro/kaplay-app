@@ -536,6 +536,27 @@ object WatchProgressRepository {
 
         return kaplayPullMutex.withLock {
             try {
+                // Recover the durable offline outbox before adopting the cloud snapshot.
+                // A successful RPC is required before clearing local dirty progress keys.
+                val dirtyKeys = dirtyProgressKeysSnapshot()
+                val pendingEntries = localEntriesSnapshot().filter { entry ->
+                    entry.resolvedProgressKey() in dirtyKeys &&
+                        !ServerItemRef.isServerId(entry.parentMetaId)
+                }
+                if (pendingEntries.isNotEmpty()) {
+                    syncAdapter.push(profileId = profileId, entries = pendingEntries)
+                    if (!isActiveOperation(profileId, operationGeneration)) {
+                        return@withLock false
+                    }
+                    recordSuccessfulPush(
+                        profileId = profileId,
+                        operationGeneration = operationGeneration,
+                        entries = pendingEntries,
+                    )
+                    log.i {
+                        "Recovered pending watch progress profile=$profileId count=${pendingEntries.size}"
+                    }
+                }
                 if (force) {
                     pullKAPlaySnapshotFromServer(
                         profileId = profileId,
