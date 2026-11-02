@@ -229,7 +229,7 @@ object LibraryRepository {
 
         return kaplaySyncMutex.withLock {
             val serializedToken = activeOperationToken(profileId) ?: return@withLock LibraryPullResult.Skipped
-            val pullSnapshot = localState.markPullStarted(serializedToken) ?: return@withLock LibraryPullResult.Skipped
+            var pullSnapshot = localState.markPullStarted(serializedToken) ?: return@withLock LibraryPullResult.Skipped
 
             try {
                 // Recover cloud writes that failed while RPCs were unavailable or the app was offline.
@@ -250,7 +250,7 @@ object LibraryRepository {
                     }
                     syncAdapter.pushItems(profileId, pendingUpserts)
                     syncAdapter.deleteItems(profileId, pendingDeletes)
-                    localState.markPushCompleted(pullSnapshot)?.let(::persist)
+                    pullSnapshot = localState.markPushCompleted(pullSnapshot)\n                        ?: return@withLock LibraryPullResult.Skipped\n                    persist(pullSnapshot)
                     log.i {
                         "Recovered pending library writes profile=$profileId " +
                             "upserts=${pendingUpserts.size} deletes=${pendingDeletes.size}"
