@@ -1259,6 +1259,11 @@ object WatchedRepository {
         )
     }
 
+    fun hasPendingCloudChanges(profileId: Int): Boolean =
+        profileId == currentProfileId &&
+            hasLoaded &&
+            itemsStore.read { _, _, dirtyKAPlayKeys, _ -> dirtyKAPlayKeys.isNotEmpty() }
+
     private fun recordSuccessfulPush(
         profileId: Int,
         operationGeneration: Long,
