@@ -1,0 +1,123 @@
+name: KA Play Debug — Cloud persistence recovery
+
+on:
+  push:
+    branches:
+      - fix/ka-play-cloud-persistence-20261101
+
+permissions:
+  contents: read
+
+jobs:
+  host-tests:
+    name: Kotlin host sync tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -XX:+UseG1GC -Dorg.gradle.workers.max=2
+      KOTLIN_COMPILER_EXECUTION_STRATEGY: in-process
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize MPVKit
+        run: |
+          git submodule sync -- MPVKit || true
+          git -c protocol.version=2 submodule update --init --depth=1 MPVKit || true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - run: |
+          sdk_dir="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          echo "sdk.dir=$sdk_dir" > local.properties
+      - name: Run Kotlin host regression tests
+        run: ./gradlew :composeApp:testAndroidHostTest --no-daemon --no-parallel --max-workers=2 --stacktrace
+      - name: Upload regression results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ka-cloud-persistence-kotlin-tests
+          path: |
+            composeApp/build/reports/tests/
+            composeApp/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  debug-apk:
+    name: Build Full Debug APK (authorized production backend)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      KAPLAY_SUPABASE_URL: https://iibureqvpurmbgqupnvl.supabase.co
+      KAPLAY_SUPABASE_ANON_KEY: sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp
+      KAPLAY_SUPABASE_FALLBACK_URL: ''
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check selected backend and Auth health
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$KAPLAY_SUPABASE_URL" = "https://iibureqvpurmbgqupnvl.supabase.co"
+          [[ "$KAPLAY_SUPABASE_ANON_KEY" == sb_publishable_* ]]
+          test -z "$KAPLAY_SUPABASE_FALLBACK_URL"
+          status="$(curl --silent --show-error --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' --header "apikey: $KAPLAY_SUPABASE_ANON_KEY" "$KAPLAY_SUPABASE_URL/auth/v1/health")"
+          test "$status" = 200 || { echo "Auth health HTTP $status" >&2; exit 1; }
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - run: ': > local.properties'
+      - name: Assemble isolated Full Debug APK
+        run: ./gradlew :androidApp:assembleFullDebug --no-daemon --stacktrace
+      - name: Validate SDK config and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$(find composeApp/build/generated -type f -name SupabaseConfig.kt -print -quit)"
+          test -s "$config"
+          grep -Fq "const val URL = \"$KAPLAY_SUPABASE_URL\"" "$config"
+          grep -Fq "const val ANON_KEY = \"$KAPLAY_SUPABASE_ANON_KEY\"" "$config"
+          grep -Fq 'const val FALLBACK_URL = ""' "$config"
+          privileged='service[_-]?role|sb_secret_|-----BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY-----'
+          if grep -Eiq "$privileged" "$config"; then
+            echo 'Privileged credential in generated config' >&2
+            exit 1
+          fi
+          apk="$(find androidApp/build/outputs/apk -type f -name '*.apk' -print -quit)"
+          test -s "$apk"
+          mkdir -p build-artifacts
+          cp "$apk" build-artifacts/KA_Play_Cloud_Persistence_Debug.apk
+          sha256sum build-artifacts/KA_Play_Cloud_Persistence_Debug.apk > build-artifacts/SHA256SUMS
+          {
+            echo 'package=com.kaplay.app.debug'
+            echo 'source_branch=fix/ka-play-cloud-persistence-20261101'
+            echo "source_commit=$GITHUB_SHA"
+            echo 'backend=production-authorized-debug'
+            echo 'database_mutations_in_ci=NONE'
+            echo 'release_signing=NO'
+            echo 'manual_device_validation=REQUIRED'
+          } > build-artifacts/BUILD_METADATA.txt
+          aapt dump badging "$apk" | grep "package: name='com.kaplay.app.debug'"
+          while IFS= read -r dex; do
+            if unzip -p "$apk" "$dex" | strings | grep -Eiq "$privileged"; then
+              echo "Privileged key material found in APK $dex" >&2
+              exit 1
+            fi
+          done < <(unzip -Z1 "$apk" | grep -E '^classes[0-9]*\\.dex$')
+      - name: Upload cloud-persistence Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ka-play-cloud-persistence-debug
+          path: build-artifacts/
+          if-no-files-found: error
+          retention-days: 7
