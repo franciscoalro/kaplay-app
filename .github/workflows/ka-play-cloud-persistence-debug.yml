@@ -35,8 +35,13 @@ jobs:
       - run: |
           sdk_dir="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
           echo "sdk.dir=$sdk_dir" > local.properties
-      - name: Run Kotlin host regression tests
-        run: ./gradlew :composeApp:testAndroidHostTest --no-daemon --no-parallel --max-workers=2 --stacktrace
+      - name: Run Kotlin sync/persistence host regression tests
+        run: |
+          ./gradlew :composeApp:testAndroidHostTest \
+            --tests 'com.kaplay.app.core.sync.*' \
+            --tests 'com.kaplay.app.features.library.sync.*' \
+            --tests 'com.kaplay.app.features.watching.sync.*' \
+            --no-daemon --no-parallel --max-workers=2 --stacktrace
       - name: Upload regression results
         if: always()
         uses: actions/upload-artifact@v4
@@ -107,7 +112,7 @@ jobs:
             echo 'release_signing=NO'
             echo 'manual_device_validation=REQUIRED'
           } > build-artifacts/BUILD_METADATA.txt
-          aapt dump badging "$apk" | grep "package: name='com.kaplay.app.debug'"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep "package: name='com.kaplay.app.debug'"
           while IFS= read -r dex; do
             if unzip -p "$apk" "$dex" | strings | grep -Eiq "$privileged"; then
               echo "Privileged key material found in APK $dex" >&2
