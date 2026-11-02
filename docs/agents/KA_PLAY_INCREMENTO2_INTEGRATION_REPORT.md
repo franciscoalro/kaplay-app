@@ -3,7 +3,7 @@
 ## Implementado
 
 - Frontend: estados de sincronização corrigidos (`Verificando sincronização…` em `LOADING`) e ação funcional `Tentar novamente` ligada ao `SyncManager.pullAllForProfile`; Biblioteca existente auditada para loading/empty/offline/error.
-- Persistência P0: filas pendentes de Biblioteca, progresso e assistidos agora são reexecutadas após login, abertura, troca de perfil, reconexão/pull e falha transitória, com backoff limitado e confirmação somente após retorno bem-sucedido da RPC.
+- Persistência P0: filas pendentes de Biblioteca, progresso e assistidos agora são reexecutadas após login, abertura, troca de perfil, reconexão/pull e falha transitória, com backoff limitado e confirmação somente após retorno bem-sucedido da RPC. Exclusões de progresso também persistem como entradas pendentes.
 - Backend proposto: tabelas e RPCs profile-scoped para favoritos/histórico, RLS, paginação por cursor, replay idempotente e monotonicidade de histórico. A alteração permanece em `supabase/proposed/`; não foi aplicada em produção.
 - QA: teste SQL determinístico de reabertura de sessão, logout/login, isolamento entre contas/perfis e replay offline/reconexão.
 - AppSec: revisão independente e redaction dos refresh tokens no backup de homologação atual.
@@ -11,7 +11,7 @@
 ## Evidências
 
 - Isolado local: `bash supabase/tests/run_etapa15_sync_v2_isolated.sh` → `isolated_sql_status=PASS`; evidência `INC2_AFTER_REPLAY` confirmou `library_items=1`, `watch_progress=1`, `watched_items=1`, e `ETAPA20_REOPEN_IDENTITY_QUEUE_OK`.
-- CI integrado SQL/sync: run [41386383704](https://github.com/franciscoalro/kaplay-app/actions/runs/41386383704) → credential scan, PostgreSQL isolado e sync host **success**; inclui backoff da fila P0 e o teste de persistência/reabertura dos três domínios.
+- CI integrado SQL/sync: run [41388246750](https://github.com/franciscoalro/kaplay-app/actions/runs/41388246750) → credential scan, PostgreSQL isolado e sync host **success**; inclui backoff da fila P0, fila de exclusão de progresso e o teste de persistência/reabertura dos três domínios.
 - CI integrado Kotlin/host: run [41338931981](https://github.com/franciscoalro/kaplay-app/actions/runs/41338931981) → compile Full/Play Store, TLS checks e host tests **success**; somente Pages foi bloqueado por proteção de ambiente.
 - AppSec report: `docs/agents/KA_PLAY_INCREMENTO2_APPSEC_REPORT.md`.
 - QA report: `docs/agents/KA_PLAY_INCREMENTO2_QA_REPORT.md`.
