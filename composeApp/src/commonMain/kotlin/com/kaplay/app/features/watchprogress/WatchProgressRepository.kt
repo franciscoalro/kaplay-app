@@ -1615,6 +1615,11 @@ object WatchProgressRepository {
         }
     }
 
+    fun hasPendingCloudChanges(profileId: Int): Boolean =
+        profileId == currentProfileId &&
+            hasLoaded &&
+            dirtyProgressKeysSnapshot().isNotEmpty()
+
     private fun dirtyProgressKeysSnapshot(): Set<String> =
         synchronized(entriesLock) {
             dirtyProgressKeys.toSet()
