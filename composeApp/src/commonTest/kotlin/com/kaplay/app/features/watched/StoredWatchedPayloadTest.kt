@@ -41,6 +41,21 @@ class StoredWatchedPayloadTest {
     }
 
     @Test
+    fun pendingDeleteItems_roundTripAcrossRestart() {
+        val item = WatchedItem(
+            id = "tt-delete",
+            type = "movie",
+            name = "Deleted movie",
+            markedAtEpochMs = 2_000L,
+        )
+        val payload = StoredWatchedPayload(pendingDeleteItems = listOf(item))
+
+        val restored = json.decodeFromString<StoredWatchedPayload>(json.encodeToString(payload))
+
+        assertEquals(listOf(item), restored.pendingDeleteItems)
+    }
+
+    @Test
     fun legacyPayload_defaultsToNoProviderSnapshots() {
         val restored = json.decodeFromString<StoredWatchedPayload>("{\"items\":[]}")
 

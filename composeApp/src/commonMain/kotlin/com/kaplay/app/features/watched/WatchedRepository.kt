@@ -149,6 +149,7 @@ object WatchedRepository {
     private var providerFullyWatchedSeriesKeys: MutableMap<TrackingProviderId, Set<String>> = mutableMapOf()
     private var expandedSiblingKeys: Set<String> = emptySet()
     private var providerExtraWatchedKeys: MutableMap<TrackingProviderId, Set<String>> = mutableMapOf()
+    private var pendingDeleteItemsByKey: MutableMap<String, WatchedItem> = mutableMapOf()
     private var kaplayHasLoaded: Boolean = false
     private var loadedProviders: MutableSet<TrackingProviderId> = mutableSetOf()
     private var kaplayHasLoadedRemote: Boolean = false
@@ -216,6 +217,7 @@ object WatchedRepository {
             providerItems.clear()
             dirtyKAPlayKeys.clear()
             dirtyProviderKeys.clear()
+            pendingDeleteItemsByKey.clear()
         }
         kaplayFullyWatchedSeriesKeys = emptySet()
         providerFullyWatchedSeriesKeys.clear()
@@ -243,6 +245,7 @@ object WatchedRepository {
             providerItems.clear()
             dirtyKAPlayKeys.clear()
             dirtyProviderKeys.clear()
+            pendingDeleteItemsByKey.clear()
         }
         kaplayFullyWatchedSeriesKeys = emptySet()
         providerFullyWatchedSeriesKeys.clear()
@@ -272,6 +275,9 @@ object WatchedRepository {
             val restoredProviderPayloads = storedPayload.providerPayloads.mapNotNull { (storageId, providerPayload) ->
                 TrackingProviderId.fromStorage(storageId)?.let { providerId -> providerId to providerPayload }
             }.toMap()
+            pendingDeleteItemsByKey = storedPayload.pendingDeleteItems
+                .map(WatchedItem::normalizedMarkedAt)
+                .associateByTo(mutableMapOf()) { watchedItemKey(it.type, it.id, it.season, it.episode) }
             itemsStore.update { kaplayItems, providerItems, dirtyKAPlayKeys, dirtyProviderKeys ->
                 kaplayItems.putAll(restoredItems)
                 dirtyKAPlayKeys += storedPayload.dirtyWatchedKeys.filter { key -> key in restoredItems }
@@ -1092,6 +1098,10 @@ object WatchedRepository {
                 source = activeSource,
             )
         }
+        val pendingDeletes = pendingDeleteItemsByKey.values.toList()
+        if (pendingDeletes.isNotEmpty()) {
+            pushDeleteToServer(items = pendingDeletes, source = activeSource)
+        }
     }
 
     private fun pushMarksToServer(
@@ -1134,6 +1144,15 @@ object WatchedRepository {
     ) {
         val profileId = currentProfileId
         ServerWatched.mirror(items, played = false)
+        if (source.providerId == null) {
+            itemsStore.update { _, _, _, _ ->
+                items.forEach { item ->
+                    pendingDeleteItemsByKey[watchedItemKey(item.type, item.id, item.season, item.episode)] = item
+                }
+                true
+            }
+            persist()
+        }
         accountScopeSnapshot().launch {
             runCatching {
                 if (items.isEmpty()) return@runCatching
@@ -1142,8 +1161,13 @@ object WatchedRepository {
                     items = items,
                     source = source,
                 )
+                if (source.providerId == null) {
+                    items.forEach { item -> pendingDeleteItemsByKey.remove(watchedItemKey(item.type, item.id, item.season, item.episode)) }
+                    persist()
+                }
             }.onFailure { e ->
                 log.e(e) { "Failed to push watched item delete" }
+                if (source.providerId == null) scheduleRemoteRetry(profileId)
             }
         }
     }
@@ -1273,6 +1297,7 @@ object WatchedRepository {
                 deltaCursorEventId = deltaCursorEventId,
                 deltaInitialized = deltaInitialized,
                 dirtyWatchedKeys = dirtyKAPlayKeys.toSet(),
+                pendingDeleteItems = pendingDeleteItemsByKey.values.toList(),
                 providerPayloads = providerIds.associate { providerId ->
                     val items = providerItems[providerId]
                         .orEmpty()
