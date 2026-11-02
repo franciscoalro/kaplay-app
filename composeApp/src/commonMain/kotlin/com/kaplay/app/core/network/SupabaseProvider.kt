@@ -12,6 +12,7 @@ import io.github.jan.supabase.realtime.websocket.KtorRealtimeWebsocketFactory
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.supabaseJson
 import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.http.HttpHeaders
@@ -42,6 +43,9 @@ object SupabaseProvider {
             supabaseKey = configuration.publishableKey,
         ) {
             httpConfig {
+                install(HttpTimeout) {
+                    requestTimeoutMillis = 30_000L
+                }
                 install(BackendRateLimitPlugin) {
                     coordinator = rateLimitCoordinator
                 }
