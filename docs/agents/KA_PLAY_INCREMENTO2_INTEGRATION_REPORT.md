@@ -3,6 +3,7 @@
 ## Implementado
 
 - Frontend: estados de sincronização corrigidos (`Verificando sincronização…` em `LOADING`) e ação funcional `Tentar novamente` ligada ao `SyncManager.pullAllForProfile`; Biblioteca existente auditada para loading/empty/offline/error.
+- Persistência P0: filas pendentes de Biblioteca, progresso e assistidos agora são reexecutadas após login, abertura, troca de perfil, reconexão/pull e falha transitória, com backoff limitado e confirmação somente após retorno bem-sucedido da RPC.
 - Backend proposto: tabelas e RPCs profile-scoped para favoritos/histórico, RLS, paginação por cursor, replay idempotente e monotonicidade de histórico. A alteração permanece em `supabase/proposed/`; não foi aplicada em produção.
 - QA: teste SQL determinístico de reabertura de sessão, logout/login, isolamento entre contas/perfis e replay offline/reconexão.
 - AppSec: revisão independente e redaction dos refresh tokens no backup de homologação atual.
@@ -10,7 +11,7 @@
 ## Evidências
 
 - Isolado local: `bash supabase/tests/run_etapa15_sync_v2_isolated.sh` → `isolated_sql_status=PASS`.
-- CI integrado SQL/sync: run [41346203822](https://github.com/franciscoalro/kaplay-app/actions/runs/41346203822) → credential scan, PostgreSQL isolado e sync host **success**.
+- CI integrado SQL/sync: run [41384340155](https://github.com/franciscoalro/kaplay-app/actions/runs/41384340155) → credential scan, PostgreSQL isolado e sync host **success**; inclui o teste de backoff da fila P0.
 - CI integrado Kotlin/host: run [41338931981](https://github.com/franciscoalro/kaplay-app/actions/runs/41338931981) → compile Full/Play Store, TLS checks e host tests **success**; somente Pages foi bloqueado por proteção de ambiente.
 - AppSec report: `docs/agents/KA_PLAY_INCREMENTO2_APPSEC_REPORT.md`.
 - QA report: `docs/agents/KA_PLAY_INCREMENTO2_QA_REPORT.md`.
@@ -24,7 +25,7 @@
 
 ## APK Debug
 
-Run [41341327563](https://github.com/franciscoalro/kaplay-app/actions/runs/41341327563) gerou o Full Debug com endpoint Supabase autorizado explicitamente no workflow. Artefato `ka-play-full-debug-build-only`; SHA-256 `a1bb48b0ed674eb9ff903ce34d806c5b55c3b6bc020e645dc3a0802725f0ffdb`; `com.kaplay.app.debug`, versionName `0.9.20`, versionCode `193`. O scan de credenciais privilegiadas passou.
+Run [41384340077](https://github.com/franciscoalro/kaplay-app/actions/runs/41384340077) gerou o Full Debug com endpoint Supabase autorizado explicitamente no workflow. Artefato `ka-play-full-debug-build-only`; SHA-256 `463fb92680b6d0cb71ba34070bfd01c729c776a3921830b31e68807fef9f66e8`; `com.kaplay.app.debug`, versionName `0.9.20`, versionCode `193`. O scan de credenciais privilegiadas passou.
 
 As capturas do emulador foram produzidas nos runs [41341327563](https://github.com/franciscoalro/kaplay-app/actions/runs/41341327563) e [41344922133](https://github.com/franciscoalro/kaplay-app/actions/runs/41344922133), mas mostram diálogos do sistema (`System UI/Settings isn't responding`); não são screenshots válidas da Biblioteca/perfil. O teste Compose instrumentado foi tentado nos runs [41350402365](https://github.com/franciscoalro/kaplay-app/actions/runs/41350402365) e [41352092751](https://github.com/franciscoalro/kaplay-app/actions/runs/41352092751), mas a instalação falhou com `Device ... API level=1`. O workflow inspeciona `uiautomator` e valida assinatura PNG antes de aceitar qualquer artefato.
 
