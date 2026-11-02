@@ -1415,6 +1415,20 @@ object WatchProgressRepository {
         return storedEntries.resolveIdentityForUpsert(entry)
     }
 
+    private fun scheduleRemoteRetry(profileId: Int) {
+        val retryAttempt = synchronized(remoteRetryLock) {
+            val next = (remoteRetryAttemptsByProfile[profileId] ?: 0) + 1
+            remoteRetryAttemptsByProfile[profileId] = next
+            next
+        }
+        if (retryAttempt <= 5) {
+            accountScopeSnapshot().launch {
+                delay(pendingSyncRetryDelayMs(retryAttempt - 1))
+                retryPendingRemoteWrites(profileId)
+            }
+        }
+    }
+
     fun retryPendingRemoteWrites(profileId: Int = ProfileRepository.activeProfileId) {
         if (!hasLoaded || currentProfileId != profileId) loadFromDisk(profileId)
         val authState = AuthRepository.state.value
