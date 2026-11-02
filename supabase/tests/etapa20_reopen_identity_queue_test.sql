@@ -30,13 +30,26 @@ select public.sync_push_watch_progress_v2(1,
 select public.sync_push_watch_progress_v2(1,
   '[{"progress_key":"inc2-progress","content_id":"inc2-title","content_type":"movie","video_id":"inc2-video","position":20,"duration":100,"last_watched":200}]'::jsonb,
   'inc2-device-a');
+select public.sync_push_watched_items_v2(1,
+  '[{"content_id":"inc2-title","content_type":"movie","title":"Queued title","watched_at":300}]'::jsonb,
+  'inc2-device-a');
+select public.sync_push_watched_items_v2(1,
+  '[{"content_id":"inc2-title","content_type":"movie","title":"Queued title","watched_at":300}]'::jsonb,
+  'inc2-device-a');
+
+select
+  'INC2_AFTER_REPLAY' as checkpoint,
+  (select count(*) from ka_sync.library_items where content_id = 'inc2-title') as library_items,
+  (select count(*) from ka_sync.watch_progress where progress_key = 'inc2-progress') as watch_progress,
+  (select count(*) from ka_sync.watched_items where content_id = 'inc2-title') as watched_items;
 
 do $$
 begin
   if (select count(*) from ka_sync.library_events where content_id = 'inc2-title') <> 1
      or (select count(*) from ka_sync.watch_progress_events where progress_key = 'inc2-progress') <> 1
      or (select count(*) from ka_sync.library_items where content_id = 'inc2-title') <> 1
-     or (select count(*) from ka_sync.watch_progress where progress_key = 'inc2-progress') <> 1 then
+     or (select count(*) from ka_sync.watch_progress where progress_key = 'inc2-progress') <> 1
+     or (select count(*) from ka_sync.watched_items where content_id = 'inc2-title') <> 1 then
     raise exception 'INC2 FAILED: duplicate reconnect replay was not idempotent';
   end if;
 end $$;
@@ -53,6 +66,9 @@ begin
   end if;
   if not exists (select 1 from public.sync_pull_watch_progress_v2(1, 50) where progress_key = 'inc2-progress' and position = 20) then
     raise exception 'INC2 FAILED: progress row did not persist across reopen';
+  end if;
+  if not exists (select 1 from public.sync_pull_watched_items_v2(1, 50) where content_id = 'inc2-title') then
+    raise exception 'INC2 FAILED: watched row did not persist across reopen';
   end if;
 end $$;
 
@@ -99,6 +115,9 @@ begin
   end if;
   if exists (select 1 from public.sync_pull_watch_progress_v2(2, 50) where progress_key = 'inc2-progress') then
     raise exception 'INC2 FAILED: profile 2 saw profile 1 progress data';
+  end if;
+  if exists (select 1 from public.sync_pull_watched_items_v2(2, 50) where content_id = 'inc2-title') then
+    raise exception 'INC2 FAILED: profile 2 saw profile 1 watched data';
   end if;
 end $$;
 reset role;
