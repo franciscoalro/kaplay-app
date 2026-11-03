@@ -34,6 +34,30 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun feedAnimeIdAliasWinsOverEpisodeIdAlias() {
+        val item = json.parseToJsonElement(
+            """{"animeId":6839,"id":37809,"anime_name":"Koori no Jouheki"}""",
+        ).jsonObject
+
+        val title = requireNotNull(TomatoProvider.titleFromFeedItem(item))
+
+        assertEquals(6839L, title.id)
+        assertEquals(37809L, title.episodeId)
+    }
+
+    @Test
+    fun feedCardWithOnlyIdDoesNotInventEpisodeIdentity() {
+        val item = json.parseToJsonElement(
+            """{"id":6839,"anime_name":"Koori no Jouheki"}""",
+        ).jsonObject
+
+        val title = requireNotNull(TomatoProvider.titleFromFeedItem(item))
+
+        assertEquals(6839L, title.id)
+        assertNull(title.episodeId)
+    }
+
+    @Test
     fun readsCurrentDetailEnvelope() {
         val payload = json.parseToJsonElement(
             """{"anime_details":{"anime_id":6945,"anime_name":"Even the Student Council Has Its Holes!"},"anime_seasons":[{"season_id":2256,"season_name":"(Legendado) Season I","season_number":1,"season_dubbed":0}]}""",
