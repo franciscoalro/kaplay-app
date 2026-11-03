@@ -389,20 +389,10 @@ object TomatoProvider {
             val items = episodeItems(payload)
             if (items.isEmpty()) break
             items.forEach { item ->
-                val id = episodeIdOf(item) ?: return@forEach
-                if (seenIds.add(id)) {
-                    result.add(
-                        TomatoEpisode(
-                            episodeId = id,
-                            number = episodeNumberOf(item),
-                            name = item["ep_name"]?.jsonPrimitive?.contentOrNull,
-                            thumbnail = item["ep_thumbnail"]?.jsonPrimitive?.contentOrNull,
-                            dubbed = item["dubbed"]?.jsonPrimitive?.booleanOrNull == true,
-                        ),
-                    )
-                }
+                val episode = episodeFromJson(item) ?: return@forEach
+                if (seenIds.add(episode.episodeId)) result.add(episode)
             }
-            val declaredTotal = payload["episodes"]?.jsonPrimitive?.intOrNull
+            val declaredTotal = episodeTotalOf(payload)
             if (declaredTotal != null && seenIds.size >= declaredTotal) break
         }
         return result
@@ -417,6 +407,21 @@ object TomatoProvider {
         return episodes?.let { runCatching { it.jsonArray.mapNotNull { entry -> entry as? JsonObject } }.getOrNull() }
             .orEmpty()
     }
+
+    internal fun episodeFromJson(item: JsonObject): TomatoEpisode? {
+        val id = episodeIdOf(item) ?: return null
+        return TomatoEpisode(
+            episodeId = id,
+            number = episodeNumberOf(item),
+            name = item["ep_name"]?.jsonPrimitive?.contentOrNull,
+            thumbnail = item["ep_thumbnail"]?.jsonPrimitive?.contentOrNull,
+            dubbed = item["dubbed"]?.jsonPrimitive?.booleanOrNull == true,
+        )
+    }
+
+    internal fun episodeTotalOf(payload: JsonObject): Int? =
+        (payload["episodes"] ?: (payload["data"] as? JsonObject)?.get("episodes"))
+            ?.jsonPrimitive?.intOrNull
 
     internal fun episodeIdOf(item: JsonObject): Long? =
         (item["ep_id"] ?: item["episode_id"] ?: item["episodeId"] ?: item["id"])

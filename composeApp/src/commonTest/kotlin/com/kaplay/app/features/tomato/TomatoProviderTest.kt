@@ -63,10 +63,24 @@ class TomatoProviderTest {
                 ).jsonObject,
             ).mapNotNull(TomatoProvider::episodeIdOf),
         )
+        val episode = TomatoProvider.episodeFromJson(
+            json.parseToJsonElement(
+                """{"ep_id":37521,"ep_name":"Episódio 1","ep_number":1,"ep_thumbnail":"https://cdn.example/ep.jpg"}""",
+            ).jsonObject,
+        )
+        assertEquals("Episódio 1", episode?.name)
+        assertEquals("https://cdn.example/ep.jpg", episode?.thumbnail)
+        assertEquals(1, episode?.number)
         assertEquals(
             1,
             TomatoProvider.episodeNumberOf(
                 json.parseToJsonElement("""{"ep_id":37521,"ep_name":"Episódio 1","ep_number":1}""").jsonObject,
+            ),
+        )
+        assertEquals(
+            1,
+            TomatoProvider.episodeTotalOf(
+                json.parseToJsonElement("""{"data":{"episodes":1}}""").jsonObject,
             ),
         )
     }
