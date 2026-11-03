@@ -238,8 +238,8 @@ object TomatoProvider {
         val raw = (
             item["anime_id"]
                 ?: item["ep_anime_id"]
-                ?: item["id"]
                 ?: item["animeId"]
+                ?: item["id"]
             )?.jsonPrimitive?.intOrNull ?: return null
         return raw.takeIf { it > 0 }?.toLong()
     }
@@ -265,8 +265,8 @@ object TomatoProvider {
         val name = displayTitleOrNull(titleOf(item))
             ?: displayTitleOrNull(fallbackName.orEmpty())
             ?: return null
-        val episodeId = episodeIdOf(item)
-        val episodeThumbnail = episodeThumbnailOf(item)
+        val episodeId = feedEpisodeIdOf(item)
+        val episodeThumbnail = episodeId?.let { episodeThumbnailOf(item) }
         return TomatoTitle(
             id = id,
             name = name,
