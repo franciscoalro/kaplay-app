@@ -271,6 +271,19 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun latestFeedDedupesRepeatedCardsWithoutExplicitEpisodeIdsByAnime() {
+        val items = listOf(
+            json.parseToJsonElement("""{"ep_anime_id":6839,"anime_name":"Koori no Jouheki"}""").jsonObject,
+            json.parseToJsonElement("""{"ep_anime_id":6839,"anime_name":"Koori no Jouheki"}""").jsonObject,
+        )
+
+        assertEquals(
+            listOf(6839L),
+            TomatoProvider.feedItemsForSection("novos-episodios", items).mapNotNull(TomatoProvider::animeIdOf),
+        )
+    }
+
+    @Test
     fun tomatoTitleFromFeedItemPopulatesEpisodeFields() {
         val item = json.parseToJsonElement(
             """{
