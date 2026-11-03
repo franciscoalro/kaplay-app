@@ -16,6 +16,11 @@ on:
         description: Optional comma-separated commit hashes to omit from the notes
         required: false
         type: string
+      android_only:
+        description: Publish Android APKs without requiring the optional iOS build
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -226,7 +231,7 @@ jobs:
 
   ios:
     name: Build iOS IPA
-    if: inputs.mode != 'dry-run'
+    if: inputs.mode != 'dry-run' && !inputs.android_only
     needs: prepare
     runs-on: xcode-27
     timeout-minutes: 120
@@ -306,7 +311,7 @@ jobs:
 
   release:
     name: Create ${{ inputs.mode }} release
-    if: inputs.mode != 'dry-run'
+    if: ${{ always() && inputs.mode != 'dry-run' && (needs.ios.result == 'success' || inputs.android_only) }}
     needs:
       - prepare
       - android
