@@ -228,7 +228,8 @@ fun AuthScreen(
 
     fun requestPasswordReset() {
         if (isLoading || isResetLoading) return
-        if (!isValidAuthEmail(email)) {
+        val resetEmail = normalizedAuthEmail(email)
+        if (resetEmail == null) {
             resetMessage = resetInvalidEmailText
             resetMessageIsError = true
             return
@@ -238,7 +239,7 @@ fun AuthScreen(
         resetMessageIsError = false
         focusManager.clearFocus(force = true)
         scope.launch {
-            val result = AuthRepository.requestPasswordReset(email.trim())
+            val result = AuthRepository.requestPasswordReset(resetEmail)
             resetMessage = result.fold(
                 onSuccess = { resetSentText },
                 onFailure = { resetFailedText },
@@ -249,6 +250,7 @@ fun AuthScreen(
     }
 
     fun toggleAuthMode() {
+        if (isResetLoading) return
         DeviceLinkAuthRepository.cancel()
         isSignUp = !isSignUp
         resetMessage = null
