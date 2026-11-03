@@ -45,21 +45,63 @@ object TomatoCatalog {
         )
     }
 
-    fun metaPreview(title: TomatoTitle): MetaPreview = MetaPreview(
-        id = "${TomatoProvider.ANIME_ID_PREFIX}${title.id}",
-        type = "tv",
-        name = title.name,
-        poster = title.image,
-        banner = title.image,
-    )
+    internal fun latestEpisodeLabel(title: TomatoTitle): String {
+        val animeName = title.name.trim()
+        val episodeNumber = title.episodeNumber?.takeIf { it > 0 }?.let { "Episódio $it" }
+        val episodeName = title.episodeName
+            ?.trim()
+            ?.replace(Regex("^\\d+\\s*[.)\\-:]\\s*"), "")
+            ?.takeIf { it.isNotBlank() }
+        val episodeDetails = when {
+            episodeNumber != null && episodeName != null -> "$episodeNumber: $episodeName"
+            episodeNumber != null -> episodeNumber
+            else -> episodeName
+        }
+        return if (episodeDetails == null) animeName else "$animeName — $episodeDetails"
+    }
+
+    fun metaPreview(title: TomatoTitle, latestEpisode: Boolean = false): MetaPreview {
+        val id = "${TomatoProvider.ANIME_ID_PREFIX}${title.id}"
+        val episodeIdentity = if (latestEpisode) {
+            title.episodeId?.takeIf { it > 0 }?.let { "$id:episode:$it" }
+        } else {
+            null
+        }
+        val image = if (latestEpisode) title.episodeThumbnail ?: title.image else title.image
+        return MetaPreview(
+            id = id,
+            type = "tv",
+            name = if (latestEpisode) latestEpisodeLabel(title) else title.name,
+            poster = image,
+            banner = image,
+            identityKey = episodeIdentity,
+        )
+    }
+
+    internal fun titlesForSection(
+        sectionId: String?,
+        sections: List<TomatoProvider.FeedSectionPayload>,
+        globalItems: List<TomatoTitle>,
+    ): List<TomatoTitle> {
+        val normalizedSectionId = sectionId?.removePrefix("tomato:")
+        return if (normalizedSectionId == null) {
+            globalItems
+        } else {
+            sections.firstOrNull { section -> section.key == normalizedSectionId }?.items.orEmpty()
+        }
+    }
 
     suspend fun feedPage(sectionId: String? = null): CatalogPage {
+        val sections = TomatoProvider.feedSections()
         val section = sectionId?.let { id ->
-            TomatoProvider.feedSections().firstOrNull { it.key == id }
+            val normalizedId = id.removePrefix("tomato:")
+            sections.firstOrNull { it.key == normalizedId }
         }
-        val titles = (section?.items ?: TomatoProvider.feedAnimes()).take(FEED_ROW_LIMIT)
+        val globalItems = if (sectionId == null) TomatoProvider.feedAnimes() else emptyList()
+        val titles = titlesForSection(sectionId, sections, globalItems).take(FEED_ROW_LIMIT)
+        val latestEpisode = section?.key?.let(TomatoProvider::isLatestEpisodeSection) == true
         return CatalogPage(
-            items = titles.map(::metaPreview),
+            items = titles.map { title -> metaPreview(title, latestEpisode = latestEpisode) },
             rawItemCount = titles.size,
             nextSkip = null,
         )
@@ -68,12 +110,12 @@ object TomatoCatalog {
     suspend fun searchPage(query: String): CatalogPage {
         val titles = TomatoProvider.searchAnimes(query).take(FEED_ROW_LIMIT)
         return CatalogPage(
-            items = titles.map(::metaPreview),
+            items = titles.map { title -> metaPreview(title) },
             rawItemCount = titles.size,
             nextSkip = null,
         )
     }
 
     suspend fun page(target: CatalogTarget.Tomato): CatalogPage =
-        if (target.query.isNullOrBlank()) feedPage() else searchPage(target.query)
+        if (target.query.isNullOrBlank()) feedPage(target.sectionId) else searchPage(target.query)
 }

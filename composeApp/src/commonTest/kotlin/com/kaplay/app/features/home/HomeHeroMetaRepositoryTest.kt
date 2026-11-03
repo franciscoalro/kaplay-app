@@ -74,4 +74,22 @@ class HomeHeroMetaRepositoryTest {
         assertEquals("7.1", merged.imdbRating)
         assertEquals("52 min", merged.runtime)
     }
+
+    @Test
+    fun `hero dedupe collapses episode-aware and regular previews for the same content`() {
+        val regular = MetaPreview(
+            id = "tomato:6839",
+            type = "tv",
+            name = "Koori no Jouheki",
+        )
+        val latestEpisode = regular.copy(
+            name = "Koori no Jouheki — Episódio 12",
+            identityKey = "tomato:6839:episode:37809",
+        )
+
+        assertEquals(
+            listOf(regular),
+            deduplicateHomeHeroItems(listOf(regular, latestEpisode)),
+        )
+    }
 }

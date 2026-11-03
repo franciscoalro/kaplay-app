@@ -209,7 +209,7 @@ object HomeRepository {
                 .mapNotNull { definition -> cachedSections[definition.cacheKey] }
                 .map { section -> section.withPosterOverlay().withReleaseFilter() }
                 .flatMap { section -> section.items }
-                .distinctBy { item -> "${item.type}:${item.id}" }
+                .let(::deduplicateHomeHeroItems)
                 .shuffled(heroRandom)
                 .take(HOME_HERO_ITEM_LIMIT)
         } else {
@@ -285,7 +285,7 @@ object HomeRepository {
     }
 
     private suspend fun HomeCatalogDefinition.toTomatoSection(): HomeCatalogSection {
-        val target = CatalogTarget.Tomato(query = null)
+        val target = CatalogTarget.Tomato(query = null, sectionId = catalogId)
         return try {
             val page = com.kaplay.app.features.tomato.TomatoCatalog.feedPage(catalogId)
             HomeCatalogSection(
@@ -373,7 +373,7 @@ object HomeRepository {
             }.awaitAll()
             val random = Random((nextRequestKey.hashCode()).absoluteValue + 7)
             cachedCollectionHeroItems = roundRobinCollectionHeroItems(sourceResults)
-                .distinctBy { item -> item.stableKey() }
+                .let(::deduplicateHomeHeroItems)
                 .shuffled(random)
                 .take(HOME_HERO_ITEM_LIMIT)
             publishCurrentState(

@@ -50,6 +50,7 @@ object TomatoProvider {
     internal val retryDelayMillis = 150L
     private const val FEED_ENRICH_LIMIT = 20
     private const val FEED_DETAIL_LOOKUP_LIMIT = 24
+    private val LATEST_EPISODE_SECTION_KEYS = setOf("novos-episodios", "ultimos-episodios", "latest-episodes")
 
     internal data class FeedSectionPayload(
         val key: String,
@@ -237,8 +238,8 @@ object TomatoProvider {
         val raw = (
             item["anime_id"]
                 ?: item["ep_anime_id"]
-                ?: item["id"]
                 ?: item["animeId"]
+                ?: item["id"]
             )?.jsonPrimitive?.intOrNull ?: return null
         return raw.takeIf { it > 0 }?.toLong()
     }
@@ -249,6 +250,37 @@ object TomatoProvider {
     internal fun imageOf(item: JsonObject): String? =
         (item["image"] ?: item["cape"] ?: item["thumbnail"] ?: item["banner"] ?: item["poster"])
             ?.jsonPrimitive?.contentOrNull
+
+    internal fun episodeNameOf(item: JsonObject): String? =
+        (item["ep_name"] ?: item["episode_name"] ?: item["episodeName"] ?: item["episode_title"] ?: item["episodeTitle"])
+            ?.jsonPrimitive?.contentOrNull?.trim()?.takeIf { it.isNotBlank() }
+
+    private fun explicitEpisodeThumbnailOf(item: JsonObject): String? =
+        (item["ep_thumbnail"] ?: item["episode_thumbnail"] ?: item["episodeThumbnail"])
+            ?.jsonPrimitive?.contentOrNull?.trim()?.takeIf { it.isNotBlank() }
+
+    internal fun episodeThumbnailOf(item: JsonObject): String? =
+        explicitEpisodeThumbnailOf(item)
+            ?: imageOf(item)?.takeIf { episodeIdOf(item) != null }
+
+    internal fun titleFromFeedItem(item: JsonObject, fallbackName: String? = null): TomatoTitle? {
+        val id = animeIdOf(item) ?: return null
+        val name = displayTitleOrNull(titleOf(item))
+            ?: displayTitleOrNull(fallbackName.orEmpty())
+            ?: return null
+        val episodeId = feedEpisodeIdOf(item)
+        val episodeThumbnail = explicitEpisodeThumbnailOf(item)
+            ?: episodeId?.let { imageOf(item) }
+        return TomatoTitle(
+            id = id,
+            name = name,
+            image = episodeThumbnail ?: imageOf(item),
+            episodeId = episodeId,
+            episodeNumber = episodeNumberOf(item),
+            episodeName = episodeNameOf(item),
+            episodeThumbnail = episodeThumbnail,
+        )
+    }
 
     fun videoId(animeId: Long, episodeId: Long): String = "${ANIME_ID_PREFIX}$animeId:$episodeId"
 
@@ -295,22 +327,17 @@ object TomatoProvider {
         }
         val sections = rawSections.mapNotNull { section ->
             val title = section["title"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
-            val items = runCatching { section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject } }
-                .getOrDefault(emptyList())
-                .distinctBy(::animeIdOf)
-                .take(FEED_ENRICH_LIMIT)
+            val key = sectionKey(title)
+            val items = feedItemsForSection(
+                key,
+                runCatching { section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject } }
+                    .getOrDefault(emptyList()),
+            ).take(FEED_ENRICH_LIMIT)
                 .mapNotNull { item ->
                     val id = animeIdOf(item) ?: return@mapNotNull null
-                    val displayName = displayTitleOrNull(titleOf(item))
-                        ?: displayTitleOrNull(namesById[id].orEmpty())
-                        ?: return@mapNotNull null
-                    TomatoTitle(
-                        id = id,
-                        name = displayName,
-                        image = imageOf(item),
-                    )
+                    titleFromFeedItem(item, fallbackName = namesById[id])
                 }
-            FeedSectionPayload(sectionKey(title), title, items).takeIf { it.items.isNotEmpty() }
+            FeedSectionPayload(key, title, items).takeIf { it.items.isNotEmpty() }
         }
         return@withLock sections.also { feedCache = it }
     }
@@ -320,6 +347,34 @@ object TomatoProvider {
 
     fun clearFeedCache() {
         feedCache = null
+    }
+
+    internal fun isLatestEpisodeSection(sectionKey: String): Boolean =
+        sectionKey in LATEST_EPISODE_SECTION_KEYS
+
+    internal fun feedItemsForSection(sectionKey: String, items: List<JsonObject>): List<JsonObject> {
+        if (!isLatestEpisodeSection(sectionKey)) return items.distinctBy(::animeIdOf)
+        val seenEpisodeIds = mutableSetOf<Long>()
+        val seenAnimeIdsWithoutEpisode = mutableSetOf<Long>()
+        return items.filter { item ->
+            val episodeId = feedEpisodeIdOf(item)
+            if (episodeId != null) {
+                seenEpisodeIds.add(episodeId)
+            } else {
+                val animeId = animeIdOf(item)
+                animeId == null || seenAnimeIdsWithoutEpisode.add(animeId)
+            }
+        }
+    }
+
+    private fun feedEpisodeIdOf(item: JsonObject): Long? {
+        val raw = item["ep_id"]
+            ?: item["episode_id"]
+            ?: item["episodeId"]
+            ?: item["id"]?.takeIf {
+                "anime_id" in item || "ep_anime_id" in item || "animeId" in item
+            }
+        return raw?.jsonPrimitive?.intOrNull?.takeIf { it > 0 }?.toLong()
     }
 
     private fun sectionKey(title: String): String =
@@ -422,8 +477,8 @@ object TomatoProvider {
         return TomatoEpisode(
             episodeId = id,
             number = episodeNumberOf(item),
-            name = item["ep_name"]?.jsonPrimitive?.contentOrNull,
-            thumbnail = item["ep_thumbnail"]?.jsonPrimitive?.contentOrNull,
+            name = episodeNameOf(item),
+            thumbnail = episodeThumbnailOf(item),
             dubbed = item["dubbed"]?.jsonPrimitive?.booleanOrNull == true,
         )
     }
@@ -438,9 +493,14 @@ object TomatoProvider {
         (item["ep_id"] ?: item["episode_id"] ?: item["episodeId"] ?: item["id"])
             ?.jsonPrimitive?.intOrNull?.takeIf { it > 0 }?.toLong()
 
-    internal fun episodeNumberOf(item: JsonObject): Int? =
-        (item["episode_number"] ?: item["ep_number"] ?: item["episodeNumber"] ?: item["number"])
-            ?.jsonPrimitive?.intOrNull
+    internal fun episodeNumberOf(item: JsonObject): Int? {
+        val explicit = (item["episode_number"] ?: item["ep_number"] ?: item["episodeNumber"] ?: item["number"])
+            ?.jsonPrimitive?.intOrNull?.takeIf { it > 0 }
+        if (explicit != null) return explicit
+        return episodeNameOf(item)?.let { name ->
+            Regex("^\\s*(\\d+)\\s*(?:[.)\\-:]|$)").find(name)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        }
+    }
 
     // ---------- streams ----------
 
@@ -486,6 +546,10 @@ data class TomatoTitle(
     val id: Long,
     val name: String,
     val image: String?,
+    val episodeId: Long? = null,
+    val episodeNumber: Int? = null,
+    val episodeName: String? = null,
+    val episodeThumbnail: String? = null,
 )
 
 data class TomatoSeason(

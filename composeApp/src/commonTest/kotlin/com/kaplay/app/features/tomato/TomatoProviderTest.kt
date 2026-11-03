@@ -34,6 +34,42 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun feedAnimeIdAliasWinsOverEpisodeIdAlias() {
+        val item = json.parseToJsonElement(
+            """{"animeId":6839,"id":37809,"anime_name":"Koori no Jouheki"}""",
+        ).jsonObject
+
+        val title = requireNotNull(TomatoProvider.titleFromFeedItem(item))
+
+        assertEquals(6839L, title.id)
+        assertEquals(37809L, title.episodeId)
+    }
+
+    @Test
+    fun feedCardWithOnlyIdDoesNotInventEpisodeIdentity() {
+        val item = json.parseToJsonElement(
+            """{"id":6839,"anime_name":"Koori no Jouheki"}""",
+        ).jsonObject
+
+        val title = requireNotNull(TomatoProvider.titleFromFeedItem(item))
+
+        assertEquals(6839L, title.id)
+        assertNull(title.episodeId)
+    }
+
+    @Test
+    fun feedCardKeepsExplicitEpisodeThumbnailWithoutEpisodeId() {
+        val item = json.parseToJsonElement(
+            """{"ep_anime_id":6839,"ep_number":12,"ep_name":"12. The Final Battle","ep_thumbnail":"https://cdn.example/ep12.jpg","thumbnail":"https://cdn.example/anime.jpg","anime_name":"Koori no Jouheki"}""",
+        ).jsonObject
+
+        val title = requireNotNull(TomatoProvider.titleFromFeedItem(item))
+
+        assertEquals("https://cdn.example/ep12.jpg", title.episodeThumbnail)
+        assertEquals("https://cdn.example/ep12.jpg", title.image)
+    }
+
+    @Test
     fun readsCurrentDetailEnvelope() {
         val payload = json.parseToJsonElement(
             """{"anime_details":{"anime_id":6945,"anime_name":"Even the Student Council Has Its Holes!"},"anime_seasons":[{"season_id":2256,"season_name":"(Legendado) Season I","season_number":1,"season_dubbed":0}]}""",
@@ -92,6 +128,20 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun episodeFromJsonAcceptsCamelCaseEpisodeAliases() {
+        val episode = TomatoProvider.episodeFromJson(
+            json.parseToJsonElement(
+                """{"episode_id":5001,"episode_number":12,"episode_name":"12. The Final Battle","episode_thumbnail":"https://cdn.example/ep12.jpg"}""",
+            ).jsonObject,
+        )
+
+        assertEquals(5001L, episode?.episodeId)
+        assertEquals(12, episode?.number)
+        assertEquals("12. The Final Battle", episode?.name)
+        assertEquals("https://cdn.example/ep12.jpg", episode?.thumbnail)
+    }
+
+    @Test
     fun detailNameRejectsTechnicalTitle() {
         val payload = json.parseToJsonElement(
             """{"anime_details":{"anime_name":"Tomato #6945"}}""",
@@ -142,5 +192,166 @@ class TomatoProviderTest {
         assertNull(TomatoProvider.parseAnimeId("other:6945"))
         assertNull(TomatoProvider.parseAnimeId("tomato:0"))
         assertNull(TomatoProvider.parseEpisodeId("tomato:6945:0"))
+    }
+
+    // ---------- episode feed metadata ----------
+
+    @Test
+    fun feedCardPreservesEpisodeMetadataWithSnakeCaseKeys() {
+        val item = json.parseToJsonElement(
+            """{
+                "ep_anime_id": 6839,
+                "ep_id": 37809,
+                "anime_name": "Koori no Jouheki",
+                "ep_number": 5,
+                "ep_name": "5. O Espelho",
+                "ep_thumbnail": "https://cdn.example/ep5.jpg",
+                "thumbnail": "https://cdn.example/thumb.jpg"
+            }""",
+        ).jsonObject
+
+        val episodeId = TomatoProvider.episodeIdOf(item)
+        val episodeNumber = TomatoProvider.episodeNumberOf(item)
+        val episodeName = TomatoProvider.episodeNameOf(item)
+        val episodeThumbnail = TomatoProvider.episodeThumbnailOf(item)
+
+        assertEquals(37809L, episodeId)
+        assertEquals(5, episodeNumber)
+        assertEquals("5. O Espelho", episodeName)
+        // ep_thumbnail takes priority over generic thumbnail
+        assertEquals("https://cdn.example/ep5.jpg", episodeThumbnail)
+    }
+
+    @Test
+    fun feedCardPreservesEpisodeMetadataWithCamelCaseAliases() {
+        val item = json.parseToJsonElement(
+            """{
+                "anime_id": 6839,
+                "episode_id": 5001,
+                "anime_name": "Shadow Chronicle",
+                "episode_number": 12,
+                "episode_name": "12. The Final Battle"
+            }""",
+        ).jsonObject
+
+        assertEquals(5001L, TomatoProvider.episodeIdOf(item))
+        assertEquals(12, TomatoProvider.episodeNumberOf(item))
+        assertEquals("12. The Final Battle", TomatoProvider.episodeNameOf(item))
+    }
+
+    @Test
+    fun feedCardThumbnailsFallbackToGenericThumbnail() {
+        val item = json.parseToJsonElement(
+            """{
+                "ep_anime_id": 6839,
+                "ep_id": 37810,
+                "thumbnail": "https://cdn.example/thumb.jpg"
+            }""",
+        ).jsonObject
+
+        assertEquals("https://cdn.example/thumb.jpg", TomatoProvider.episodeThumbnailOf(item))
+    }
+
+    @Test
+    fun derivesEpisodeNumberFromLiveFeedEpisodeName() {
+        val item = json.parseToJsonElement(
+            """{"ep_id":37894,"ep_anime_id":6922,"anime_name":"Battle Spirits [Re] ZEKKAI NO KU","ep_name":"5. O Espelho","thumbnail":"https://cdn.example/live.jpg"}""",
+        ).jsonObject
+
+        assertEquals(5, TomatoProvider.episodeNumberOf(item))
+        assertEquals("https://cdn.example/live.jpg", TomatoProvider.episodeThumbnailOf(item))
+    }
+
+    @Test
+    fun episodeNameOfReturnsNullWhenNoNameField() {
+        val item = json.parseToJsonElement("""{"ep_id": 1}""").jsonObject
+        assertNull(TomatoProvider.episodeNameOf(item))
+    }
+
+    @Test
+    fun episodeThumbnailOfReturnsNullWhenNoThumbnail() {
+        val item = json.parseToJsonElement("""{"ep_id": 1}""").jsonObject
+        assertNull(TomatoProvider.episodeThumbnailOf(item))
+    }
+
+    @Test
+    fun titleFromFeedItemUsesResolvedFallbackNameWhenFeedOmitsAnimeName() {
+        val item = json.parseToJsonElement(
+            """{"ep_anime_id":6839,"ep_id":37809,"ep_name":"5. O Espelho","thumbnail":"https://cdn.example/ep5.jpg"}""",
+        ).jsonObject
+
+        val title = TomatoProvider.titleFromFeedItem(item, fallbackName = "Koori no Jouheki")
+
+        assertEquals("Koori no Jouheki", title?.name)
+    }
+
+    @Test
+    fun latestFeedKeepsMultipleEpisodesButRegularFeedDedupesAnime() {
+        val items = listOf(
+            json.parseToJsonElement("""{"ep_anime_id":6839,"ep_id":37809,"ep_number":11,"anime_name":"Koori no Jouheki"}""").jsonObject,
+            json.parseToJsonElement("""{"ep_anime_id":6839,"ep_id":37810,"ep_number":12,"anime_name":"Koori no Jouheki"}""").jsonObject,
+        )
+
+        assertEquals(
+            listOf(37809L, 37810L),
+            TomatoProvider.feedItemsForSection("novos-episodios", items).mapNotNull(TomatoProvider::episodeIdOf),
+        )
+        assertEquals(
+            listOf(37809L, 37810L),
+            TomatoProvider.feedItemsForSection("ultimos-episodios", items).mapNotNull(TomatoProvider::episodeIdOf),
+        )
+        assertEquals(
+            listOf(6839L),
+            TomatoProvider.feedItemsForSection("em-alta", items).mapNotNull(TomatoProvider::animeIdOf),
+        )
+    }
+
+    @Test
+    fun latestFeedDedupesRepeatedCardsWithoutExplicitEpisodeIdsByAnime() {
+        val items = listOf(
+            json.parseToJsonElement("""{"ep_anime_id":6839,"anime_name":"Koori no Jouheki"}""").jsonObject,
+            json.parseToJsonElement("""{"ep_anime_id":6839,"anime_name":"Koori no Jouheki"}""").jsonObject,
+        )
+
+        assertEquals(
+            listOf(6839L),
+            TomatoProvider.feedItemsForSection("novos-episodios", items).mapNotNull(TomatoProvider::animeIdOf),
+        )
+    }
+
+    @Test
+    fun latestFeedKeepsEpisodeIdsStoredInIdWhenAnimeIdIsSeparate() {
+        val items = listOf(
+            json.parseToJsonElement("""{"anime_id":6839,"id":37809,"anime_name":"Koori no Jouheki"}""").jsonObject,
+            json.parseToJsonElement("""{"anime_id":6839,"id":37810,"anime_name":"Koori no Jouheki"}""").jsonObject,
+        )
+
+        assertEquals(
+            listOf(37809L, 37810L),
+            TomatoProvider.feedItemsForSection("novos-episodios", items).mapNotNull(TomatoProvider::episodeIdOf),
+        )
+    }
+
+    @Test
+    fun tomatoTitleFromFeedItemPopulatesEpisodeFields() {
+        val item = json.parseToJsonElement(
+            """{
+                "ep_anime_id": 6839,
+                "ep_id": 37809,
+                "anime_name": "Koori no Jouheki",
+                "ep_number": 5,
+                "ep_name": "5. O Espelho",
+                "ep_thumbnail": "https://cdn.example/ep5.jpg",
+                "thumbnail": "https://cdn.example/thumb.jpg"
+            }""",
+        ).jsonObject
+
+        val title = requireNotNull(TomatoProvider.titleFromFeedItem(item))
+
+        assertEquals(6839L, title.id)
+        assertEquals("Koori no Jouheki", title.name)
+        assertEquals("https://cdn.example/ep5.jpg", title.episodeThumbnail)
+        assertEquals(5, title.episodeNumber)
+        assertEquals("5. O Espelho", title.episodeName)
     }
 }
