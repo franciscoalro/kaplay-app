@@ -35,6 +35,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       RELEASE_PROPERTIES_BASE64: ${{ secrets.KAPLAY_LOCAL_PROPERTIES_BASE64 }}
       RELEASE_KEYSTORE_BASE64: ${{ secrets.KAPLAY_RELEASE_KEYSTORE_B64 }}
+      RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.KAPLAY_RELEASE_KEY_PASSWORD }}
 
     steps:
       - name: Check out full history
@@ -99,8 +102,10 @@ jobs:
 
           if [[ "${RELEASE_MODE}" != "dry-run" ]]; then
             required_secrets=(
-              RELEASE_PROPERTIES_BASE64
               RELEASE_KEYSTORE_BASE64
+              RELEASE_STORE_PASSWORD
+              RELEASE_KEY_ALIAS
+              RELEASE_KEY_PASSWORD
             )
             missing=()
             for secret_name in "${required_secrets[@]}"; do
@@ -155,6 +160,9 @@ jobs:
       RELEASE_VERSION: ${{ needs.prepare.outputs.tag }}
       RELEASE_PROPERTIES_BASE64: ${{ secrets.KAPLAY_LOCAL_PROPERTIES_BASE64 }}
       RELEASE_KEYSTORE_BASE64: ${{ secrets.KAPLAY_RELEASE_KEYSTORE_B64 }}
+      RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.KAPLAY_RELEASE_KEY_PASSWORD }}
 
     steps:
       - name: Check out source
@@ -173,7 +181,14 @@ jobs:
         run: |
           keystore_path="${RUNNER_TEMP}/kaplay-release.jks"
           printf '%s' "${RELEASE_KEYSTORE_BASE64}" | base64 --decode > "${keystore_path}"
-          printf '%s' "${RELEASE_PROPERTIES_BASE64}" | base64 --decode > local.properties
+          if [[ -n "${RELEASE_PROPERTIES_BASE64:-}" ]]; then
+            printf '%s' "${RELEASE_PROPERTIES_BASE64}" | base64 --decode > local.properties
+          else
+            : > local.properties
+            printf 'KAPLAY_RELEASE_STORE_PASSWORD=%s\n' "${RELEASE_STORE_PASSWORD}" >> local.properties
+            printf 'KAPLAY_RELEASE_KEY_ALIAS=%s\n' "${RELEASE_KEY_ALIAS}" >> local.properties
+            printf 'KAPLAY_RELEASE_KEY_PASSWORD=%s\n' "${RELEASE_KEY_PASSWORD}" >> local.properties
+          fi
 
           sed -i -E '/^[[:space:]]*(sdk\.dir|KAPLAY_RELEASE_STORE_FILE)[[:space:]]*=/d' local.properties
           printf '\nKAPLAY_RELEASE_STORE_FILE=%s\n' "${keystore_path}" >> local.properties
@@ -222,6 +237,9 @@ jobs:
       KAPLAY_GRADLE_JVMARGS: -Xmx4608M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=768M
       KAPLAY_KOTLIN_NATIVE_JVMARGS: -Xmx4608M
       RELEASE_PROPERTIES_BASE64: ${{ secrets.KAPLAY_LOCAL_PROPERTIES_BASE64 }}
+      RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.KAPLAY_RELEASE_KEY_PASSWORD }}
 
     steps:
       - name: Check out source
@@ -251,7 +269,14 @@ jobs:
 
       - name: Configure runtime properties
         run: |
-          printf '%s' "${RELEASE_PROPERTIES_BASE64}" | base64 --decode > local.properties
+          if [[ -n "${RELEASE_PROPERTIES_BASE64:-}" ]]; then
+            printf '%s' "${RELEASE_PROPERTIES_BASE64}" | base64 --decode > local.properties
+          else
+            : > local.properties
+            printf 'KAPLAY_RELEASE_STORE_PASSWORD=%s\n' "${RELEASE_STORE_PASSWORD}" >> local.properties
+            printf 'KAPLAY_RELEASE_KEY_ALIAS=%s\n' "${RELEASE_KEY_ALIAS}" >> local.properties
+            printf 'KAPLAY_RELEASE_KEY_PASSWORD=%s\n' "${RELEASE_KEY_PASSWORD}" >> local.properties
+          fi
           sed -i '' -E '/^[[:space:]]*(sdk\.dir|KAPLAY_RELEASE_STORE_FILE)[[:space:]]*=/d' local.properties
 
       - name: Prepare iOS dependencies
