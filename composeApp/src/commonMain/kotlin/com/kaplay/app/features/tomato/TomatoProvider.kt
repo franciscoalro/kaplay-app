@@ -313,9 +313,9 @@ object TomatoProvider {
             ),
         )
         return searchItems(payload).mapNotNull { item ->
-            animeIdOf(item)?.let { id ->
-                TomatoTitle(id = id, name = titleOf(item), image = imageOf(item))
-            }
+            val id = animeIdOf(item) ?: return@mapNotNull null
+            val name = displayTitleOrNull(titleOf(item)) ?: return@mapNotNull null
+            TomatoTitle(id = id, name = name, image = imageOf(item))
         }
     }
 
