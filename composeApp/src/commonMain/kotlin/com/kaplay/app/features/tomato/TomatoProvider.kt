@@ -363,9 +363,15 @@ object TomatoProvider {
         }
     }
 
-    private fun feedEpisodeIdOf(item: JsonObject): Long? =
-        (item["ep_id"] ?: item["episode_id"] ?: item["episodeId"])
-            ?.jsonPrimitive?.intOrNull?.takeIf { it > 0 }?.toLong()
+    private fun feedEpisodeIdOf(item: JsonObject): Long? {
+        val raw = item["ep_id"]
+            ?: item["episode_id"]
+            ?: item["episodeId"]
+            ?: item["id"]?.takeIf {
+                "anime_id" in item || "ep_anime_id" in item || "animeId" in item
+            }
+        return raw?.jsonPrimitive?.intOrNull?.takeIf { it > 0 }?.toLong()
+    }
 
     private fun sectionKey(title: String): String =
         title.lowercase()
