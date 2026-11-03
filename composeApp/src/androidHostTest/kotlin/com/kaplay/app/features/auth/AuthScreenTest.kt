@@ -2,11 +2,8 @@ package com.kaplay.app.features.auth
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -44,7 +41,7 @@ class AuthScreenTest {
         setForm(isSignUp = true)
 
         compose.onNodeWithText("Create Account").assertIsDisplayed()
-        compose.onAllNodes(hasText("Forgot password?")).assertCountEquals(0)
+        compose.onNodeWithText("Forgot password?").assertDoesNotExist()
     }
 
     @Test
