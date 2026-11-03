@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 class TomatoProviderTest {
@@ -39,6 +40,21 @@ class TomatoProviderTest {
         ).jsonObject
 
         assertEquals("Even the Student Council Has Its Holes!", TomatoProvider.detailName(payload))
+        assertEquals(
+            "(Legendado) Season I",
+            TomatoProvider.seasonFromJson(payload["anime_seasons"]!!.jsonArray[0].jsonObject, 0)?.name,
+        )
+        assertEquals(
+            2256L,
+            TomatoProvider.seasonFromJson(payload["anime_seasons"]!!.jsonArray[0].jsonObject, 0)?.seasonId,
+        )
+        assertEquals(
+            null,
+            TomatoProvider.seasonFromJson(
+                json.parseToJsonElement("""{"season_name":"Season I"}""").jsonObject,
+                0,
+            ),
+        )
         assertEquals(
             listOf(37521L),
             TomatoProvider.episodeItems(
