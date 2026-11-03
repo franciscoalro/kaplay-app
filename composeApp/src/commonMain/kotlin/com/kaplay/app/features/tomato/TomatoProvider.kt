@@ -253,10 +253,19 @@ object TomatoProvider {
     fun videoId(animeId: Long, episodeId: Long): String = "${ANIME_ID_PREFIX}$animeId:$episodeId"
 
     fun parseAnimeId(metaId: String): Long? =
-        metaId.removePrefix(ANIME_ID_PREFIX).substringBefore(':').toLongOrNull()
+        metaId.takeIf { it.startsWith(ANIME_ID_PREFIX) }
+            ?.removePrefix(ANIME_ID_PREFIX)
+            ?.substringBefore(':')
+            ?.toLongOrNull()
+            ?.takeIf { it > 0 }
 
     fun parseEpisodeId(videoId: String): Long? =
-        videoId.removePrefix(ANIME_ID_PREFIX).split(':').getOrNull(1)?.toLongOrNull()
+        videoId.takeIf { it.startsWith(ANIME_ID_PREFIX) }
+            ?.removePrefix(ANIME_ID_PREFIX)
+            ?.split(':')
+            ?.getOrNull(1)
+            ?.toLongOrNull()
+            ?.takeIf { it > 0 }
 
     // ---------- catalog: feed + search ----------
 
@@ -420,8 +429,10 @@ object TomatoProvider {
     }
 
     internal fun episodeTotalOf(payload: JsonObject): Int? =
-        (payload["episodes"] ?: (payload["data"] as? JsonObject)?.get("episodes"))
-            ?.jsonPrimitive?.intOrNull
+        runCatching {
+            (payload["episodes"] ?: (payload["data"] as? JsonObject)?.get("episodes"))
+                ?.jsonPrimitive?.intOrNull
+        }.getOrNull()
 
     internal fun episodeIdOf(item: JsonObject): Long? =
         (item["ep_id"] ?: item["episode_id"] ?: item["episodeId"] ?: item["id"])

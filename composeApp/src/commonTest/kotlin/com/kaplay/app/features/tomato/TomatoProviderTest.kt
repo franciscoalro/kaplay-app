@@ -83,6 +83,12 @@ class TomatoProviderTest {
                 json.parseToJsonElement("""{"data":{"episodes":1}}""").jsonObject,
             ),
         )
+        assertEquals(
+            null,
+            TomatoProvider.episodeTotalOf(
+                json.parseToJsonElement("""{"data":{"episodes":[{"ep_id":37521}]}}""").jsonObject,
+            ),
+        )
     }
 
     @Test
@@ -133,5 +139,8 @@ class TomatoProviderTest {
     fun parsesTomatoIds() {
         assertEquals(6945L, TomatoProvider.parseAnimeId("tomato:6945"))
         assertEquals(123L, TomatoProvider.parseEpisodeId("tomato:6945:123"))
+        assertNull(TomatoProvider.parseAnimeId("other:6945"))
+        assertNull(TomatoProvider.parseAnimeId("tomato:0"))
+        assertNull(TomatoProvider.parseEpisodeId("tomato:6945:0"))
     }
 }
