@@ -142,6 +142,13 @@ object AuthRepository {
             ?: getString(Res.string.auth_sign_in_failed)
     }
 
+    suspend fun requestPasswordReset(email: String): Result<Unit> = runCatching {
+        SupabaseProvider.client.auth.resetPasswordForEmail(email = email)
+        Unit
+    }.onFailure { e ->
+        log.e(e) { "Password reset request failed" }
+    }
+
     suspend fun signOut(): Result<Unit> {
         _error.value = null
         val anonymousRead = runCatching { AuthStorage.loadAnonymousUserId() }
