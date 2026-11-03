@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
@@ -97,7 +98,13 @@ import kaplay.composeapp.generated.resources.compose_auth_continue_without_accou
 import kaplay.composeapp.generated.resources.compose_auth_create_account
 import kaplay.composeapp.generated.resources.compose_auth_dont_have_account
 import kaplay.composeapp.generated.resources.compose_auth_email
+import kaplay.composeapp.generated.resources.compose_auth_forgot_password
+import kaplay.composeapp.generated.resources.compose_auth_hide_password
 import kaplay.composeapp.generated.resources.compose_auth_password
+import kaplay.composeapp.generated.resources.compose_auth_reset_failed
+import kaplay.composeapp.generated.resources.compose_auth_reset_invalid_email
+import kaplay.composeapp.generated.resources.compose_auth_reset_sent
+import kaplay.composeapp.generated.resources.compose_auth_show_password
 import kaplay.composeapp.generated.resources.compose_auth_sign_in
 import kaplay.composeapp.generated.resources.compose_auth_sign_in_subtitle
 import kaplay.composeapp.generated.resources.compose_auth_sign_up
@@ -109,20 +116,24 @@ import kaplay.composeapp.generated.resources.compose_auth_terms_prefix
 import kaplay.composeapp.generated.resources.compose_auth_welcome_back
 import org.jetbrains.compose.resources.stringResource
 
-internal val AuthTextPrimary = Color(0xFFF5F7F8)
-internal val AuthTextSecondary = Color(0xFF969CA3)
-private val AuthTextMuted = Color(0xFF6E7178)
-private val AuthPrimaryButtonBackground = Color(0xFFF5F5F5)
-private val AuthPrimaryButtonText = Color(0xFF111111)
-internal val AuthFieldBackground = Color.White.copy(alpha = 0.04f)
-private val AuthFieldBackgroundMobile = Color.White.copy(alpha = 0.035f)
-internal val AuthFieldBorder = Color.White.copy(alpha = 0.08f)
-private val AuthPaneBackground = Color.White.copy(alpha = 0.022f)
-private val AuthPaneBorder = Color.White.copy(alpha = 0.07f)
-private val AuthSecondaryButtonBackground = Color.White.copy(alpha = 0.05f)
-private val AuthSecondaryButtonBorder = Color.White.copy(alpha = 0.09f)
+private val AuthBackground = Color(0xFF090610)
+private val AuthDeepPurple = Color(0xFF210B38)
+private val AuthAccent = Color(0xFFA844F5)
+private val AuthAccentSoft = Color(0xFFC878FF)
+internal val AuthTextPrimary = Color(0xFFF8F8FA)
+internal val AuthTextSecondary = Color(0xFFD6CDE0)
+private val AuthTextMuted = Color(0xFF9C8EAA)
+private val AuthPrimaryButtonBackground = Color(0xFFF8F8FA)
+private val AuthPrimaryButtonText = Color(0xFF101015)
+internal val AuthFieldBackground = Color(0xFF171121)
+private val AuthFieldBackgroundMobile = Color(0xFF171121)
+internal val AuthFieldBorder = Color(0xFF493954)
+private val AuthPaneBackground = Color(0xA6090610)
+private val AuthPaneBorder = Color(0x80493954)
+private val AuthSecondaryButtonBackground = Color(0x663A155C)
+private val AuthSecondaryButtonBorder = Color(0xFFA844F5)
 
-private data class AuthFormMetrics(
+internal data class AuthFormMetrics(
     val fieldHeight: Dp,
     val fieldHorizontalPadding: Dp,
     val iconSize: Dp,
@@ -136,7 +147,7 @@ private data class AuthFormMetrics(
     val fieldBackground: Color,
 )
 
-private val MobileAuthFormMetrics = AuthFormMetrics(
+internal val MobileAuthFormMetrics = AuthFormMetrics(
     fieldHeight = 56.dp,
     fieldHorizontalPadding = 16.dp,
     iconSize = 19.dp,
@@ -194,11 +205,17 @@ fun AuthScreen(
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var isLoading by rememberSaveable { mutableStateOf(false) }
+    var isResetLoading by rememberSaveable { mutableStateOf(false) }
+    var resetMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var resetMessageIsError by rememberSaveable { mutableStateOf(false) }
     var emailFieldBounds by remember { mutableStateOf<Rect?>(null) }
     var passwordFieldBounds by remember { mutableStateOf<Rect?>(null) }
+    val resetInvalidEmailText = stringResource(Res.string.compose_auth_reset_invalid_email)
+    val resetSentText = stringResource(Res.string.compose_auth_reset_sent)
+    val resetFailedText = stringResource(Res.string.compose_auth_reset_failed)
 
     fun submitAuth() {
-        if (email.isBlank() || password.length < 6 || isLoading) return
+        if (!canSubmitAuth(email, password, isLoading)) return
         DeviceLinkAuthRepository.cancel()
         isLoading = true
         focusManager.clearFocus(force = true)
@@ -209,9 +226,33 @@ fun AuthScreen(
         }
     }
 
+    fun requestPasswordReset() {
+        if (isLoading || isResetLoading) return
+        if (!isValidAuthEmail(email)) {
+            resetMessage = resetInvalidEmailText
+            resetMessageIsError = true
+            return
+        }
+        isResetLoading = true
+        resetMessage = null
+        resetMessageIsError = false
+        focusManager.clearFocus(force = true)
+        scope.launch {
+            val result = AuthRepository.requestPasswordReset(email.trim())
+            resetMessage = result.fold(
+                onSuccess = { resetSentText },
+                onFailure = { resetFailedText },
+            )
+            resetMessageIsError = result.isFailure
+            isResetLoading = false
+        }
+    }
+
     fun toggleAuthMode() {
         DeviceLinkAuthRepository.cancel()
         isSignUp = !isSignUp
+        resetMessage = null
+        resetMessageIsError = false
         AuthRepository.clearError()
     }
 
@@ -231,7 +272,7 @@ fun AuthScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(AuthBackground)
             .pointerInput(emailFieldBounds, passwordFieldBounds) {
                 awaitEachGesture {
                     val down = awaitFirstDown(
@@ -273,6 +314,9 @@ fun AuthScreen(
                         passwordVisible = passwordVisible,
                         isLoading = isLoading,
                         authError = authError,
+                        resetMessage = resetMessage,
+                        resetMessageIsError = resetMessageIsError,
+                        isResetLoading = isResetLoading,
                         deviceLinkAuthState = deviceLinkAuthState,
                         deviceLinkEnabled = serverConnectionState.activeServer.capabilities.tvLogin,
                         formPaneWidth = if (compactLargeScreen) 460.dp else formPaneWidth,
@@ -282,14 +326,19 @@ fun AuthScreen(
                         scale = largeScale,
                         onEmailChange = {
                             email = it
+                            resetMessage = null
+                            resetMessageIsError = false
                             AuthRepository.clearError()
                         },
                         onPasswordChange = {
                             password = it
+                            resetMessage = null
+                            resetMessageIsError = false
                             AuthRepository.clearError()
                         },
                         onPasswordVisibilityToggle = { passwordVisible = !passwordVisible },
                         onSubmit = ::submitAuth,
+                        onForgotPassword = ::requestPasswordReset,
                         onToggleAuthMode = ::toggleAuthMode,
                         onContinueWithoutAccount = {
                             focusManager.clearFocus(force = true)
@@ -309,19 +358,27 @@ fun AuthScreen(
                         passwordVisible = passwordVisible,
                         isLoading = isLoading,
                         authError = authError,
+                        resetMessage = resetMessage,
+                        resetMessageIsError = resetMessageIsError,
+                        isResetLoading = isResetLoading,
                         deviceLinkAuthState = deviceLinkAuthState,
                         deviceLinkEnabled = serverConnectionState.activeServer.capabilities.tvLogin,
                         statusBarTop = statusBarTop,
                         onEmailChange = {
                             email = it
+                            resetMessage = null
+                            resetMessageIsError = false
                             AuthRepository.clearError()
                         },
                         onPasswordChange = {
                             password = it
+                            resetMessage = null
+                            resetMessageIsError = false
                             AuthRepository.clearError()
                         },
                         onPasswordVisibilityToggle = { passwordVisible = !passwordVisible },
                         onSubmit = ::submitAuth,
+                        onForgotPassword = ::requestPasswordReset,
                         onToggleAuthMode = ::toggleAuthMode,
                         onContinueWithoutAccount = {
                             focusManager.clearFocus(force = true)
@@ -348,6 +405,9 @@ private fun AuthMobileLayout(
     passwordVisible: Boolean,
     isLoading: Boolean,
     authError: String?,
+    resetMessage: String?,
+    resetMessageIsError: Boolean,
+    isResetLoading: Boolean,
     deviceLinkAuthState: DeviceLinkAuthState,
     deviceLinkEnabled: Boolean,
     statusBarTop: Dp,
@@ -355,6 +415,7 @@ private fun AuthMobileLayout(
     onPasswordChange: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
     onSubmit: () -> Unit,
+    onForgotPassword: () -> Unit,
     onToggleAuthMode: () -> Unit,
     onContinueWithoutAccount: () -> Unit,
     onStartDeviceLink: () -> Unit,
@@ -367,22 +428,22 @@ private fun AuthMobileLayout(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(
-                start = 30.dp,
-                top = statusBarTop + 48.dp,
-                end = 30.dp,
-                bottom = 40.dp,
+                start = 24.dp,
+                top = statusBarTop + 32.dp,
+                end = 24.dp,
+                bottom = 32.dp,
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 342.dp)
+                .widthIn(max = 420.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AuthBrandLockup(logoHeight = 38.dp)
 
-            Spacer(modifier = Modifier.height(64.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
             AuthHeading(
                 isSignUp = isSignUp,
@@ -409,6 +470,9 @@ private fun AuthMobileLayout(
                 passwordVisible = passwordVisible,
                 isLoading = isLoading,
                 authError = authError,
+                        resetMessage = resetMessage,
+                        resetMessageIsError = resetMessageIsError,
+                        isResetLoading = isResetLoading,
                 deviceLinkAuthState = deviceLinkAuthState,
                 deviceLinkEnabled = deviceLinkEnabled,
                 metrics = MobileAuthFormMetrics,
@@ -416,6 +480,7 @@ private fun AuthMobileLayout(
                 onPasswordChange = onPasswordChange,
                 onPasswordVisibilityToggle = onPasswordVisibilityToggle,
                 onSubmit = onSubmit,
+                 onForgotPassword = onForgotPassword,
                 onToggleAuthMode = onToggleAuthMode,
                 onContinueWithoutAccount = onContinueWithoutAccount,
                 onStartDeviceLink = onStartDeviceLink,
@@ -436,6 +501,9 @@ private fun AuthLargeLayout(
     passwordVisible: Boolean,
     isLoading: Boolean,
     authError: String?,
+    resetMessage: String?,
+    resetMessageIsError: Boolean,
+    isResetLoading: Boolean,
     deviceLinkAuthState: DeviceLinkAuthState,
     deviceLinkEnabled: Boolean,
     formPaneWidth: Dp,
@@ -447,6 +515,7 @@ private fun AuthLargeLayout(
     onPasswordChange: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
     onSubmit: () -> Unit,
+    onForgotPassword: () -> Unit,
     onToggleAuthMode: () -> Unit,
     onContinueWithoutAccount: () -> Unit,
     onStartDeviceLink: () -> Unit,
@@ -538,6 +607,9 @@ private fun AuthLargeLayout(
                     passwordVisible = passwordVisible,
                     isLoading = isLoading,
                     authError = authError,
+                        resetMessage = resetMessage,
+                        resetMessageIsError = resetMessageIsError,
+                        isResetLoading = isResetLoading,
                     deviceLinkAuthState = deviceLinkAuthState,
                     deviceLinkEnabled = deviceLinkEnabled,
                     metrics = formMetrics,
@@ -546,6 +618,7 @@ private fun AuthLargeLayout(
                     onPasswordChange = onPasswordChange,
                     onPasswordVisibilityToggle = onPasswordVisibilityToggle,
                     onSubmit = onSubmit,
+                 onForgotPassword = onForgotPassword,
                     onToggleAuthMode = onToggleAuthMode,
                     onContinueWithoutAccount = onContinueWithoutAccount,
                     onStartDeviceLink = onStartDeviceLink,
@@ -620,13 +693,16 @@ private fun AuthHeading(
 }
 
 @Composable
-private fun AuthForm(
+internal fun AuthForm(
     isSignUp: Boolean,
     email: String,
     password: String,
     passwordVisible: Boolean,
     isLoading: Boolean,
     authError: String?,
+    resetMessage: String?,
+    resetMessageIsError: Boolean,
+    isResetLoading: Boolean,
     deviceLinkAuthState: DeviceLinkAuthState,
     deviceLinkEnabled: Boolean,
     metrics: AuthFormMetrics,
@@ -635,6 +711,7 @@ private fun AuthForm(
     onPasswordChange: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
     onSubmit: () -> Unit,
+    onForgotPassword: () -> Unit,
     onToggleAuthMode: () -> Unit,
     onContinueWithoutAccount: () -> Unit,
     onStartDeviceLink: () -> Unit,
@@ -686,12 +763,50 @@ private fun AuthForm(
             ),
         )
 
+        if (!isSignUp) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp * scale),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Text(
+                    text = stringResource(Res.string.compose_auth_forgot_password),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(
+                            enabled = !isLoading && !isResetLoading,
+                            onClick = onForgotPassword,
+                        )
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = AuthAccentSoft,
+                        fontSize = (13f * scale).sp,
+                        lineHeight = (18f * scale).sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                )
+            }
+        }
+
         authError?.let { errorText ->
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = errorText,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.error,
+                    fontSize = (13f * scale).sp,
+                    lineHeight = (18f * scale).sp,
+                ),
+            )
+        }
+
+        resetMessage?.let { message ->
+            Spacer(modifier = Modifier.height(8.dp * scale))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = if (resetMessageIsError) MaterialTheme.colorScheme.error else AuthAccentSoft,
                     fontSize = (13f * scale).sp,
                     lineHeight = (18f * scale).sp,
                 ),
@@ -800,13 +915,19 @@ private fun AuthTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(20.dp)
+    var isFocused by remember { mutableStateOf(false) }
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(metrics.fieldHeight)
+            .onFocusChanged { isFocused = it.isFocused }
             .background(metrics.fieldBackground, shape)
-            .border(1.dp, AuthFieldBorder, shape)
+            .border(
+                width = if (isFocused) 2.dp else 1.dp,
+                color = if (isFocused) AuthAccent else AuthFieldBorder,
+                shape = shape,
+            )
             .padding(horizontal = metrics.fieldHorizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -860,17 +981,27 @@ private fun AuthTextField(
         )
         if (isPassword) {
             Spacer(modifier = Modifier.width(12.dp))
+            var visibilityFocused by remember { mutableStateOf(false) }
             Box(
                 modifier = Modifier
-                    .size(30.dp)
-                    .clip(RoundedCornerShape(15.dp))
+                    .size(32.dp)
+                    .onFocusChanged { visibilityFocused = it.isFocused }
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(
+                        width = if (visibilityFocused) 2.dp else 0.dp,
+                        color = AuthAccent,
+                        shape = RoundedCornerShape(16.dp),
+                    )
                     .clickable(onClick = onPasswordVisibilityToggle),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = if (passwordVisible) Icons.Rounded.VisibilityOff
                     else Icons.Rounded.Visibility,
-                    contentDescription = null,
+                    contentDescription = stringResource(
+                        if (passwordVisible) Res.string.compose_auth_hide_password
+                        else Res.string.compose_auth_show_password,
+                    ),
                     modifier = Modifier.size(metrics.passwordIconSize),
                     tint = AuthTextSecondary,
                 )
@@ -894,7 +1025,7 @@ internal fun AuthPrimaryButton(
             .fillMaxWidth()
             .height(height),
         enabled = enabled,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         contentPadding = PaddingValues(0.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = AuthPrimaryButtonBackground,
@@ -990,8 +1121,8 @@ internal fun AuthSecondaryButton(
             .fillMaxWidth()
             .height(height),
         enabled = enabled,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, AuthSecondaryButtonBorder),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, AuthSecondaryButtonBorder.copy(alpha = 0.7f)),
         contentPadding = PaddingValues(0.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = AuthSecondaryButtonBackground,
@@ -1029,25 +1160,23 @@ private fun Modifier.authGradientBackground(largeScreen: Boolean): Modifier = dr
     )
     val colorStops = if (largeScreen) {
         arrayOf(
-            0f to Color(0xFF21113B),
-            0.14f to Color(0xFF21113B),
-            0.26f to Color(0xFF1A0E2F),
-            0.36f to Color(0xFF130A23),
-            0.48f to Color(0xFF0A060F),
-            0.60f to Color(0xFF050408),
-            0.70f to Color.Black,
-            1f to Color.Black,
+            0f to AuthAccent.copy(alpha = 0.18f),
+            0.14f to AuthDeepPurple,
+            0.30f to Color(0xFF32104D),
+            0.46f to Color(0xFF170B25),
+            0.64f to AuthBackground,
+            0.82f to AuthBackground,
+            1f to AuthBackground,
         )
     } else {
         arrayOf(
-            0f to Color(0xFF21113B),
-            0.12f to Color(0xFF21113B),
-            0.24f to Color(0xFF1A0E2F),
-            0.34f to Color(0xFF130A23),
-            0.44f to Color(0xFF0A060F),
-            0.58f to Color(0xFF050408),
-            0.64f to Color.Black,
-            1f to Color.Black,
+            0f to AuthAccent.copy(alpha = 0.14f),
+            0.12f to AuthDeepPurple,
+            0.27f to Color(0xFF32104D),
+            0.42f to Color(0xFF170B25),
+            0.60f to AuthBackground,
+            0.80f to AuthBackground,
+            1f to AuthBackground,
         )
     }
     val brush = Brush.linearGradient(
