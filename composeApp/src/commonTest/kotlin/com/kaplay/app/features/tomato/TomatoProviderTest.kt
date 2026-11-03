@@ -58,6 +58,18 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun feedCardKeepsExplicitEpisodeThumbnailWithoutEpisodeId() {
+        val item = json.parseToJsonElement(
+            """{"ep_anime_id":6839,"ep_number":12,"ep_name":"12. The Final Battle","ep_thumbnail":"https://cdn.example/ep12.jpg","thumbnail":"https://cdn.example/anime.jpg","anime_name":"Koori no Jouheki"}""",
+        ).jsonObject
+
+        val title = requireNotNull(TomatoProvider.titleFromFeedItem(item))
+
+        assertEquals("https://cdn.example/ep12.jpg", title.episodeThumbnail)
+        assertEquals("https://cdn.example/ep12.jpg", title.image)
+    }
+
+    @Test
     fun readsCurrentDetailEnvelope() {
         val payload = json.parseToJsonElement(
             """{"anime_details":{"anime_id":6945,"anime_name":"Even the Student Council Has Its Holes!"},"anime_seasons":[{"season_id":2256,"season_name":"(Legendado) Season I","season_number":1,"season_dubbed":0}]}""",
