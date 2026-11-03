@@ -27,9 +27,10 @@ data class MetaPreview(
     val ageRating: String? = null,
     val language: String? = null,
     val externalRatings: List<MetaExternalRating> = emptyList(),
+    val identityKey: String? = null,
 )
 
-fun MetaPreview.stableKey(): String = "$type:$id"
+fun MetaPreview.stableKey(): String = "$type:${identityKey ?: id}"
 
 enum class PosterShape {
     Poster,

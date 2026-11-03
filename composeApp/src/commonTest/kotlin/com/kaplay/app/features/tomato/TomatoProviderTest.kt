@@ -239,6 +239,38 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun titleFromFeedItemUsesResolvedFallbackNameWhenFeedOmitsAnimeName() {
+        val item = json.parseToJsonElement(
+            """{"ep_anime_id":6839,"ep_id":37809,"ep_name":"5. O Espelho","thumbnail":"https://cdn.example/ep5.jpg"}""",
+        ).jsonObject
+
+        val title = TomatoProvider.titleFromFeedItem(item, fallbackName = "Koori no Jouheki")
+
+        assertEquals("Koori no Jouheki", title?.name)
+    }
+
+    @Test
+    fun latestFeedKeepsMultipleEpisodesButRegularFeedDedupesAnime() {
+        val items = listOf(
+            json.parseToJsonElement("""{"ep_anime_id":6839,"ep_id":37809,"ep_number":11,"anime_name":"Koori no Jouheki"}""").jsonObject,
+            json.parseToJsonElement("""{"ep_anime_id":6839,"ep_id":37810,"ep_number":12,"anime_name":"Koori no Jouheki"}""").jsonObject,
+        )
+
+        assertEquals(
+            listOf(37809L, 37810L),
+            TomatoProvider.feedItemsForSection("novos-episodios", items).mapNotNull(TomatoProvider::episodeIdOf),
+        )
+        assertEquals(
+            listOf(37809L, 37810L),
+            TomatoProvider.feedItemsForSection("ultimos-episodios", items).mapNotNull(TomatoProvider::episodeIdOf),
+        )
+        assertEquals(
+            listOf(6839L),
+            TomatoProvider.feedItemsForSection("em-alta", items).mapNotNull(TomatoProvider::animeIdOf),
+        )
+    }
+
+    @Test
     fun tomatoTitleFromFeedItemPopulatesEpisodeFields() {
         val item = json.parseToJsonElement(
             """{

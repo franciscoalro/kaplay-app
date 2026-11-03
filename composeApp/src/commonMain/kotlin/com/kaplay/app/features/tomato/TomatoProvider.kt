@@ -50,6 +50,7 @@ object TomatoProvider {
     internal val retryDelayMillis = 150L
     private const val FEED_ENRICH_LIMIT = 20
     private const val FEED_DETAIL_LOOKUP_LIMIT = 24
+    private val LATEST_EPISODE_SECTION_KEYS = setOf("novos-episodios", "ultimos-episodios", "latest-episodes")
 
     internal data class FeedSectionPayload(
         val key: String,
@@ -322,15 +323,17 @@ object TomatoProvider {
         }
         val sections = rawSections.mapNotNull { section ->
             val title = section["title"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
-            val items = runCatching { section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject } }
-                .getOrDefault(emptyList())
-                .distinctBy(::animeIdOf)
-                .take(FEED_ENRICH_LIMIT)
+            val key = sectionKey(title)
+            val items = feedItemsForSection(
+                key,
+                runCatching { section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject } }
+                    .getOrDefault(emptyList()),
+            ).take(FEED_ENRICH_LIMIT)
                 .mapNotNull { item ->
                     val id = animeIdOf(item) ?: return@mapNotNull null
                     titleFromFeedItem(item, fallbackName = namesById[id])
                 }
-            FeedSectionPayload(sectionKey(title), title, items).takeIf { it.items.isNotEmpty() }
+            FeedSectionPayload(key, title, items).takeIf { it.items.isNotEmpty() }
         }
         return@withLock sections.also { feedCache = it }
     }
@@ -340,6 +343,18 @@ object TomatoProvider {
 
     fun clearFeedCache() {
         feedCache = null
+    }
+
+    internal fun isLatestEpisodeSection(sectionKey: String): Boolean =
+        sectionKey in LATEST_EPISODE_SECTION_KEYS
+
+    internal fun feedItemsForSection(sectionKey: String, items: List<JsonObject>): List<JsonObject> {
+        if (!isLatestEpisodeSection(sectionKey)) return items.distinctBy(::animeIdOf)
+        val seenEpisodeIds = mutableSetOf<Long>()
+        return items.filter { item ->
+            val episodeId = episodeIdOf(item)
+            episodeId == null || seenEpisodeIds.add(episodeId)
+        }
     }
 
     private fun sectionKey(title: String): String =
