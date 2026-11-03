@@ -78,11 +78,27 @@ object TomatoCatalog {
         )
     }
 
-    suspend fun feedPage(sectionId: String? = null): CatalogPage {
-        val section = sectionId?.let { id ->
-            TomatoProvider.feedSections().firstOrNull { it.key == id }
+    internal fun titlesForSection(
+        sectionId: String?,
+        sections: List<TomatoProvider.FeedSectionPayload>,
+        globalItems: List<TomatoTitle>,
+    ): List<TomatoTitle> {
+        val normalizedSectionId = sectionId?.removePrefix("tomato:")
+        return if (normalizedSectionId == null) {
+            globalItems
+        } else {
+            sections.firstOrNull { section -> section.key == normalizedSectionId }?.items.orEmpty()
         }
-        val titles = (section?.items ?: TomatoProvider.feedAnimes()).take(FEED_ROW_LIMIT)
+    }
+
+    suspend fun feedPage(sectionId: String? = null): CatalogPage {
+        val sections = TomatoProvider.feedSections()
+        val section = sectionId?.let { id ->
+            val normalizedId = id.removePrefix("tomato:")
+            sections.firstOrNull { it.key == normalizedId }
+        }
+        val globalItems = if (sectionId == null) TomatoProvider.feedAnimes() else emptyList()
+        val titles = titlesForSection(sectionId, sections, globalItems).take(FEED_ROW_LIMIT)
         val latestEpisode = section?.key?.let(TomatoProvider::isLatestEpisodeSection) == true
         return CatalogPage(
             items = titles.map { title -> metaPreview(title, latestEpisode = latestEpisode) },
