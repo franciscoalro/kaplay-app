@@ -211,6 +211,7 @@ object MetaDetailsRepository {
                 runCatching {
                     val provider = com.kaplay.app.features.tomato.TomatoProvider
                     val details = provider.animeDetails(animeId)
+                    val title = provider.displayTitleOrNull(details.name) ?: return@runCatching null
                     val videos = details.seasons.flatMap { season ->
                         kotlinx.coroutines.runBlocking {
                             provider.seasonEpisodes(season)
@@ -227,7 +228,7 @@ object MetaDetailsRepository {
                     MetaDetails(
                         id = metaId,
                         type = "tv",
-                        name = details.name,
+                        name = title,
                         poster = details.poster,
                         background = details.banner ?: details.poster,
                         description = details.description,

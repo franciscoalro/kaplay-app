@@ -183,6 +183,26 @@ object TomatoProvider {
     internal fun displayTitleOrNull(value: String): String? =
         value.trim().takeUnless(::isTechnicalTitle)
 
+    internal fun seasonFromJson(payload: JsonObject, index: Int): TomatoSeason? {
+        val seasonId = (payload["season_id"] ?: payload["id"])
+            ?.jsonPrimitive?.intOrNull?.toLong()?.takeIf { it > 0 } ?: return null
+        val label = (payload["season_name"] ?: payload["name"])
+            ?.jsonPrimitive?.contentOrNull.orEmpty()
+        val explicitNumber = payload["season_number"]?.jsonPrimitive?.intOrNull
+        val number = explicitNumber?.takeIf { it > 0 }
+            ?: Regex("(?:season|temporada)\\s*(\\d+)", RegexOption.IGNORE_CASE)
+                .find(label)?.groupValues?.get(1)?.toIntOrNull()
+            ?: (index + 1)
+        val dubbed = payload["season_dubbed"]?.jsonPrimitive?.intOrNull == 1 ||
+            payload["season_dubbed"]?.jsonPrimitive?.booleanOrNull == true
+        return TomatoSeason(
+            seasonId = seasonId,
+            number = number,
+            name = displayTitleOrNull(label),
+            dubbed = dubbed,
+        )
+    }
+
     internal fun searchItems(payload: JsonObject): List<JsonObject> {
         val data = payload["data"]
         val candidates = buildList {
@@ -330,7 +350,7 @@ object TomatoProvider {
             .orEmpty()
         return TomatoDetails(
             animeId = animeId,
-            name = (details["anime_name"] ?: details["name"] ?: details["title"])?.jsonPrimitive?.contentOrNull.orEmpty(),
+            name = detailName(payload),
             description = (details["anime_description"] ?: details["description"] ?: details["sinopse"])
                 ?.jsonPrimitive?.contentOrNull,
             poster = (details["anime_cape_url"] ?: details["anime_cover_url"] ?: details["cape"]
@@ -347,20 +367,7 @@ object TomatoProvider {
                     }
                 }
             }.distinct(),
-            seasons = seasons.mapIndexed { index, season ->
-                val explicit = season["season_number"]?.jsonPrimitive?.intOrNull
-                val label = (season["season_name"] ?: season["name"])?.jsonPrimitive?.contentOrNull.orEmpty()
-                val number = explicit?.takeIf { it > 0 }
-                    ?: Regex("(?:season|temporada)\\s*(\\d+)", RegexOption.IGNORE_CASE)
-                        .find(label)?.groupValues?.get(1)?.toIntOrNull()
-                    ?: (index + 1)
-                TomatoSeason(
-                    seasonId = season["season_id"]?.jsonPrimitive?.intOrNull?.toLong()
-                        ?: season["id"]?.jsonPrimitive?.intOrNull?.toLong() ?: 0L,
-                    number = number,
-                    dubbed = season["season_dubbed"]?.jsonPrimitive?.intOrNull == 1,
-                )
-            },
+            seasons.mapIndexedNotNull(::seasonFromJson),
         )
     }
 
@@ -468,6 +475,7 @@ data class TomatoTitle(
 data class TomatoSeason(
     val seasonId: Long,
     val number: Int,
+    val name: String?,
     val dubbed: Boolean,
 )
 

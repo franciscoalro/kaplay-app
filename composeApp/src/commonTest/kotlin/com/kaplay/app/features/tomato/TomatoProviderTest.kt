@@ -72,6 +72,16 @@ class TomatoProviderTest {
     }
 
     @Test
+    @Test
+    fun detailNameRejectsTechnicalTitle() {
+        val payload = json.parseToJsonElement(
+            """{"anime_details":{"anime_name":"Tomato #6945"}}""",
+        ).jsonObject
+
+        assertEquals("", TomatoProvider.detailName(payload))
+    }
+
+    @Test
     fun acceptsRealTomatoDisplayTitle() {
         assertEquals(
             "Even the Student Council Has Its Holes!",
