@@ -1,0 +1,100 @@
+name: KA Play Android update smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      old_tag:
+        description: Existing signed release to upgrade from
+        required: true
+        default: v0.9.17
+        type: string
+      new_tag:
+        description: New signed release to install over the old release
+        required: true
+        default: 0.9.21
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  EXPECTED_CERT_SHA256: 97807c6f56415754cffb6d2ffb6cdff642b30bffc3f892dd9bbf513f839e99a8
+
+jobs:
+  update-smoke:
+    name: install -r preserves package and app storage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+
+      - name: Download signed release APKs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OLD_TAG: ${{ inputs.old_tag }}
+          NEW_TAG: ${{ inputs.new_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ka-update-smoke"
+          gh release download "$OLD_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern 'androidApp-full-x86_64-release.apk' \
+            --dir "$RUNNER_TEMP/ka-update-smoke/old"
+          gh release download "$NEW_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern 'androidApp-full-x86_64-release.apk' \
+            --dir "$RUNNER_TEMP/ka-update-smoke/new"
+          old_apk="$RUNNER_TEMP/ka-update-smoke/old/androidApp-full-x86_64-release.apk"
+          new_apk="$RUNNER_TEMP/ka-update-smoke/new/androidApp-full-x86_64-release.apk"
+          aapt="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          apksigner="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          for apk in "$old_apk" "$new_apk"; do
+            "$aapt" dump badging "$apk" | grep -Eq "package: name='com\.kaplay\.app'"
+            "$apksigner" verify --print-certs "$apk" | grep -Fq "SHA-256 digest: $EXPECTED_CERT_SHA256"
+          done
+          printf 'old_apk=%s\nnew_apk=%s\n' "$old_apk" "$new_apk" >> "$GITHUB_ENV"
+          sha256sum "$old_apk" "$new_apk"
+
+      - name: Run non-destructive Android upgrade
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: true
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            adb install "$old_apk"
+            adb shell pm path com.kaplay.app | grep -Fq 'base.apk'
+            old_version="$(adb shell dumpsys package com.kaplay.app | grep -m1 'versionName=' | tr -d '\r')"
+            marker_path='/sdcard/Android/data/com.kaplay.app/files/ka-update-smoke-marker.txt'
+            adb shell "mkdir -p /sdcard/Android/data/com.kaplay.app/files && printf 'preserve-me\\n' > '$marker_path'"
+            test "$(adb shell cat "$marker_path" | tr -d '\r')" = 'preserve-me'
+            adb install -r "$new_apk" | tee "$RUNNER_TEMP/ka-update-smoke-install.log"
+            grep -Fq 'Success' "$RUNNER_TEMP/ka-update-smoke-install.log"
+            adb shell pm path com.kaplay.app | grep -Fq 'base.apk'
+            new_version="$(adb shell dumpsys package com.kaplay.app | grep -m1 'versionName=' | tr -d '\r')"
+            test "$(adb shell cat "$marker_path" | tr -d '\r')" = 'preserve-me'
+            {
+              printf 'old=%s\n' "$old_version"
+              printf 'new=%s\n' "$new_version"
+              printf 'package=com.kaplay.app\n'
+              printf 'operation=adb install -r\n'
+              printf 'data_marker=preserved\n'
+              printf 'uninstall=not-run\nclear=not-run\n'
+            } | tee "$RUNNER_TEMP/ka-update-smoke-evidence.txt"
+
+      - name: Upload sanitized update evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ka-play-android-update-smoke-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ka-update-smoke-evidence.txt
+            ${{ runner.temp }}/ka-update-smoke-install.log
+          if-no-files-found: warn
+          retention-days: 14
