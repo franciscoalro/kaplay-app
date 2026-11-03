@@ -26,6 +26,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
