@@ -2,6 +2,8 @@ package com.kaplay.app.features.tomato
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 
@@ -33,10 +35,46 @@ class TomatoProviderTest {
     @Test
     fun readsCurrentDetailEnvelope() {
         val payload = json.parseToJsonElement(
-            """{"anime_details":{"anime_id":6945,"anime_name":"Even the Student Council Has Its Holes!"},"anime_seasons":[]}""",
+            """{"anime_details":{"anime_id":6945,"anime_name":"Even the Student Council Has Its Holes!"},"anime_seasons":[{"season_id":2256,"season_name":"(Legendado) Season I","season_number":1,"season_dubbed":0}]}""",
         ).jsonObject
 
         assertEquals("Even the Student Council Has Its Holes!", TomatoProvider.detailName(payload))
+        assertEquals(
+            listOf(37521L),
+            TomatoProvider.episodeItems(
+                json.parseToJsonElement(
+                    """{"data":[{"ep_id":37521,"ep_name":"Episódio 1","ep_number":1,"ep_season_id":2256}]}""",
+                ).jsonObject,
+            ).mapNotNull(TomatoProvider::episodeIdOf),
+        )
+        assertEquals(
+            1,
+            TomatoProvider.episodeNumberOf(
+                json.parseToJsonElement("""{"ep_id":37521,"ep_name":"Episódio 1","ep_number":1}""").jsonObject,
+            ),
+        )
+    }
+
+    @Test
+    fun acceptsRealTomatoDisplayTitle() {
+        assertEquals(
+            "Even the Student Council Has Its Holes!",
+            TomatoProvider.displayTitleOrNull("Even the Student Council Has Its Holes!"),
+        )
+    }
+
+    @Test
+    fun rejectsTechnicalTomatoTitles() {
+        assertTrueTechnicalTitle("tomato:6945")
+        assertTrueTechnicalTitle("Tomato #6945")
+        assertNull(TomatoProvider.displayTitleOrNull(""))
+        assertNull(TomatoProvider.displayTitleOrNull("tomato:6945"))
+        assertNull(TomatoProvider.displayTitleOrNull("Tomato #6945"))
+    }
+
+    private fun assertTrueTechnicalTitle(value: String) {
+        kotlin.test.assertTrue(TomatoProvider.isTechnicalTitle(value))
+        assertFalse(TomatoProvider.displayTitleOrNull(value) != null)
     }
 
     @Test

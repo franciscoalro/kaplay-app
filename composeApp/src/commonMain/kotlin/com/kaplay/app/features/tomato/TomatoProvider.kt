@@ -166,10 +166,22 @@ object TomatoProvider {
         (payload["anime_details"] as? JsonObject) ?: payloadData(payload)
 
     internal fun detailName(payload: JsonObject): String =
-        (detailObject(payload)["anime_name"]
-            ?: detailObject(payload)["name"]
-            ?: detailObject(payload)["title"])
-            ?.jsonPrimitive?.contentOrNull.orEmpty()
+        displayTitleOrNull(
+            (detailObject(payload)["anime_name"]
+                ?: detailObject(payload)["name"]
+                ?: detailObject(payload)["title"])
+                ?.jsonPrimitive?.contentOrNull.orEmpty(),
+        ).orEmpty()
+
+    internal fun isTechnicalTitle(value: String): Boolean {
+        val normalized = value.trim()
+        return normalized.isBlank() ||
+            normalized.matches(Regex("tomato:\\d+(?::\\d+)?", RegexOption.IGNORE_CASE)) ||
+            normalized.matches(Regex("tomato\\s+#\\d+", RegexOption.IGNORE_CASE))
+    }
+
+    internal fun displayTitleOrNull(value: String): String? =
+        value.trim().takeUnless(::isTechnicalTitle)
 
     internal fun searchItems(payload: JsonObject): List<JsonObject> {
         val data = payload["data"]
@@ -260,9 +272,12 @@ object TomatoProvider {
                 .take(FEED_ENRICH_LIMIT)
                 .mapNotNull { item ->
                     val id = animeIdOf(item) ?: return@mapNotNull null
+                    val displayName = displayTitleOrNull(titleOf(item))
+                        ?: displayTitleOrNull(namesById[id].orEmpty())
+                        ?: return@mapNotNull null
                     TomatoTitle(
                         id = id,
-                        name = titleOf(item).ifBlank { namesById[id].orEmpty().ifBlank { "Tomato #$id" } },
+                        name = displayName,
                         image = imageOf(item),
                     )
                 }
