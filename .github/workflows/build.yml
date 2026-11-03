@@ -224,6 +224,7 @@ jobs:
 
   pages:
     name: publish-plugin-pages
+    if: ${{ github.ref == 'refs/heads/build-tomato-cmp' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
