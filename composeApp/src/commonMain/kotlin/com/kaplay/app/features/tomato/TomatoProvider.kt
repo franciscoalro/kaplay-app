@@ -351,11 +351,21 @@ object TomatoProvider {
     internal fun feedItemsForSection(sectionKey: String, items: List<JsonObject>): List<JsonObject> {
         if (!isLatestEpisodeSection(sectionKey)) return items.distinctBy(::animeIdOf)
         val seenEpisodeIds = mutableSetOf<Long>()
+        val seenAnimeIdsWithoutEpisode = mutableSetOf<Long>()
         return items.filter { item ->
-            val episodeId = episodeIdOf(item)
-            episodeId == null || seenEpisodeIds.add(episodeId)
+            val episodeId = feedEpisodeIdOf(item)
+            if (episodeId != null) {
+                seenEpisodeIds.add(episodeId)
+            } else {
+                val animeId = animeIdOf(item)
+                animeId == null || seenAnimeIdsWithoutEpisode.add(animeId)
+            }
         }
     }
+
+    private fun feedEpisodeIdOf(item: JsonObject): Long? =
+        (item["ep_id"] ?: item["episode_id"] ?: item["episodeId"])
+            ?.jsonPrimitive?.intOrNull?.takeIf { it > 0 }?.toLong()
 
     private fun sectionKey(title: String): String =
         title.lowercase()

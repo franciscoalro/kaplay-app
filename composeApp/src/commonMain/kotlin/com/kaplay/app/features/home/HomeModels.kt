@@ -32,6 +32,9 @@ data class MetaPreview(
 
 fun MetaPreview.stableKey(): String = "$type:${identityKey ?: id}"
 
+internal fun deduplicateHomeHeroItems(items: List<MetaPreview>): List<MetaPreview> =
+    items.distinctBy { item -> "${item.type}:${item.id}" }
+
 enum class PosterShape {
     Poster,
     Square,
