@@ -72,7 +72,6 @@ class TomatoProviderTest {
     }
 
     @Test
-    @Test
     fun detailNameRejectsTechnicalTitle() {
         val payload = json.parseToJsonElement(
             """{"anime_details":{"anime_name":"Tomato #6945"}}""",
