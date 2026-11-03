@@ -81,4 +81,40 @@ class TomatoCatalogTest {
         assertEquals("tv:tomato:6839", preview.stableKey())
         assertTrue(preview.poster?.endsWith("anime.jpg") == true)
     }
+
+    @Test
+    fun unknownSectionDoesNotFallBackToTheGlobalFeed() {
+        val emAlta = TomatoTitle(id = 1L, name = "Em alta", image = null)
+        val aventura = TomatoTitle(id = 2L, name = "Aventura", image = null)
+        val sections = listOf(
+            TomatoProvider.FeedSectionPayload("em-alta", "Em alta", listOf(emAlta)),
+            TomatoProvider.FeedSectionPayload("aventura", "Aventura", listOf(aventura)),
+        )
+
+        assertEquals(
+            emptyList(),
+            TomatoCatalog.titlesForSection(
+                sectionId = "categoria-inexistente",
+                sections = sections,
+                globalItems = listOf(emAlta, aventura),
+            ),
+        )
+    }
+
+    @Test
+    fun sectionSelectorAcceptsCanonicalHomeKeyAndNullUsesGlobalFeed() {
+        val emAlta = TomatoTitle(id = 1L, name = "Em alta", image = null)
+        val aventura = TomatoTitle(id = 2L, name = "Aventura", image = null)
+        val sections = listOf(
+            TomatoProvider.FeedSectionPayload("em-alta", "Em alta", listOf(emAlta)),
+            TomatoProvider.FeedSectionPayload("aventura", "Aventura", listOf(aventura)),
+        )
+        val globalItems = listOf(emAlta, aventura)
+
+        assertEquals(
+            listOf(emAlta),
+            TomatoCatalog.titlesForSection("tomato:em-alta", sections, globalItems),
+        )
+        assertEquals(globalItems, TomatoCatalog.titlesForSection(null, sections, globalItems))
+    }
 }
