@@ -119,6 +119,12 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            if (releaseKeystore != null && releaseStorePassword != null && releaseKeyAlias != null && releaseKeyPassword != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+
         getByName("release") {
             val minifyRelease = providers.gradleProperty("releaseMinifyEnabled")
                 .map(String::toBooleanStrict)

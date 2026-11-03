@@ -19,6 +19,10 @@ jobs:
       # This is the publishable/anon key only; no service-role credential is used.
       KAPLAY_SUPABASE_URL: https://iibureqvpurmbgqupnvl.supabase.co
       KAPLAY_SUPABASE_ANON_KEY: sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp
+      KAPLAY_RELEASE_KEYSTORE_B64: ${{ secrets.KAPLAY_RELEASE_KEYSTORE_B64 }}
+      KAPLAY_RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
+      KAPLAY_RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
+      KAPLAY_RELEASE_KEY_PASSWORD: ${{ secrets.KAPLAY_RELEASE_KEY_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,9 +40,26 @@ jobs:
           accept-android-sdk-licenses: true
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
 
-      - name: Create empty local Gradle properties
+      - name: Configure stable Debug signing
+        shell: bash
         run: |
-          : > local.properties
+          set -euo pipefail
+          for required in KAPLAY_RELEASE_KEYSTORE_B64 KAPLAY_RELEASE_STORE_PASSWORD KAPLAY_RELEASE_KEY_ALIAS KAPLAY_RELEASE_KEY_PASSWORD; do
+            if [[ -z "${!required:-}" ]]; then
+              echo "${required} is required for stable Debug signing." >&2
+              exit 1
+            fi
+          done
+          store_file="${RUNNER_TEMP}/kaplay-debug-stable.jks"
+          printf '%s' "$KAPLAY_RELEASE_KEYSTORE_B64" | base64 --decode > "$store_file"
+          test -s "$store_file"
+          {
+            echo "sdk.dir=${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+            echo "KAPLAY_RELEASE_STORE_FILE=$store_file"
+            echo "KAPLAY_RELEASE_STORE_PASSWORD=$KAPLAY_RELEASE_STORE_PASSWORD"
+            echo "KAPLAY_RELEASE_KEY_ALIAS=$KAPLAY_RELEASE_KEY_ALIAS"
+            echo "KAPLAY_RELEASE_KEY_PASSWORD=$KAPLAY_RELEASE_KEY_PASSWORD"
+          } > local.properties
 
       - name: Build Full Debug APK
         run: ./gradlew :androidApp:assembleFullDebug --no-daemon
