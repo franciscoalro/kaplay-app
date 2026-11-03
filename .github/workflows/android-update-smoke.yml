@@ -65,15 +65,16 @@ jobs:
           arch: x86_64
           profile: pixel_6
           force-avd-creation: true
+          disable-animations: false
           script: |
-            set -euo pipefail
+            set -eu
             adb install "$old_apk"
             adb shell pm path com.kaplay.app | grep -Fq 'base.apk'
             old_version="$(adb shell dumpsys package com.kaplay.app | grep -m1 'versionName=' | tr -d '\r')"
             marker_path='/sdcard/Android/data/com.kaplay.app/files/ka-update-smoke-marker.txt'
             adb shell "mkdir -p /sdcard/Android/data/com.kaplay.app/files && printf 'preserve-me\\n' > '$marker_path'"
             test "$(adb shell cat "$marker_path" | tr -d '\r')" = 'preserve-me'
-            adb install -r "$new_apk" | tee "$RUNNER_TEMP/ka-update-smoke-install.log"
+            adb install -r "$new_apk" > "$RUNNER_TEMP/ka-update-smoke-install.log" 2>&1
             grep -Fq 'Success' "$RUNNER_TEMP/ka-update-smoke-install.log"
             adb shell pm path com.kaplay.app | grep -Fq 'base.apk'
             new_version="$(adb shell dumpsys package com.kaplay.app | grep -m1 'versionName=' | tr -d '\r')"
