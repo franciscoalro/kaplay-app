@@ -284,6 +284,19 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun latestFeedKeepsEpisodeIdsStoredInIdWhenAnimeIdIsSeparate() {
+        val items = listOf(
+            json.parseToJsonElement("""{"anime_id":6839,"id":37809,"anime_name":"Koori no Jouheki"}""").jsonObject,
+            json.parseToJsonElement("""{"anime_id":6839,"id":37810,"anime_name":"Koori no Jouheki"}""").jsonObject,
+        )
+
+        assertEquals(
+            listOf(37809L, 37810L),
+            TomatoProvider.feedItemsForSection("novos-episodios", items).mapNotNull(TomatoProvider::episodeIdOf),
+        )
+    }
+
+    @Test
     fun tomatoTitleFromFeedItemPopulatesEpisodeFields() {
         val item = json.parseToJsonElement(
             """{
