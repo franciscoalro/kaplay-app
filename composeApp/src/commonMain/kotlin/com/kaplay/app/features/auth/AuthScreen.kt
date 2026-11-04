@@ -152,31 +152,31 @@ internal data class AuthFormMetrics(
 )
 
 internal val MobileAuthFormMetrics = AuthFormMetrics(
-    fieldHeight = 56.dp,
+    fieldHeight = 52.dp,
     fieldHorizontalPadding = 16.dp,
-    iconSize = 19.dp,
+    iconSize = 20.dp,
     passwordIconSize = 20.dp,
-    primaryTop = 22.dp,
-    primaryHeight = 54.dp,
-    toggleTop = 18.dp,
-    dividerTop = 28.dp,
-    secondaryTop = 24.dp,
-    secondaryHeight = 54.dp,
-    fieldBackground = AuthFieldBackgroundMobile,
+    primaryTop = 20.dp,
+    primaryHeight = 48.dp,
+    toggleTop = 16.dp,
+    dividerTop = 24.dp,
+    secondaryTop = 20.dp,
+    secondaryHeight = 48.dp,
+    fieldBackground = KAColors.Surface,
 )
 
 private val LargeAuthFormMetrics = AuthFormMetrics(
-    fieldHeight = 58.dp,
+    fieldHeight = 54.dp,
     fieldHorizontalPadding = 18.dp,
     iconSize = 20.dp,
-    passwordIconSize = 21.dp,
+    passwordIconSize = 20.dp,
     primaryTop = 24.dp,
-    primaryHeight = 56.dp,
+    primaryHeight = 50.dp,
     toggleTop = 18.dp,
-    dividerTop = 30.dp,
-    secondaryTop = 26.dp,
-    secondaryHeight = 56.dp,
-    fieldBackground = AuthFieldBackground,
+    dividerTop = 28.dp,
+    secondaryTop = 24.dp,
+    secondaryHeight = 50.dp,
+    fieldBackground = KAColors.Surface,
 )
 
 private fun largeAuthScale(screenWidth: Dp): Float =
@@ -382,7 +382,7 @@ fun AuthScreen(
                         resetMessageIsError = resetMessageIsError,
                         isResetLoading = isResetLoading,
                         deviceLinkAuthState = deviceLinkAuthState,
-                        deviceLinkEnabled = serverConnectionState.activeServer.capabilities.tvLogin,
+                        deviceLinkEnabled = false,
                         statusBarTop = statusBarTop,
                         onEmailChange = {
                             email = it
@@ -826,20 +826,14 @@ internal fun AuthForm(
                         text = stringResource(Res.string.compose_auth_forgot_password),
                         modifier = Modifier
                             .focusRequester(forgotPasswordFocusRequester)
-                             .onFocusChanged { forgotPasswordFocused = it.isFocused }
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(
-                                width = if (forgotPasswordFocused) 2.dp else 0.dp,
-                                color = AuthAccent,
-                                shape = RoundedCornerShape(8.dp),
-                            )
+                            .onFocusChanged { forgotPasswordFocused = it.isFocused }
                             .clickable(
                                 enabled = authActionsEnabled,
                                 onClick = onForgotPassword,
                             )
-                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = AuthAccentSoft,
+                            color = if (forgotPasswordFocused) KAColors.TextPrimary else KAColors.PrimaryLight,
                             fontSize = (13f * scale).sp,
                             lineHeight = (18f * scale).sp,
                             fontWeight = FontWeight.SemiBold,
@@ -1001,7 +995,7 @@ private fun AuthTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = KAShapes.Field
     var isFocused by remember { mutableStateOf(false) }
     Row(
         modifier = modifier
@@ -1113,7 +1107,7 @@ internal fun AuthPrimaryButton(
             .fillMaxWidth()
             .height(height),
         enabled = enabled,
-        shape = RoundedCornerShape(20.dp),
+        shape = KAShapes.Button,
         contentPadding = PaddingValues(0.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = AuthPrimaryButtonBackground,
@@ -1187,16 +1181,10 @@ private fun AuthModeToggle(
                 else stringResource(Res.string.compose_auth_sign_up),
                 modifier = Modifier
                     .onFocusChanged { actionFocused = it.isFocused }
-                    .clip(RoundedCornerShape(8.dp))
-                    .border(
-                        width = if (actionFocused) 2.dp else 0.dp,
-                        color = AuthAccent,
-                        shape = RoundedCornerShape(8.dp),
-                    )
                     .clickable(enabled = enabled, onClick = onToggleAuthMode)
-                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = AuthTextPrimary,
+                    color = if (actionFocused) KAColors.TextPrimary else KAColors.PrimaryLight,
                     fontSize = (14f * scale).sp,
                     lineHeight = (20f * scale).sp,
                     fontWeight = FontWeight.SemiBold,
@@ -1221,14 +1209,13 @@ internal fun AuthSecondaryButton(
             .fillMaxWidth()
             .height(height),
         enabled = enabled,
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, AuthSecondaryButtonBorder.copy(alpha = 0.7f)),
+        shape = KAShapes.Button,
         contentPadding = PaddingValues(0.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = AuthSecondaryButtonBackground,
-            contentColor = AuthTextPrimary,
-            disabledContainerColor = AuthSecondaryButtonBackground.copy(alpha = 0.45f),
-            disabledContentColor = AuthTextPrimary.copy(alpha = 0.55f),
+            containerColor = KAColors.SurfaceVariant,
+            contentColor = Color.White,
+            disabledContainerColor = KAColors.SurfaceVariant.copy(alpha = 0.45f),
+            disabledContentColor = Color.White.copy(alpha = 0.55f),
         ),
     ) {
         Text(
