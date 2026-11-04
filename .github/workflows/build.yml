@@ -92,6 +92,8 @@ jobs:
           ./gradlew :composeApp:testAndroidHostTest \
             --tests 'com.kaplay.app.features.tomato.TomatoProviderTest' \
             --tests 'com.kaplay.app.features.tomato.TomatoCatalogTest' \
+            --tests 'com.kaplay.app.features.auth.AuthValidationTest' \
+            --tests 'com.kaplay.app.features.auth.AuthScreenTest' \
             --tests 'com.kaplay.app.core.network.NetworkStatusRepositoryTest' \
             --tests 'com.kaplay.app.features.player.PlayerScreenRuntimeStateTest' \
             --tests 'com.kaplay.app.features.player.PlaybackRequestSecurityPolicyTest' \

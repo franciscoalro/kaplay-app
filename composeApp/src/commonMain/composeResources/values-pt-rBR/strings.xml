@@ -350,6 +350,13 @@
     <string name="compose_auth_create_account">Criar Conta</string>
     <string name="compose_auth_dont_have_account">Não tem uma conta? </string>
     <string name="compose_auth_email">E-mail</string>
+    <string name="compose_auth_forgot_password">Esqueceu a senha?</string>
+    <string name="compose_auth_reset_invalid_email">Digite um e-mail válido.</string>
+    <string name="compose_auth_reset_sent">Se existir uma conta, um link de redefinição foi enviado para seu e-mail.</string>
+    <string name="compose_auth_reset_failed">Não foi possível enviar o link. Tente novamente.</string>
+    <string name="compose_auth_reset_sending">Enviando link de redefinição…</string>
+    <string name="compose_auth_show_password">Mostrar senha</string>
+    <string name="compose_auth_hide_password">Ocultar senha</string>
     <string name="compose_auth_link_cancel">Cancelar</string>
     <string name="compose_auth_link_code_expired">Este código expirou.</string>
     <string name="compose_auth_link_creating_code">Criando código…</string>

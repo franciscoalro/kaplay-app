@@ -13,18 +13,23 @@ import io.github.jan.supabase.postgrest.rpc
 import io.ktor.client.statement.bodyAsText
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -58,44 +63,59 @@ object DeviceLinkAuthRepository {
     private val json = Json { ignoreUnknownKeys = true }
     private val _state = MutableStateFlow<DeviceLinkAuthState>(DeviceLinkAuthState.Idle)
     val state: StateFlow<DeviceLinkAuthState> = _state.asStateFlow()
+    private val stateLock = SynchronizedObject()
+    private var activeGeneration = 0L
     private var activeJob: Job? = null
 
     @OptIn(ExperimentalUuidApi::class)
     fun start() {
-        if (_state.value is DeviceLinkAuthState.Starting || _state.value is DeviceLinkAuthState.Waiting) return
+        synchronized(stateLock) {
+            if (_state.value is DeviceLinkAuthState.Starting || _state.value is DeviceLinkAuthState.Waiting) return
 
-        activeJob?.cancel()
-        activeJob = scope.launch {
-            _state.value = DeviceLinkAuthState.Starting
-            val configuration = ServerConfigurationRepository.active.value
-            val nonce = Uuid.random().toString()
-            try {
-                val session = startSession(
-                    configuration = configuration,
-                    nonce = nonce,
-                    deviceName = currentDeviceClientMetadata().deviceName,
-                )
-                _state.value = DeviceLinkAuthState.Waiting(
-                    code = formatDeviceLinkCode(session.userCode),
-                    verificationUrl = session.verificationUriComplete,
-                )
-                pollAndComplete(session, nonce)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: DeviceLinkAuthException) {
-                log.w(error) { "Device link sign-in stopped" }
-                _state.value = DeviceLinkAuthState.Failed(error.reason)
-            } catch (error: Throwable) {
-                log.w(error) { "Device link sign-in failed" }
-                _state.value = DeviceLinkAuthState.Failed(DeviceLinkAuthFailure.Start)
+            activeGeneration += 1
+            activeJob?.cancel()
+            val generation = activeGeneration
+            activeJob = scope.launch {
+                if (!setStateIfCurrent(generation, DeviceLinkAuthState.Starting)) return@launch
+                val configuration = ServerConfigurationRepository.active.value
+                val nonce = Uuid.random().toString()
+                try {
+                    val session = startSession(
+                        configuration = configuration,
+                        nonce = nonce,
+                        deviceName = currentDeviceClientMetadata().deviceName,
+                    )
+                    if (!setStateIfCurrent(
+                            generation,
+                            DeviceLinkAuthState.Waiting(
+                                code = formatDeviceLinkCode(session.userCode),
+                                verificationUrl = session.verificationUriComplete,
+                            ),
+                        )
+                    ) return@launch
+                    pollAndComplete(session, nonce, generation)
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: DeviceLinkAuthException) {
+                    log.w(error) { "Device link sign-in stopped" }
+                    setStateIfCurrent(generation, DeviceLinkAuthState.Failed(error.reason))
+                } catch (error: Throwable) {
+                    log.w(error) { "Device link sign-in failed" }
+                    setStateIfCurrent(generation, DeviceLinkAuthState.Failed(DeviceLinkAuthFailure.Start))
+                }
             }
         }
     }
 
     fun cancel() {
-        activeJob?.cancel()
-        activeJob = null
-        _state.value = DeviceLinkAuthState.Idle
+        val job = synchronized(stateLock) {
+            activeGeneration += 1
+            val previousJob = activeJob
+            activeJob = null
+            _state.value = DeviceLinkAuthState.Idle
+            previousJob
+        }
+        job?.cancel()
     }
 
     private suspend fun startSession(
@@ -121,7 +141,11 @@ object DeviceLinkAuthRepository {
             ?: throw DeviceLinkAuthException(DeviceLinkAuthFailure.Start)
     }
 
-    private suspend fun pollAndComplete(session: DeviceLinkStartResponse, nonce: String) {
+    private suspend fun pollAndComplete(
+        session: DeviceLinkStartResponse,
+        nonce: String,
+        generation: Long,
+    ) {
         var pollAttempts = 0
         var consecutiveFailures = 0
         val intervalMillis = session.pollIntervalSeconds.coerceIn(2, 10) * 1_000L
@@ -151,12 +175,20 @@ object DeviceLinkAuthRepository {
             when (poll.status.trim().lowercase()) {
                 "pending" -> Unit
                 "approved" -> {
-                    _state.value = DeviceLinkAuthState.Waiting(
-                        code = formatDeviceLinkCode(session.userCode),
-                        verificationUrl = session.verificationUriComplete,
-                        isCompleting = true,
-                    )
-                    completeSession(session.deviceCode, nonce)
+                    val shouldComplete = synchronized(stateLock) {
+                        if (activeGeneration != generation) {
+                            false
+                        } else {
+                            _state.value = DeviceLinkAuthState.Waiting(
+                                code = formatDeviceLinkCode(session.userCode),
+                                verificationUrl = session.verificationUriComplete,
+                                isCompleting = true,
+                            )
+                            true
+                        }
+                    }
+                    if (!shouldComplete) return
+                    completeSession(session.deviceCode, nonce, generation)
                     return
                 }
                 else -> throw DeviceLinkAuthException(DeviceLinkAuthFailure.Expired)
@@ -166,31 +198,105 @@ object DeviceLinkAuthRepository {
         throw DeviceLinkAuthException(DeviceLinkAuthFailure.Expired)
     }
 
-    private suspend fun completeSession(deviceCode: String, nonce: String) {
+    private suspend fun completeSession(deviceCode: String, nonce: String, generation: Long) {
+        var importAttempted = false
+        var importedAccessToken: String? = null
+        var importedRefreshToken: String? = null
         try {
+            ensureGenerationActive(generation)
             val payload = buildJsonObject {
                 put("code", deviceCode)
                 put("device_nonce", nonce)
             }
             val response = SupabaseProvider.client.functions.invoke("tv-logins-exchange", payload)
             val result = json.decodeFromString<DeviceLinkExchangeResponse>(response.bodyAsText())
-            val user = result.user ?: SupabaseProvider.client.auth.retrieveUser(result.accessToken)
+            val accessToken = result.accessToken.takeIf { it.isNotBlank() }
+                ?: throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete)
+            val refreshToken = result.refreshToken.takeIf { it.isNotBlank() }
+                ?: throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete)
             val expiresIn = requireNotNull(result.expiresIn?.takeIf { it > 0L })
-            SupabaseProvider.client.auth.importSession(
-                UserSession(
-                    accessToken = result.accessToken,
-                    refreshToken = result.refreshToken,
-                    expiresIn = expiresIn,
-                    tokenType = result.tokenType?.takeIf { it.isNotBlank() } ?: "bearer",
-                    user = user,
-                ),
-            )
+            val user = SupabaseProvider.client.auth.retrieveUser(accessToken)
+            if (user.id.orEmpty().isBlank()) {
+                throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete)
+            }
+            importedAccessToken = accessToken
+            importedRefreshToken = refreshToken
+            importAttempted = true
+            AuthRepository.withSessionMutation {
+                try {
+                    withContext(NonCancellable) {
+                        SupabaseProvider.client.auth.importSession(
+                            UserSession(
+                                accessToken = accessToken,
+                                refreshToken = refreshToken,
+                                expiresIn = expiresIn,
+                                tokenType = result.tokenType?.takeIf { it.isNotBlank() } ?: "bearer",
+                                user = user,
+                            ),
+                        )
+                    }
+                } catch (error: Throwable) {
+                    withContext(NonCancellable) {
+                        runCatching {
+                            AuthRepository.clearRemoteSessionIfMatchesWhileLocked(
+                                accessToken,
+                                refreshToken,
+                            )
+                        }
+                    }
+                    throw error
+                }
+                ensureGenerationActive(generation)
+                synchronized(stateLock) {
+                    if (activeGeneration != generation) {
+                        throw CancellationException("Device link sign-in was cancelled")
+                    }
+                    if (!AuthRepository.onRemoteSessionImported(user.id, user.email)) {
+                        throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete)
+                    }
+                    _state.value = DeviceLinkAuthState.Idle
+                }
+            }
         } catch (error: CancellationException) {
+            if (importAttempted) {
+                clearImportedSessionIfOwned(importedAccessToken, importedRefreshToken)
+            }
             throw error
         } catch (error: Throwable) {
+            if (importAttempted) {
+                clearImportedSessionIfOwned(importedAccessToken, importedRefreshToken)
+            }
             throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete, error)
         }
     }
+
+    private suspend fun clearImportedSessionIfOwned(accessToken: String?, refreshToken: String?) {
+        runCatching {
+            AuthRepository.clearRemoteSessionIfMatches(accessToken, refreshToken)
+        }.onFailure { error ->
+            log.w(error) { "Unable to clear the cancelled device-link session" }
+        }
+    }
+
+    private suspend fun ensureGenerationActive(generation: Long) {
+        currentCoroutineContext().ensureActive()
+        if (!isCurrentGeneration(generation)) {
+            throw CancellationException("Device link sign-in was cancelled")
+        }
+    }
+
+    private fun isCurrentGeneration(generation: Long): Boolean =
+        synchronized(stateLock) { activeGeneration == generation }
+
+    private fun setStateIfCurrent(generation: Long, state: DeviceLinkAuthState): Boolean =
+        synchronized(stateLock) {
+            if (activeGeneration != generation) {
+                false
+            } else {
+                _state.value = state
+                true
+            }
+        }
 
     private fun ServerConfiguration.deviceLinkUrl(): String =
         if (isCustom) "${backendUrl.trimEnd('/')}/link" else officialLinkUrl
