@@ -342,29 +342,33 @@ fun KAPlayInputField(
     trailingContent: (@Composable (() -> Unit))? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
 ) {
-    val tokens = MaterialTheme.kaplay
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp),
         singleLine = true,
-        shape = RoundedCornerShape(KAPlayTokens.Radius.lg),
+        shape = KAShapes.Field,
         placeholder = {
             Text(
                 text = placeholder,
-                color = tokens.colors.textMuted,
-                style = MaterialTheme.typography.bodyLarge,
+                color = KAColors.TextMuted,
+                fontSize = 15.sp,
             )
         },
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = tokens.colors.textPrimary),
+        textStyle = androidx.compose.ui.text.TextStyle(
+            color = KAColors.TextPrimary,
+            fontSize = 15.sp,
+        ),
         trailingIcon = trailingContent,
         visualTransformation = visualTransformation,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = tokens.colors.borderFocus,
-            unfocusedBorderColor = tokens.colors.borderDefault,
-            focusedContainerColor = tokens.colors.surfaceCard,
-            unfocusedContainerColor = tokens.colors.surfaceCard,
-            cursorColor = tokens.colors.accent,
+            focusedBorderColor = KAColors.Primary,
+            unfocusedBorderColor = KAColors.Outline,
+            focusedContainerColor = KAColors.Surface,
+            unfocusedContainerColor = KAColors.Surface,
+            cursorColor = KAColors.PrimaryLight,
         ),
     )
 }
