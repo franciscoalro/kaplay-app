@@ -61,12 +61,18 @@ object AuthRepository {
                     is SessionStatus.Authenticated -> {
                         val user = status.session.user
                         val userId = user?.id.orEmpty()
-                        if (!validateRemoteSession(userId)) return@collect
+                        if (!validateRemoteSession(
+                                userId = userId,
+                                accessToken = status.session.accessToken,
+                                refreshToken = status.session.refreshToken,
+                            )
+                        ) return@collect
                         withSessionMutation {
                             if (AuthStorage.loadAnonymousUserId() != null) return@withSessionMutation
                             val currentSession = SupabaseProvider.client.auth.currentSessionOrNull()
-                            if (currentSession != null &&
-                                currentSession.accessToken != status.session.accessToken
+                            if (currentSession == null ||
+                                currentSession.accessToken != status.session.accessToken ||
+                                currentSession.refreshToken != status.session.refreshToken
                             ) {
                                 return@withSessionMutation
                             }
@@ -109,7 +115,11 @@ object AuthRepository {
         }
     }
 
-    private suspend fun validateRemoteSession(userId: String): Boolean {
+    private suspend fun validateRemoteSession(
+        userId: String,
+        accessToken: String,
+        refreshToken: String,
+    ): Boolean {
         if (userId.isBlank() || validatedRemoteUserId == userId) return true
 
         return runCatching {
@@ -120,7 +130,10 @@ object AuthRepository {
             if (e is CancellationException) throw e
             if (isInvalidRemoteSessionError(e)) {
                 log.w(e) { "Stored Supabase session no longer belongs to an active account; clearing local auth" }
-                clearLocalSessionAfterRemoteInvalidation()
+                clearLocalSessionAfterRemoteInvalidation(
+                    accessToken = accessToken,
+                    refreshToken = refreshToken,
+                )
                 false
             } else {
                 log.w(e) { "Unable to validate stored Supabase session; keeping cached auth state" }
@@ -202,19 +215,25 @@ object AuthRepository {
         refreshToken: String?,
     ): Boolean = withContext(NonCancellable) {
         withSessionMutation {
-            val currentSession = runCatching {
-                SupabaseProvider.client.auth.currentSessionOrNull()
-            }.getOrNull()
-            if (currentSession == null ||
-                currentSession.accessToken != accessToken ||
-                currentSession.refreshToken != refreshToken
-            ) {
-                false
-            } else {
-                SupabaseProvider.client.auth.clearSession()
-                true
-            }
+            clearRemoteSessionIfMatchesWhileLocked(accessToken, refreshToken)
         }
+    }
+
+    internal suspend fun clearRemoteSessionIfMatchesWhileLocked(
+        accessToken: String?,
+        refreshToken: String?,
+    ): Boolean {
+        val currentSession = runCatching {
+            SupabaseProvider.client.auth.currentSessionOrNull()
+        }.getOrNull()
+        if (currentSession == null ||
+            currentSession.accessToken != accessToken ||
+            currentSession.refreshToken != refreshToken
+        ) {
+            return false
+        }
+        SupabaseProvider.client.auth.clearSession()
+        return true
     }
 
     internal fun onRemoteSessionImported(userId: String?, email: String?): Boolean {
@@ -304,19 +323,35 @@ object AuthRepository {
         return true
     }
 
-    private suspend fun clearLocalSessionAfterRemoteInvalidation() {
-        _error.value = null
-        AuthStorage.clearAnonymousUserId()
-        validatedRemoteUserId = null
-        runCatching {
-            withSessionMutation { SupabaseProvider.client.auth.clearSession() }
-        }.onFailure { e ->
-            log.w(e) { "Failed to clear Supabase session after remote invalidation; continuing local reset" }
-        }
-        val localCleanup = runCatching { LocalAccountDataCleaner.wipe() }
-        _state.value = AuthState.Unauthenticated
-        localCleanup.onFailure { error ->
-            log.e(error) { "Local account cleanup failed after remote session invalidation" }
+    private suspend fun clearLocalSessionAfterRemoteInvalidation(
+        accessToken: String? = null,
+        refreshToken: String? = null,
+    ) = withContext(NonCancellable) {
+        withSessionMutation {
+            val sessionCleared = runCatching {
+                if (accessToken == null && refreshToken == null) {
+                    SupabaseProvider.client.auth.clearSession()
+                    true
+                } else if (accessToken == null || refreshToken == null) {
+                    false
+                } else {
+                    clearRemoteSessionIfMatchesWhileLocked(accessToken, refreshToken)
+                }
+            }.onFailure { error ->
+                log.w(error) {
+                    "Failed to clear Supabase session after remote invalidation; continuing local reset"
+                }
+            }.getOrDefault(false)
+            if ((accessToken != null || refreshToken != null) && !sessionCleared) return@withSessionMutation
+
+            _error.value = null
+            AuthStorage.clearAnonymousUserId()
+            validatedRemoteUserId = null
+            val localCleanup = runCatching { LocalAccountDataCleaner.wipe() }
+            _state.value = AuthState.Unauthenticated
+            localCleanup.onFailure { error ->
+                log.e(error) { "Local account cleanup failed after remote session invalidation" }
+            }
         }
     }
 

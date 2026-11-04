@@ -64,18 +64,22 @@ internal fun DeviceLinkAuthSection(
 
     LaunchedEffect(state, enabled) {
         val stateBeforeTransition = previousState
-        previousState = state
-        when {
-            enabled && state is DeviceLinkAuthState.Idle &&
-                stateBeforeTransition != null && stateBeforeTransition !is DeviceLinkAuthState.Idle -> {
-                idleFocusRequester.requestFocus()
+        if (enabled) {
+            when {
+                state is DeviceLinkAuthState.Idle &&
+                    stateBeforeTransition != null && stateBeforeTransition !is DeviceLinkAuthState.Idle -> {
+                    idleFocusRequester.requestFocus()
+                }
+                state is DeviceLinkAuthState.Waiting && !state.isCompleting -> {
+                    openFocusRequester.requestFocus()
+                }
+                state is DeviceLinkAuthState.Failed -> {
+                    retryFocusRequester.requestFocus()
+                }
             }
-            enabled && state is DeviceLinkAuthState.Waiting && !state.isCompleting -> {
-                openFocusRequester.requestFocus()
-            }
-            enabled && state is DeviceLinkAuthState.Failed -> {
-                retryFocusRequester.requestFocus()
-            }
+            previousState = state
+        } else if (state !is DeviceLinkAuthState.Idle) {
+            previousState = state
         }
     }
 

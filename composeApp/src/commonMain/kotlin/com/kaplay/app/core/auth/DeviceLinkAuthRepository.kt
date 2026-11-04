@@ -237,7 +237,12 @@ object DeviceLinkAuthRepository {
                     }
                 } catch (error: Throwable) {
                     withContext(NonCancellable) {
-                        runCatching { SupabaseProvider.client.auth.clearSession() }
+                        runCatching {
+                            AuthRepository.clearRemoteSessionIfMatchesWhileLocked(
+                                accessToken,
+                                refreshToken,
+                            )
+                        }
                     }
                     throw error
                 }
