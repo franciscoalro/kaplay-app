@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.kaplay.app.core.ui.KAPlayTokens
 import com.kaplay.app.core.ui.KAPlayActionLabel
 import com.kaplay.app.core.ui.KAPlayBackButton
