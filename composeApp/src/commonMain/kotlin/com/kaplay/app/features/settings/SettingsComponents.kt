@@ -242,9 +242,9 @@ internal fun SettingsNavigationRow(
     onClick: () -> Unit,
 ) {
     val tokens = MaterialTheme.kaplay
-    val iconSize = if (isTablet) 42.dp else 36.dp
-    val verticalPadding = if (isTablet) 16.dp else 14.dp
-    val horizontalPadding = if (isTablet) 20.dp else 16.dp
+    val iconSize = if (isTablet) 38.dp else 32.dp
+    val verticalPadding = if (isTablet) 14.dp else 11.dp
+    val horizontalPadding = if (isTablet) 18.dp else 16.dp
 
     Row(
         modifier = Modifier
@@ -277,24 +277,28 @@ internal fun SettingsNavigationRow(
                             androidx.compose.foundation.Image(
                                 painter = iconPainter,
                                 contentDescription = null,
-                                modifier = Modifier.size(if (isTablet) 28.dp else 24.dp),
+                                modifier = Modifier.size(if (isTablet) 24.dp else 20.dp),
                                 contentScale = ContentScale.Fit,
                             )
                         } else if (icon != null) {
                             Icon(
                                 imageVector = icon,
                                 contentDescription = null,
+                                modifier = Modifier.size(if (isTablet) 22.dp else 20.dp),
                                 tint = tokens.colors.accent,
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.width(if (isTablet) 16.dp else 14.dp))
+                Spacer(modifier = Modifier.width(if (isTablet) 14.dp else 12.dp))
             }
             Column {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = 15.sp,
+                        lineHeight = 20.sp,
+                    ),
                     color = tokens.colors.textPrimary,
                     fontWeight = FontWeight.Medium,
                 )
@@ -302,7 +306,10 @@ internal fun SettingsNavigationRow(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = description,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                        ),
                         color = tokens.colors.textMuted,
                         modifier = Modifier.alpha(0.92f),
                     )
