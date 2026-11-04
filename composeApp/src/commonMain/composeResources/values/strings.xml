@@ -354,6 +354,7 @@
     <string name="compose_auth_reset_invalid_email">Enter a valid email address.</string>
     <string name="compose_auth_reset_sent">If an account exists, a reset link was sent to your email.</string>
     <string name="compose_auth_reset_failed">We couldn't send the reset link. Try again.</string>
+    <string name="compose_auth_reset_sending">Sending reset link…</string>
     <string name="compose_auth_show_password">Show password</string>
     <string name="compose_auth_hide_password">Hide password</string>
     <string name="compose_auth_link_cancel">Cancel</string>

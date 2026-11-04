@@ -104,6 +104,7 @@ import kaplay.composeapp.generated.resources.compose_auth_password
 import kaplay.composeapp.generated.resources.compose_auth_reset_failed
 import kaplay.composeapp.generated.resources.compose_auth_reset_invalid_email
 import kaplay.composeapp.generated.resources.compose_auth_reset_sent
+import kaplay.composeapp.generated.resources.compose_auth_reset_sending
 import kaplay.composeapp.generated.resources.compose_auth_show_password
 import kaplay.composeapp.generated.resources.compose_auth_sign_in
 import kaplay.composeapp.generated.resources.compose_auth_sign_in_subtitle
@@ -215,19 +216,21 @@ fun AuthScreen(
     val resetFailedText = stringResource(Res.string.compose_auth_reset_failed)
 
     fun submitAuth() {
-        if (!canSubmitAuth(email, password, isLoading)) return
+        if (!canSubmitAuth(email, password, isLoading || isResetLoading)) return
+        val normalizedEmail = normalizedAuthEmail(email) ?: return
         DeviceLinkAuthRepository.cancel()
         isLoading = true
         focusManager.clearFocus(force = true)
         scope.launch {
-            if (isSignUp) AuthRepository.signUpWithEmail(email, password)
-            else AuthRepository.signInWithEmail(email, password)
+            if (isSignUp) AuthRepository.signUpWithEmail(normalizedEmail, password)
+            else AuthRepository.signInWithEmail(normalizedEmail, password)
             isLoading = false
         }
     }
 
     fun requestPasswordReset() {
         if (isLoading || isResetLoading) return
+        AuthRepository.clearError()
         val resetEmail = normalizedAuthEmail(email)
         if (resetEmail == null) {
             resetMessage = resetInvalidEmailText
@@ -259,7 +262,7 @@ fun AuthScreen(
     }
 
     fun startDeviceLink() {
-        if (isLoading) return
+        if (isLoading || isResetLoading) return
         focusManager.clearFocus(force = true)
         AuthRepository.clearError()
         DeviceLinkAuthRepository.start()
@@ -581,8 +584,10 @@ private fun AuthLargeLayout(
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = formHorizontalPadding),
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = formHorizontalPadding, vertical = 32.dp * scale),
+                verticalArrangement = Arrangement.Center,
             ) {
                 AuthHeading(
                     isSignUp = isSignUp,
@@ -722,6 +727,7 @@ internal fun AuthForm(
     onPasswordBoundsChange: (Rect) -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+    val submitEnabled = canSubmitAuth(email, password, isLoading || isResetLoading)
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -771,23 +777,41 @@ internal fun AuthForm(
                     .fillMaxWidth()
                     .padding(top = 12.dp * scale),
                 horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = stringResource(Res.string.compose_auth_forgot_password),
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable(
-                            enabled = !isLoading && !isResetLoading,
-                            onClick = onForgotPassword,
-                        )
-                        .padding(horizontal = 6.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.bodyMedium.copy(
+                if (isResetLoading) {
+                    KAPlayLoadingIndicator(
+                        modifier = Modifier.size(14.dp * scale),
                         color = AuthAccentSoft,
-                        fontSize = (13f * scale).sp,
-                        lineHeight = (18f * scale).sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp * scale))
+                    Text(
+                        text = stringResource(Res.string.compose_auth_reset_sending),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = AuthAccentSoft,
+                            fontSize = (13f * scale).sp,
+                            lineHeight = (18f * scale).sp,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    )
+                } else {
+                    Text(
+                        text = stringResource(Res.string.compose_auth_forgot_password),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable(
+                                enabled = !isLoading && !isResetLoading,
+                                onClick = onForgotPassword,
+                            )
+                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = AuthAccentSoft,
+                            fontSize = (13f * scale).sp,
+                            lineHeight = (18f * scale).sp,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    )
+                }
             }
         }
 
@@ -829,7 +853,7 @@ internal fun AuthForm(
             text = if (isSignUp) stringResource(Res.string.compose_auth_create_account)
             else stringResource(Res.string.compose_auth_sign_in),
             isLoading = isLoading,
-            enabled = !isLoading,
+            enabled = submitEnabled,
             height = metrics.primaryHeight,
             scale = scale,
             onClick = onSubmit,
@@ -839,6 +863,7 @@ internal fun AuthForm(
 
         AuthModeToggle(
             isSignUp = isSignUp,
+            enabled = !isLoading && !isResetLoading,
             scale = scale,
             onToggleAuthMode = onToggleAuthMode,
         )
@@ -847,7 +872,7 @@ internal fun AuthForm(
 
         AuthSecondaryButton(
             text = stringResource(Res.string.compose_auth_continue_without_account),
-            enabled = !isLoading,
+            enabled = !isLoading && !isResetLoading,
             height = metrics.secondaryHeight,
             scale = scale,
             onClick = onContinueWithoutAccount,
@@ -923,7 +948,6 @@ private fun AuthTextField(
         modifier = modifier
             .fillMaxWidth()
             .height(metrics.fieldHeight)
-            .onFocusChanged { isFocused = it.isFocused }
             .background(metrics.fieldBackground, shape)
             .border(
                 width = if (isFocused) 2.dp else 1.dp,
@@ -945,7 +969,8 @@ private fun AuthTextField(
             onValueChange = onValueChange,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxHeight(),
+                .fillMaxHeight()
+                .onFocusChanged { isFocused = it.hasFocus },
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyLarge.copy(
                 color = AuthTextPrimary,
@@ -1061,6 +1086,7 @@ internal fun AuthPrimaryButton(
 @Composable
 private fun AuthModeToggle(
     isSignUp: Boolean,
+    enabled: Boolean,
     scale: Float,
     onToggleAuthMode: () -> Unit,
 ) {
@@ -1097,7 +1123,7 @@ private fun AuthModeToggle(
             Text(
                 text = if (signUp) stringResource(Res.string.compose_auth_sign_in)
                 else stringResource(Res.string.compose_auth_sign_up),
-                modifier = Modifier.clickable(onClick = onToggleAuthMode),
+                modifier = Modifier.clickable(enabled = enabled, onClick = onToggleAuthMode),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = AuthTextPrimary,
                     fontSize = (14f * scale).sp,
