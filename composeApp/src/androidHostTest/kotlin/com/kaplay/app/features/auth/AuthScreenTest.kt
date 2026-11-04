@@ -97,6 +97,23 @@ class AuthScreenTest {
     }
 
     @Test
+    fun resetLoadingDisablesDeviceLinkCancel() {
+        setForm(
+            isSignUp = false,
+            email = "user@example.com",
+            password = "secret1",
+            isResetLoading = true,
+            deviceLinkEnabled = true,
+            deviceLinkAuthState = com.kaplay.app.core.auth.DeviceLinkAuthState.Waiting(
+                code = "ABCD-EFGH",
+                verificationUrl = "https://kaplay.tv/link?code=ABCD-EFGH",
+            ),
+        )
+
+        compose.onNodeWithText("Cancel").assertIsNotEnabled()
+    }
+
+    @Test
     fun passwordVisibilityActionIsFocusableAndInvokesCallback() {
         var visibilityClicks = 0
         setForm(
@@ -114,6 +131,8 @@ class AuthScreenTest {
         password: String = "",
         isResetLoading: Boolean = false,
         deviceLinkEnabled: Boolean = false,
+        deviceLinkAuthState: com.kaplay.app.core.auth.DeviceLinkAuthState =
+            com.kaplay.app.core.auth.DeviceLinkAuthState.Idle,
         onForgotPassword: () -> Unit = {},
         onPasswordVisibilityToggle: () -> Unit = {},
         onStartDeviceLink: () -> Unit = {},
@@ -130,7 +149,7 @@ class AuthScreenTest {
                     resetMessage = null,
                     resetMessageIsError = false,
                     isResetLoading = isResetLoading,
-                    deviceLinkAuthState = com.kaplay.app.core.auth.DeviceLinkAuthState.Idle,
+                    deviceLinkAuthState = deviceLinkAuthState,
                     deviceLinkEnabled = deviceLinkEnabled,
                     metrics = MobileAuthFormMetrics,
                     onEmailChange = {},
