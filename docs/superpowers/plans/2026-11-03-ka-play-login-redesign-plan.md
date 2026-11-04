@@ -169,4 +169,7 @@
 - Review-fix RED/GREEN cycles: `41747097760`, `41814902979`.
 - Sync validation: `41815957339` passed.
 - Android build-only: `41815951454` build, APK scan and credential scan passed; emulator/Compose screenshot jobs remained infrastructure failures (`cmd: Can't find service: package`, emulator ANR/boot failure).
-- Final whole-branch review: dispatched after commit `a8a96ca8`; no merge or publish performed.
+- Post-review completion-gate RED: `41819765114` failed on the new `isCompleting` regression test as expected.
+- Post-review hardening CI: `41821810018`, `41824163592`, and final `41827122058` passed compile, TLS checks, host tests, and toolchain checks; `41826757797` was an intermediate compile failure corrected by removing an unsupported extension import.
+- Final hardening commits: `3ab44afc`, `7f3a08c6`, `00b4d34d`, `bf36a724` serialize session mutation, fence cancellation/publication, validate exchange tokens before promotion, restore terminal/focus states, and retain localized TV-link strings.
+- Fresh whole-branch review: dispatched after `bf36a724`; no merge or publish performed.
