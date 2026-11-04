@@ -862,25 +862,23 @@ private fun LibraryChip(
     error: Boolean = false,
     onClick: () -> Unit,
 ) {
-    val colorScheme = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier
-            .clip(RoundedCornerShape(18.dp))
+            .clip(com.kaplay.app.core.ui.KAShapes.Chip)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        color = if (selected) colorScheme.primaryContainer else colorScheme.surfaceContainerLow,
-        border = if (selected) BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.45f)) else null,
+        shape = com.kaplay.app.core.ui.KAShapes.Chip,
+        color = if (selected) com.kaplay.app.core.ui.KAColors.Primary else com.kaplay.app.core.ui.KAColors.SurfaceVariant,
     ) {
         Text(
             text = label,
             modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .padding(horizontal = 14.dp, vertical = 7.dp)
                 .shimmer(loading),
             style = MaterialTheme.typography.labelMedium,
             color = when {
-                error -> colorScheme.error
-                selected -> colorScheme.onPrimaryContainer
-                else -> colorScheme.onSurfaceVariant
+                error -> com.kaplay.app.core.ui.KAColors.Error
+                selected -> androidx.compose.ui.graphics.Color.White
+                else -> com.kaplay.app.core.ui.KAColors.TextSecondary
             },
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
