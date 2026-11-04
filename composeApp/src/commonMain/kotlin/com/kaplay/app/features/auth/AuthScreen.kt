@@ -206,7 +206,7 @@ fun AuthScreen(
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var isLoading by rememberSaveable { mutableStateOf(false) }
-    var isResetLoading by rememberSaveable { mutableStateOf(false) }
+    var isResetLoading by remember { mutableStateOf(false) }
     var resetMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var resetMessageIsError by rememberSaveable { mutableStateOf(false) }
     var emailFieldBounds by remember { mutableStateOf<Rect?>(null) }
@@ -242,13 +242,16 @@ fun AuthScreen(
         resetMessageIsError = false
         focusManager.clearFocus(force = true)
         scope.launch {
-            val result = AuthRepository.requestPasswordReset(resetEmail)
-            resetMessage = result.fold(
-                onSuccess = { resetSentText },
-                onFailure = { resetFailedText },
-            )
-            resetMessageIsError = result.isFailure
-            isResetLoading = false
+            try {
+                val result = AuthRepository.requestPasswordReset(resetEmail)
+                resetMessage = result.fold(
+                    onSuccess = { resetSentText },
+                    onFailure = { resetFailedText },
+                )
+                resetMessageIsError = result.isFailure
+            } finally {
+                isResetLoading = false
+            }
         }
     }
 
@@ -727,6 +730,7 @@ internal fun AuthForm(
     onPasswordBoundsChange: (Rect) -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+    var forgotPasswordFocused by remember { mutableStateOf(false) }
     val submitEnabled = canSubmitAuth(email, password, isLoading || isResetLoading)
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -738,6 +742,7 @@ internal fun AuthForm(
             icon = Icons.Rounded.Email,
             metrics = metrics,
             scale = scale,
+            enabled = !isLoading && !isResetLoading,
             modifier = Modifier.onGloballyPositioned { coordinates ->
                 onEmailBoundsChange(coordinates.boundsInRoot())
             },
@@ -756,6 +761,7 @@ internal fun AuthForm(
             icon = Icons.Rounded.Lock,
             metrics = metrics,
             scale = scale,
+            enabled = !isLoading && !isResetLoading,
             isPassword = true,
             passwordVisible = passwordVisible,
             onPasswordVisibilityToggle = onPasswordVisibilityToggle,
@@ -798,7 +804,13 @@ internal fun AuthForm(
                     Text(
                         text = stringResource(Res.string.compose_auth_forgot_password),
                         modifier = Modifier
+                            .onFocusChanged { forgotPasswordFocused = it.isFocused }
                             .clip(RoundedCornerShape(8.dp))
+                            .border(
+                                width = if (forgotPasswordFocused) 2.dp else 0.dp,
+                                color = AuthAccent,
+                                shape = RoundedCornerShape(8.dp),
+                            )
                             .clickable(
                                 enabled = !isLoading && !isResetLoading,
                                 onClick = onForgotPassword,
@@ -878,6 +890,18 @@ internal fun AuthForm(
             onClick = onContinueWithoutAccount,
         )
 
+        if (deviceLinkEnabled) {
+            Spacer(modifier = Modifier.height(12.dp * scale))
+            DeviceLinkAuthSection(
+                state = deviceLinkAuthState,
+                enabled = !isLoading && !isResetLoading,
+                height = metrics.secondaryHeight,
+                scale = scale,
+                onStart = onStartDeviceLink,
+                onCancel = onCancelDeviceLink,
+            )
+        }
+
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
@@ -935,6 +959,7 @@ private fun AuthTextField(
     icon: ImageVector,
     metrics: AuthFormMetrics,
     scale: Float,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
     isPassword: Boolean = false,
     passwordVisible: Boolean = false,
@@ -972,6 +997,7 @@ private fun AuthTextField(
                 .fillMaxHeight()
                 .onFocusChanged { isFocused = it.hasFocus },
             singleLine = true,
+            enabled = enabled,
             textStyle = MaterialTheme.typography.bodyLarge.copy(
                 color = AuthTextPrimary,
                 fontSize = (16f * scale).sp,
@@ -1019,7 +1045,7 @@ private fun AuthTextField(
                         color = AuthAccent,
                         shape = RoundedCornerShape(16.dp),
                     )
-                    .clickable(onClick = onPasswordVisibilityToggle),
+                    .clickable(enabled = enabled, onClick = onPasswordVisibilityToggle),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -1090,6 +1116,7 @@ private fun AuthModeToggle(
     scale: Float,
     onToggleAuthMode: () -> Unit,
 ) {
+    var actionFocused by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
@@ -1123,7 +1150,16 @@ private fun AuthModeToggle(
             Text(
                 text = if (signUp) stringResource(Res.string.compose_auth_sign_in)
                 else stringResource(Res.string.compose_auth_sign_up),
-                modifier = Modifier.clickable(enabled = enabled, onClick = onToggleAuthMode),
+                modifier = Modifier
+                    .onFocusChanged { actionFocused = it.isFocused }
+                    .clip(RoundedCornerShape(8.dp))
+                    .border(
+                        width = if (actionFocused) 2.dp else 0.dp,
+                        color = AuthAccent,
+                        shape = RoundedCornerShape(8.dp),
+                    )
+                    .clickable(enabled = enabled, onClick = onToggleAuthMode)
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = AuthTextPrimary,
                     fontSize = (14f * scale).sp,
