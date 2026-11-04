@@ -55,6 +55,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.kaplay.app.core.ui.KAColors
+import com.kaplay.app.core.ui.KAShapes
+import com.kaplay.app.core.ui.KASpacing
 import com.kaplay.app.core.ui.heroStretchHeight
 import com.kaplay.app.core.ui.LocalVerticalBarPadding
 import com.kaplay.app.core.ui.ScreenActivityEffect
@@ -80,9 +83,9 @@ private const val HERO_SCROLL_MAX_SCALE = 1.3f
 private const val HERO_SWIPE_THRESHOLD_FRACTION = 0.16f
 private const val HERO_SWIPE_VELOCITY_THRESHOLD = 300f
 private const val HERO_AUTO_SCROLL_INTERVAL_MS = 8_000L
-private const val MOBILE_HERO_VIEWPORT_RATIO = 0.82f
-private const val MOBILE_HERO_MIN_HEIGHT_DP = 360f
-private const val MOBILE_HERO_MAX_HEIGHT_DP = 760f
+private const val MOBILE_HERO_VIEWPORT_RATIO = 0.45f
+private const val MOBILE_HERO_MIN_HEIGHT_DP = 200f
+private const val MOBILE_HERO_MAX_HEIGHT_DP = 260f
 
 internal data class HomeHeroLayout(
     val isTablet: Boolean,
@@ -313,29 +316,30 @@ fun HomeHeroSection(
                     }
 
                     if (!layout.isTablet) {
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Surface(
                             modifier = Modifier
                                 .clickable(enabled = onItemClick != null) {
                                     onItemClick?.invoke(currentItem)
                                 },
-                            color = MaterialTheme.colorScheme.onBackground,
-                            contentColor = MaterialTheme.colorScheme.background,
-                            shape = RoundedCornerShape(40.dp),
+                            color = KAColors.Primary,
+                            contentColor = androidx.compose.ui.graphics.Color.White,
+                            shape = KAShapes.Button,
                         ) {
                             Text(
                                 text = stringResource(Res.string.home_view_details),
-                                modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 9.dp),
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.SemiBold,
+                                color = androidx.compose.ui.graphics.Color.White,
                             )
                         }
                     }
 
                     if (items.size > 1) {
-                        Spacer(modifier = Modifier.height(if (layout.isTablet) 14.dp else 12.dp))
+                        Spacer(modifier = Modifier.height(if (layout.isTablet) 14.dp else 10.dp))
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             items.forEachIndexed { index, _ ->
@@ -352,12 +356,12 @@ fun HomeHeroSection(
                                             }
                                         }
                                         .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.onBackground)
+                                        .background(if (activeFraction > 0.5f) KAColors.Primary else KAColors.TextMuted)
                                         .graphicsLayer {
-                                            alpha = 0.35f + (0.57f * activeFraction)
+                                            alpha = 0.4f + (0.6f * activeFraction)
                                         }
-                                        .width(8.dp + (24.dp * activeFraction))
-                                        .height(8.dp),
+                                        .width(6.dp + (16.dp * activeFraction))
+                                        .height(6.dp),
                                 )
                             }
                         }

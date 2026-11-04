@@ -1273,11 +1273,11 @@ private fun HomeRewardButton(
             rewardState.error != null -> AdRewardController::refresh
             else -> AdRewardController::showRewarded
         },
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 5.dp,
-        shadowElevation = 3.dp,
+        shape = com.kaplay.app.core.ui.KAShapes.Button,
+        color = com.kaplay.app.core.ui.KAColors.SurfaceVariant,
+        contentColor = com.kaplay.app.core.ui.KAColors.TextPrimary,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 11.dp),
