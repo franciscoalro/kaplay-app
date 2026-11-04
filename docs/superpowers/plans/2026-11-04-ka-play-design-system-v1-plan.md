@@ -188,3 +188,4 @@
 - **Task 6 GREEN:** CI run `41909064318` (commit `ebefd9bf`) passed compile and unit tests.
 - **Task 7 GREEN:** CI run `41911947269` (commit `ce413ab0`) passed compile and unit tests.
 - **Task 8 Debug APK:** CI run `41913985555` built Full Debug APK (`assembleFullDebug`), verified APK credentials, and uploaded artifact `ka-play-full-debug-build-only`.
+- **Review Fix Pass:** CI run `41920290674` (commit `14a566e1`) verified Android navigation bar delegation to `KAPlayNavigationBar`, expanded 48 dp accessible touch targets (`KATextButton`, password toggle, `HomeRewardButton`, hero button, `AuthScreen` links), and bound core components directly to production screens.
