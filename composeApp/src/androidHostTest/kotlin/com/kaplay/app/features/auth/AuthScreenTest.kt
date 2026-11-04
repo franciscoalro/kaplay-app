@@ -2,10 +2,11 @@ package com.kaplay.app.features.auth
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.test.assertAll
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -78,8 +79,7 @@ class AuthScreenTest {
             isResetLoading = true,
         )
 
-        compose.onNode(hasSetTextAction() and hasText("user@example.com")).assertIsNotEnabled()
-        compose.onNode(hasSetTextAction() and hasText("secret1")).assertIsNotEnabled()
+        compose.onAllNodes(hasSetTextAction()).assertAll(isNotEnabled())
         compose.onNodeWithContentDescription("Show password").assertIsNotEnabled()
     }
 
