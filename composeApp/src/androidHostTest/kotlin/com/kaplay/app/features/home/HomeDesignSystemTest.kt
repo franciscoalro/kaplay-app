@@ -1,5 +1,6 @@
 package com.kaplay.app.features.home
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.kaplay.app.core.ui.DefaultPosterCardCornerRadiusDp
 import com.kaplay.app.core.ui.KAColors
@@ -12,7 +13,7 @@ import kotlin.test.assertEquals
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
-class HomeScreenTest {
+class HomeDesignSystemTest {
     @Test
     fun posterRadiusMatchesDesignSystemSpec() {
         assertEquals(8, DefaultPosterCardCornerRadiusDp)
@@ -22,6 +23,8 @@ class HomeScreenTest {
 
     @Test
     fun brandColorsRemainConsistent() {
-        assertEquals(androidx.compose.ui.graphics.Color(0xFF9729D7), KAColors.Primary)
+        assertEquals(Color(0xFF9729D7), KAColors.Primary)
+        assertEquals(Color(0xFF0B0B0F), KAColors.Background)
+        assertEquals(Color(0xFF19191F), KAColors.Surface)
     }
 }
