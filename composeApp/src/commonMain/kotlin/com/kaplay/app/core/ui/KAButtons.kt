@@ -111,7 +111,7 @@ fun KATextButton(
     val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = modifier
-            .heightIn(min = 44.dp)
+            .heightIn(min = 48.dp)
             .clickable(
                 interactionSource = interactionSource,
                 indication = ripple(bounded = false, color = KAColors.PrimaryLight),

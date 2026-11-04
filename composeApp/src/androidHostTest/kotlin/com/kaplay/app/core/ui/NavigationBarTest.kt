@@ -66,4 +66,25 @@ class NavigationBarTest {
         compose.onNodeWithText("Busca").performClick()
         compose.runOnIdle { assertEquals(1, selectedIndex) }
     }
+
+    @Test
+    fun floatingNavigationBarRendersItemsThroughKAPlayNavigationBar() {
+        var clicked = false
+        val items = listOf(
+            FloatingNavigationItem(
+                label = "Início",
+                selected = true,
+                onClick = { clicked = true },
+                icon = Icons.Filled.Home,
+            ),
+        )
+        compose.setContent {
+            FloatingNavigationBar(
+                items = items,
+            )
+        }
+
+        compose.onNodeWithText("Início").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(true, clicked) }
+    }
 }

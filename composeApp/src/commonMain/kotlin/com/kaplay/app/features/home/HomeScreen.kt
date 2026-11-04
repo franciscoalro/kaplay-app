@@ -1266,7 +1266,7 @@ private fun HomeRewardButton(
     val label = homeRewardLabel(requiresAuthentication, rewardState)
     val enabled = homeRewardEnabled(rewardState)
     Surface(
-        modifier = modifier.height(38.dp),
+        modifier = modifier.heightIn(min = 48.dp),
         enabled = enabled,
         onClick = when {
             requiresAuthentication -> onRequestAuthentication

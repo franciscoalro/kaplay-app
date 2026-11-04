@@ -319,6 +319,7 @@ fun HomeHeroSection(
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
                             modifier = Modifier
+                                .heightIn(min = 48.dp)
                                 .clickable(enabled = onItemClick != null) {
                                     onItemClick?.invoke(currentItem)
                                 },
@@ -326,13 +327,19 @@ fun HomeHeroSection(
                             contentColor = androidx.compose.ui.graphics.Color.White,
                             shape = KAShapes.Button,
                         ) {
-                            Text(
-                                text = stringResource(Res.string.home_view_details),
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 9.dp),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = androidx.compose.ui.graphics.Color.White,
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .heightIn(min = 48.dp)
+                                    .padding(horizontal = 20.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.home_view_details),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = androidx.compose.ui.graphics.Color.White,
+                                )
+                            }
                         }
                     }
 

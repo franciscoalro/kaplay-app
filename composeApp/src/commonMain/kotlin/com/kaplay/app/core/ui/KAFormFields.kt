@@ -121,12 +121,9 @@ fun KAInputField(
             }
 
             if (isPassword && onPasswordVisibilityToggle != null) {
-                Spacer(modifier = Modifier.width(KASpacing.SM))
-                Icon(
-                    imageVector = if (passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                    contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                Box(
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(48.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -134,8 +131,15 @@ fun KAInputField(
                             role = Role.Button,
                             onClick = onPasswordVisibilityToggle,
                         ),
-                    tint = KAColors.TextSecondary,
-                )
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                        modifier = Modifier.size(20.dp),
+                        tint = KAColors.TextSecondary,
+                    )
+                }
             }
         }
     }
