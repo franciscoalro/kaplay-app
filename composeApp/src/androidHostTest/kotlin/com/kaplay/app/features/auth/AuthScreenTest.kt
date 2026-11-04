@@ -3,6 +3,7 @@ package com.kaplay.app.features.auth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -45,6 +46,28 @@ class AuthScreenTest {
     }
 
     @Test
+    fun invalidCredentialsDisableSubmit() {
+        setForm(isSignUp = false)
+
+        compose.onNodeWithText("Sign In").assertIsNotEnabled()
+    }
+
+    @Test
+    fun resetLoadingDisablesAuthActionsAndShowsProgressState() {
+        setForm(
+            isSignUp = false,
+            email = "user@example.com",
+            password = "secret1",
+            isResetLoading = true,
+        )
+
+        compose.onNodeWithText("Sign In").assertIsNotEnabled()
+        compose.onNodeWithText("Sign Up").assertIsNotEnabled()
+        compose.onNodeWithText("Continue Without Account").assertIsNotEnabled()
+        compose.onNodeWithText("Forgot password?").assertDoesNotExist()
+    }
+
+    @Test
     fun passwordVisibilityActionIsFocusableAndInvokesCallback() {
         var visibilityClicks = 0
         setForm(
@@ -58,6 +81,9 @@ class AuthScreenTest {
 
     private fun setForm(
         isSignUp: Boolean,
+        email: String = "",
+        password: String = "",
+        isResetLoading: Boolean = false,
         onForgotPassword: () -> Unit = {},
         onPasswordVisibilityToggle: () -> Unit = {},
     ) {
@@ -65,14 +91,14 @@ class AuthScreenTest {
             MaterialTheme {
                 AuthForm(
                     isSignUp = isSignUp,
-                    email = "",
-                    password = "",
+                    email = email,
+                    password = password,
                     passwordVisible = false,
                     isLoading = false,
                     authError = null,
                     resetMessage = null,
                     resetMessageIsError = false,
-                    isResetLoading = false,
+                    isResetLoading = isResetLoading,
                     deviceLinkAuthState = com.kaplay.app.core.auth.DeviceLinkAuthState.Idle,
                     deviceLinkEnabled = false,
                     metrics = MobileAuthFormMetrics,
