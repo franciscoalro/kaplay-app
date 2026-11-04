@@ -142,11 +142,28 @@ object AuthRepository {
             ?: getString(Res.string.auth_sign_in_failed)
     }
 
-    suspend fun requestPasswordReset(email: String): Result<Unit> = runCatching {
-        SupabaseProvider.client.auth.resetPasswordForEmail(email = email)
-        Unit
-    }.onFailure { e ->
-        log.e(e) { "Password reset request failed" }
+    suspend fun requestPasswordReset(email: String): Result<Unit> {
+        return try {
+            SupabaseProvider.client.auth.resetPasswordForEmail(email = email)
+            Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            log.e(e) { "Password reset request failed" }
+            Result.failure(e)
+        }
+    }
+
+    internal suspend fun onRemoteSessionImported(userId: String?, email: String?) {
+        AuthStorage.clearAnonymousUserId()
+        AuthStorage.markOnboardingCompleted()
+        if (userId.isNullOrBlank()) return
+        if (!validateRemoteSession(userId)) return
+        _state.value = AuthState.Authenticated(
+            userId = userId,
+            email = email,
+            isAnonymous = false,
+        )
     }
 
     suspend fun signOut(): Result<Unit> {

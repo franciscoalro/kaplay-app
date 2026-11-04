@@ -218,6 +218,8 @@ fun AuthScreen(
     fun submitAuth() {
         if (!canSubmitAuth(email, password, isLoading || isResetLoading)) return
         val normalizedEmail = normalizedAuthEmail(email) ?: return
+        resetMessage = null
+        resetMessageIsError = false
         DeviceLinkAuthRepository.cancel()
         isLoading = true
         focusManager.clearFocus(force = true)
@@ -230,6 +232,7 @@ fun AuthScreen(
 
     fun requestPasswordReset() {
         if (isLoading || isResetLoading) return
+        DeviceLinkAuthRepository.cancel()
         AuthRepository.clearError()
         val resetEmail = normalizedAuthEmail(email)
         if (resetEmail == null) {
@@ -266,6 +269,8 @@ fun AuthScreen(
 
     fun startDeviceLink() {
         if (isLoading || isResetLoading) return
+        resetMessage = null
+        resetMessageIsError = false
         focusManager.clearFocus(force = true)
         AuthRepository.clearError()
         DeviceLinkAuthRepository.start()
@@ -923,6 +928,7 @@ private fun AuthTermsAcknowledgement(
     scale: Float,
     onTermsClick: () -> Unit,
 ) {
+    var termsFocused by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
@@ -940,7 +946,16 @@ private fun AuthTermsAcknowledgement(
         Spacer(modifier = Modifier.width(4.dp * scale))
         Text(
             text = stringResource(Res.string.compose_auth_terms_link),
-            modifier = Modifier.clickable(onClick = onTermsClick),
+            modifier = Modifier
+                .onFocusChanged { termsFocused = it.isFocused }
+                .clip(RoundedCornerShape(8.dp))
+                .border(
+                    width = if (termsFocused) 2.dp else 0.dp,
+                    color = AuthAccent,
+                    shape = RoundedCornerShape(8.dp),
+                )
+                .clickable(onClick = onTermsClick)
+                .padding(horizontal = 6.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = AuthTextPrimary,
                 fontSize = (13f * scale).sp,

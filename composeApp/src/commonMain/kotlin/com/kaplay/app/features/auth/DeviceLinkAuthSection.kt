@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -52,6 +53,7 @@ internal fun DeviceLinkAuthSection(
 ) {
     val uriHandler = LocalUriHandler.current
     var openFailed by remember(state) { mutableStateOf(false) }
+    var cancelFocused by remember(state) { mutableStateOf(false) }
 
     when (state) {
         DeviceLinkAuthState.Idle -> {
@@ -148,7 +150,16 @@ internal fun DeviceLinkAuthSection(
                     Spacer(modifier = Modifier.height(10.dp * scale))
                     Text(
                         text = stringResource(Res.string.compose_auth_link_cancel),
-                        modifier = Modifier.clickable(onClick = onCancel),
+                        modifier = Modifier
+                            .onFocusChanged { cancelFocused = it.isFocused }
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(
+                                width = if (cancelFocused) 2.dp else 0.dp,
+                                color = AuthAccent,
+                                shape = RoundedCornerShape(8.dp),
+                            )
+                            .clickable(enabled = enabled, onClick = onCancel)
+                            .padding(horizontal = 6.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = AuthTextPrimary,
                             fontSize = (13f * scale).sp,

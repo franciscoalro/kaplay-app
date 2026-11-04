@@ -185,6 +185,7 @@ object DeviceLinkAuthRepository {
                     user = user,
                 ),
             )
+            AuthRepository.onRemoteSessionImported(user.id, user.email)
         } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {
