@@ -97,6 +97,26 @@ class AuthScreenTest {
     }
 
     @Test
+    fun completingDeviceLinkDisablesCompetingAuthActions() {
+        setForm(
+            isSignUp = false,
+            email = "user@example.com",
+            password = "secret1",
+            deviceLinkEnabled = true,
+            deviceLinkAuthState = com.kaplay.app.core.auth.DeviceLinkAuthState.Waiting(
+                code = "ABCD-EFGH",
+                verificationUrl = "https://kaplay.tv/link?code=ABCD-EFGH",
+                isCompleting = true,
+            ),
+        )
+
+        compose.onNodeWithText("Sign In").assertIsNotEnabled()
+        compose.onNodeWithText("Sign Up").assertIsNotEnabled()
+        compose.onNodeWithText("Continue Without Account").assertIsNotEnabled()
+        compose.onAllNodes(hasSetTextAction()).assertAll(isNotEnabled())
+    }
+
+    @Test
     fun resetLoadingDisablesDeviceLinkCancel() {
         setForm(
             isSignUp = false,
