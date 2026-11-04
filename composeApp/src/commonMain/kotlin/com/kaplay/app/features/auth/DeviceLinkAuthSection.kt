@@ -57,18 +57,17 @@ internal fun DeviceLinkAuthSection(
     val uriHandler = LocalUriHandler.current
     var openFailed by remember(state) { mutableStateOf(false) }
     var cancelFocused by remember(state) { mutableStateOf(false) }
-    var previousState by remember { mutableStateOf<DeviceLinkAuthState?>(null) }
+    var cancelRequestedBySection by remember { mutableStateOf(false) }
     val idleFocusRequester = remember { FocusRequester() }
     val openFocusRequester = remember { FocusRequester() }
     val retryFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(state, enabled) {
-        val stateBeforeTransition = previousState
         if (enabled) {
             when {
-                state is DeviceLinkAuthState.Idle &&
-                    stateBeforeTransition != null && stateBeforeTransition !is DeviceLinkAuthState.Idle -> {
+                state is DeviceLinkAuthState.Idle && cancelRequestedBySection -> {
                     idleFocusRequester.requestFocus()
+                    cancelRequestedBySection = false
                 }
                 state is DeviceLinkAuthState.Waiting && !state.isCompleting -> {
                     openFocusRequester.requestFocus()
@@ -77,9 +76,6 @@ internal fun DeviceLinkAuthSection(
                     retryFocusRequester.requestFocus()
                 }
             }
-            previousState = state
-        } else if (state !is DeviceLinkAuthState.Idle) {
-            previousState = state
         }
     }
 
@@ -188,7 +184,13 @@ internal fun DeviceLinkAuthSection(
                                 color = AuthAccent,
                                 shape = RoundedCornerShape(8.dp),
                             )
-                            .clickable(enabled = enabled, onClick = onCancel)
+                            .clickable(
+                                enabled = enabled,
+                                onClick = {
+                                    cancelRequestedBySection = true
+                                    onCancel()
+                                },
+                            )
                             .padding(horizontal = 6.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = AuthTextPrimary,

@@ -317,32 +317,40 @@ object AuthRepository {
 
     suspend fun signOutIfSessionInvalid(error: Throwable, source: String): Boolean {
         if (!isInvalidRemoteSessionError(error)) return false
+        if (AuthStorage.loadAnonymousUserId() != null) {
+            log.w(error) { "$source failed with invalid remote session error, but user is currently anonymous; keeping local auth" }
+            return false
+        }
+        val currentSession = runCatching {
+            SupabaseProvider.client.auth.currentSessionOrNull()
+        }.getOrNull()
+        if (currentSession == null) {
+            log.w(error) { "$source failed with invalid remote session error, but there is no active remote session; keeping local auth" }
+            return false
+        }
 
         log.w(error) { "$source failed because the current Supabase account/session is no longer valid; clearing local auth" }
-        clearLocalSessionAfterRemoteInvalidation()
+        clearLocalSessionAfterRemoteInvalidation(
+            accessToken = currentSession.accessToken,
+            refreshToken = currentSession.refreshToken,
+        )
         return true
     }
 
     private suspend fun clearLocalSessionAfterRemoteInvalidation(
-        accessToken: String? = null,
-        refreshToken: String? = null,
+        accessToken: String,
+        refreshToken: String,
     ) = withContext(NonCancellable) {
         withSessionMutation {
             val sessionCleared = runCatching {
-                if (accessToken == null && refreshToken == null) {
-                    SupabaseProvider.client.auth.clearSession()
-                    true
-                } else if (accessToken == null || refreshToken == null) {
-                    false
-                } else {
-                    clearRemoteSessionIfMatchesWhileLocked(accessToken, refreshToken)
-                }
+                clearRemoteSessionIfMatchesWhileLocked(accessToken, refreshToken)
             }.onFailure { error ->
                 log.w(error) {
                     "Failed to clear Supabase session after remote invalidation; continuing local reset"
                 }
             }.getOrDefault(false)
-            if ((accessToken != null || refreshToken != null) && !sessionCleared) return@withSessionMutation
+            if (!sessionCleared) return@withSessionMutation
+            if (AuthStorage.loadAnonymousUserId() != null) return@withSessionMutation
 
             _error.value = null
             AuthStorage.clearAnonymousUserId()
