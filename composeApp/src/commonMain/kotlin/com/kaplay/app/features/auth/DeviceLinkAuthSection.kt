@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,6 +21,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +57,19 @@ internal fun DeviceLinkAuthSection(
     val uriHandler = LocalUriHandler.current
     var openFailed by remember(state) { mutableStateOf(false) }
     var cancelFocused by remember(state) { mutableStateOf(false) }
+    val openFocusRequester = remember { FocusRequester() }
+    val retryFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(state, enabled) {
+        when {
+            enabled && state is DeviceLinkAuthState.Waiting && !state.isCompleting -> {
+                openFocusRequester.requestFocus()
+            }
+            enabled && state is DeviceLinkAuthState.Failed -> {
+                retryFocusRequester.requestFocus()
+            }
+        }
+    }
 
     when (state) {
         DeviceLinkAuthState.Idle -> {
@@ -108,6 +124,7 @@ internal fun DeviceLinkAuthSection(
                     enabled = enabled && !state.isCompleting,
                     height = height,
                     scale = scale,
+                    modifier = Modifier.focusRequester(openFocusRequester),
                     onClick = {
                         openFailed = runCatching {
                             uriHandler.openUri(state.verificationUrl)
@@ -200,6 +217,7 @@ internal fun DeviceLinkAuthSection(
                     enabled = enabled,
                     height = height,
                     scale = scale,
+                    modifier = Modifier.focusRequester(retryFocusRequester),
                     onClick = onStart,
                 )
             }

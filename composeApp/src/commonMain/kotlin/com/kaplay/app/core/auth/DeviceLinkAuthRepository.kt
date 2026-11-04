@@ -20,6 +20,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -167,6 +168,7 @@ object DeviceLinkAuthRepository {
     }
 
     private suspend fun completeSession(deviceCode: String, nonce: String) {
+        var sessionImported = false
         try {
             val payload = buildJsonObject {
                 put("code", deviceCode)
@@ -185,10 +187,20 @@ object DeviceLinkAuthRepository {
                     user = user,
                 ),
             )
-            AuthRepository.onRemoteSessionImported(user.id, user.email)
+            sessionImported = true
+            currentCoroutineContext().ensureActive()
+            if (!AuthRepository.onRemoteSessionImported(user.id, user.email)) {
+                throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete)
+            }
         } catch (error: CancellationException) {
+            if (sessionImported) {
+                runCatching { SupabaseProvider.client.auth.clearSession() }
+            }
             throw error
         } catch (error: Throwable) {
+            if (sessionImported) {
+                runCatching { SupabaseProvider.client.auth.clearSession() }
+            }
             throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete, error)
         }
     }

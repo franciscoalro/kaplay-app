@@ -198,6 +198,7 @@ fun AuthScreen(
 ) {
     val authError by AuthRepository.error.collectAsStateWithLifecycle()
     val deviceLinkAuthState by DeviceLinkAuthRepository.state.collectAsStateWithLifecycle()
+    val deviceLinkCompleting = (deviceLinkAuthState as? DeviceLinkAuthState.Waiting)?.isCompleting == true
     val serverConnectionState by ServerConnectionController.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
@@ -216,7 +217,7 @@ fun AuthScreen(
     val resetFailedText = stringResource(Res.string.compose_auth_reset_failed)
 
     fun submitAuth() {
-        if (!canSubmitAuth(email, password, isLoading || isResetLoading)) return
+        if (deviceLinkCompleting || !canSubmitAuth(email, password, isLoading || isResetLoading)) return
         val normalizedEmail = normalizedAuthEmail(email) ?: return
         resetMessage = null
         resetMessageIsError = false
@@ -231,8 +232,7 @@ fun AuthScreen(
     }
 
     fun requestPasswordReset() {
-        if (isLoading || isResetLoading) return
-        DeviceLinkAuthRepository.cancel()
+        if (isLoading || isResetLoading || deviceLinkCompleting) return
         AuthRepository.clearError()
         val resetEmail = normalizedAuthEmail(email)
         if (resetEmail == null) {
@@ -240,6 +240,7 @@ fun AuthScreen(
             resetMessageIsError = true
             return
         }
+        DeviceLinkAuthRepository.cancel()
         isResetLoading = true
         resetMessage = null
         resetMessageIsError = false
@@ -259,7 +260,7 @@ fun AuthScreen(
     }
 
     fun toggleAuthMode() {
-        if (isResetLoading) return
+        if (isResetLoading || deviceLinkCompleting) return
         DeviceLinkAuthRepository.cancel()
         isSignUp = !isSignUp
         resetMessage = null
@@ -268,7 +269,7 @@ fun AuthScreen(
     }
 
     fun startDeviceLink() {
-        if (isLoading || isResetLoading) return
+        if (isLoading || isResetLoading || deviceLinkCompleting) return
         resetMessage = null
         resetMessageIsError = false
         focusManager.clearFocus(force = true)
@@ -276,9 +277,16 @@ fun AuthScreen(
         DeviceLinkAuthRepository.start()
     }
 
+    fun continueWithoutAccount() {
+        if (isLoading || isResetLoading || deviceLinkCompleting) return
+        focusManager.clearFocus(force = true)
+        DeviceLinkAuthRepository.cancel()
+        AuthRepository.signInAnonymously()
+    }
+
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    DisposableEffect(Unit) {
+    DisposableEffect(serverConnectionState.activeServer) {
         onDispose(DeviceLinkAuthRepository::cancel)
     }
 
@@ -353,11 +361,7 @@ fun AuthScreen(
                         onSubmit = ::submitAuth,
                         onForgotPassword = ::requestPasswordReset,
                         onToggleAuthMode = ::toggleAuthMode,
-                        onContinueWithoutAccount = {
-                            focusManager.clearFocus(force = true)
-                            DeviceLinkAuthRepository.cancel()
-                            AuthRepository.signInAnonymously()
-                        },
+                        onContinueWithoutAccount = ::continueWithoutAccount,
                         onStartDeviceLink = ::startDeviceLink,
                         onCancelDeviceLink = DeviceLinkAuthRepository::cancel,
                         onEmailBoundsChange = { emailFieldBounds = it },
@@ -393,11 +397,7 @@ fun AuthScreen(
                         onSubmit = ::submitAuth,
                         onForgotPassword = ::requestPasswordReset,
                         onToggleAuthMode = ::toggleAuthMode,
-                        onContinueWithoutAccount = {
-                            focusManager.clearFocus(force = true)
-                            DeviceLinkAuthRepository.cancel()
-                            AuthRepository.signInAnonymously()
-                        },
+                        onContinueWithoutAccount = ::continueWithoutAccount,
                         onStartDeviceLink = ::startDeviceLink,
                         onCancelDeviceLink = DeviceLinkAuthRepository::cancel,
                         onEmailBoundsChange = { emailFieldBounds = it },
@@ -736,7 +736,9 @@ internal fun AuthForm(
 ) {
     val uriHandler = LocalUriHandler.current
     var forgotPasswordFocused by remember { mutableStateOf(false) }
-    val submitEnabled = canSubmitAuth(email, password, isLoading || isResetLoading)
+    val deviceLinkCompleting = (deviceLinkAuthState as? DeviceLinkAuthState.Waiting)?.isCompleting == true
+    val authActionsEnabled = !isLoading && !isResetLoading && !deviceLinkCompleting
+    val submitEnabled = canSubmitAuth(email, password, isLoading || isResetLoading || deviceLinkCompleting)
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -747,7 +749,7 @@ internal fun AuthForm(
             icon = Icons.Rounded.Email,
             metrics = metrics,
             scale = scale,
-            enabled = !isLoading && !isResetLoading,
+            enabled = authActionsEnabled,
             modifier = Modifier.onGloballyPositioned { coordinates ->
                 onEmailBoundsChange(coordinates.boundsInRoot())
             },
@@ -766,7 +768,7 @@ internal fun AuthForm(
             icon = Icons.Rounded.Lock,
             metrics = metrics,
             scale = scale,
-            enabled = !isLoading && !isResetLoading,
+            enabled = authActionsEnabled,
             isPassword = true,
             passwordVisible = passwordVisible,
             onPasswordVisibilityToggle = onPasswordVisibilityToggle,
@@ -817,7 +819,7 @@ internal fun AuthForm(
                                 shape = RoundedCornerShape(8.dp),
                             )
                             .clickable(
-                                enabled = !isLoading && !isResetLoading,
+                                enabled = authActionsEnabled,
                                 onClick = onForgotPassword,
                             )
                             .padding(horizontal = 6.dp, vertical = 4.dp),
@@ -859,6 +861,7 @@ internal fun AuthForm(
         if (isSignUp) {
             Spacer(modifier = Modifier.height(14.dp * scale))
             AuthTermsAcknowledgement(
+                enabled = authActionsEnabled,
                 scale = scale,
                 onTermsClick = { uriHandler.openUri("https://kaplay.tv/terms") },
             )
@@ -880,7 +883,7 @@ internal fun AuthForm(
 
         AuthModeToggle(
             isSignUp = isSignUp,
-            enabled = !isLoading && !isResetLoading,
+            enabled = authActionsEnabled,
             scale = scale,
             onToggleAuthMode = onToggleAuthMode,
         )
@@ -889,7 +892,7 @@ internal fun AuthForm(
 
         AuthSecondaryButton(
             text = stringResource(Res.string.compose_auth_continue_without_account),
-            enabled = !isLoading && !isResetLoading,
+            enabled = authActionsEnabled,
             height = metrics.secondaryHeight,
             scale = scale,
             onClick = onContinueWithoutAccount,
@@ -899,7 +902,7 @@ internal fun AuthForm(
             Spacer(modifier = Modifier.height(12.dp * scale))
             DeviceLinkAuthSection(
                 state = deviceLinkAuthState,
-                enabled = !isLoading && !isResetLoading,
+                enabled = authActionsEnabled,
                 height = metrics.secondaryHeight,
                 scale = scale,
                 onStart = onStartDeviceLink,
@@ -925,6 +928,7 @@ internal fun AuthForm(
 
 @Composable
 private fun AuthTermsAcknowledgement(
+    enabled: Boolean,
     scale: Float,
     onTermsClick: () -> Unit,
 ) {
@@ -954,7 +958,7 @@ private fun AuthTermsAcknowledgement(
                     color = AuthAccent,
                     shape = RoundedCornerShape(8.dp),
                 )
-                .clickable(onClick = onTermsClick)
+                .clickable(enabled = enabled, onClick = onTermsClick)
                 .padding(horizontal = 6.dp, vertical = 4.dp),
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = AuthTextPrimary,
@@ -1086,10 +1090,11 @@ internal fun AuthPrimaryButton(
     height: Dp,
     scale: Float,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(height),
         enabled = enabled,
@@ -1193,10 +1198,11 @@ internal fun AuthSecondaryButton(
     height: Dp,
     scale: Float,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(height),
         enabled = enabled,

@@ -88,6 +88,7 @@ object AuthRepository {
             validatedRemoteUserId = userId
             true
         }.getOrElse { e ->
+            if (e is CancellationException) throw e
             if (isInvalidRemoteSessionError(e)) {
                 log.w(e) { "Stored Supabase session no longer belongs to an active account; clearing local auth" }
                 clearLocalSessionAfterRemoteInvalidation()
@@ -154,16 +155,17 @@ object AuthRepository {
         }
     }
 
-    internal suspend fun onRemoteSessionImported(userId: String?, email: String?) {
+    internal fun onRemoteSessionImported(userId: String?, email: String?): Boolean {
+        if (userId.isNullOrBlank()) return false
         AuthStorage.clearAnonymousUserId()
         AuthStorage.markOnboardingCompleted()
-        if (userId.isNullOrBlank()) return
-        if (!validateRemoteSession(userId)) return
+        validatedRemoteUserId = userId
         _state.value = AuthState.Authenticated(
             userId = userId,
             email = email,
             isAnonymous = false,
         )
+        return true
     }
 
     suspend fun signOut(): Result<Unit> {
