@@ -4,7 +4,6 @@ import co.touchlab.kermit.Logger
 import com.kaplay.app.core.network.SupabaseProvider
 import com.kaplay.app.core.storage.LocalAccountDataCleaner
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.currentSessionOrNull
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
