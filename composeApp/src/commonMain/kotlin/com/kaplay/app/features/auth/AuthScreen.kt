@@ -89,6 +89,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.DeviceLinkAuthRepository
 import com.kaplay.app.core.auth.DeviceLinkAuthState
+import com.kaplay.app.core.ui.KAColors
+import com.kaplay.app.core.ui.KAShapes
 import com.kaplay.app.features.settings.AppBrandWordmark
 import kotlin.math.abs
 import kotlin.math.cos
