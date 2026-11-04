@@ -19,6 +19,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -74,7 +76,7 @@ object DeviceLinkAuthRepository {
             activeJob?.cancel()
             val generation = activeGeneration
             activeJob = scope.launch {
-                _state.value = DeviceLinkAuthState.Starting
+                if (!setStateIfCurrent(generation, DeviceLinkAuthState.Starting)) return@launch
                 val configuration = ServerConfigurationRepository.active.value
                 val nonce = Uuid.random().toString()
                 try {
@@ -83,23 +85,23 @@ object DeviceLinkAuthRepository {
                         nonce = nonce,
                         deviceName = currentDeviceClientMetadata().deviceName,
                     )
-                    _state.value = DeviceLinkAuthState.Waiting(
-                        code = formatDeviceLinkCode(session.userCode),
-                        verificationUrl = session.verificationUriComplete,
-                    )
+                    if (!setStateIfCurrent(
+                            generation,
+                            DeviceLinkAuthState.Waiting(
+                                code = formatDeviceLinkCode(session.userCode),
+                                verificationUrl = session.verificationUriComplete,
+                            ),
+                        )
+                    ) return@launch
                     pollAndComplete(session, nonce, generation)
                 } catch (error: CancellationException) {
                     throw error
                 } catch (error: DeviceLinkAuthException) {
                     log.w(error) { "Device link sign-in stopped" }
-                    if (isCurrentGeneration(generation)) {
-                        _state.value = DeviceLinkAuthState.Failed(error.reason)
-                    }
+                    setStateIfCurrent(generation, DeviceLinkAuthState.Failed(error.reason))
                 } catch (error: Throwable) {
                     log.w(error) { "Device link sign-in failed" }
-                    if (isCurrentGeneration(generation)) {
-                        _state.value = DeviceLinkAuthState.Failed(DeviceLinkAuthFailure.Start)
-                    }
+                    setStateIfCurrent(generation, DeviceLinkAuthState.Failed(DeviceLinkAuthFailure.Start))
                 }
             }
         }
@@ -197,7 +199,9 @@ object DeviceLinkAuthRepository {
     }
 
     private suspend fun completeSession(deviceCode: String, nonce: String, generation: Long) {
-        var sessionImported = false
+        var importAttempted = false
+        var importedAccessToken: String? = null
+        var importedRefreshToken: String? = null
         try {
             ensureGenerationActive(generation)
             val payload = buildJsonObject {
@@ -206,37 +210,66 @@ object DeviceLinkAuthRepository {
             }
             val response = SupabaseProvider.client.functions.invoke("tv-logins-exchange", payload)
             val result = json.decodeFromString<DeviceLinkExchangeResponse>(response.bodyAsText())
-            val user = result.user ?: SupabaseProvider.client.auth.retrieveUser(result.accessToken)
+            val accessToken = result.accessToken.takeIf { it.isNotBlank() }
+                ?: throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete)
+            val refreshToken = result.refreshToken.takeIf { it.isNotBlank() }
+                ?: throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete)
             val expiresIn = requireNotNull(result.expiresIn?.takeIf { it > 0L })
-            SupabaseProvider.client.auth.importSession(
-                UserSession(
-                    accessToken = result.accessToken,
-                    refreshToken = result.refreshToken,
-                    expiresIn = expiresIn,
-                    tokenType = result.tokenType?.takeIf { it.isNotBlank() } ?: "bearer",
-                    user = user,
-                ),
-            )
-            sessionImported = true
-            ensureGenerationActive(generation)
-            synchronized(stateLock) {
-                if (activeGeneration != generation) {
-                    throw CancellationException("Device link sign-in was cancelled")
+            val user = SupabaseProvider.client.auth.retrieveUser(accessToken)
+            if (user.id.orEmpty().isBlank()) {
+                throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete)
+            }
+            importedAccessToken = accessToken
+            importedRefreshToken = refreshToken
+            importAttempted = true
+            AuthRepository.withSessionMutation {
+                try {
+                    withContext(NonCancellable) {
+                        SupabaseProvider.client.auth.importSession(
+                            UserSession(
+                                accessToken = accessToken,
+                                refreshToken = refreshToken,
+                                expiresIn = expiresIn,
+                                tokenType = result.tokenType?.takeIf { it.isNotBlank() } ?: "bearer",
+                                user = user,
+                            ),
+                        )
+                    }
+                } catch (error: Throwable) {
+                    withContext(NonCancellable) {
+                        runCatching { SupabaseProvider.client.auth.clearSession() }
+                    }
+                    throw error
                 }
-                if (!AuthRepository.onRemoteSessionImported(user.id, user.email)) {
-                    throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete)
+                ensureGenerationActive(generation)
+                synchronized(stateLock) {
+                    if (activeGeneration != generation) {
+                        throw CancellationException("Device link sign-in was cancelled")
+                    }
+                    if (!AuthRepository.onRemoteSessionImported(user.id, user.email)) {
+                        throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete)
+                    }
+                    _state.value = DeviceLinkAuthState.Idle
                 }
             }
         } catch (error: CancellationException) {
-            if (sessionImported) {
-                runCatching { SupabaseProvider.client.auth.clearSession() }
+            if (importAttempted) {
+                clearImportedSessionIfOwned(importedAccessToken, importedRefreshToken)
             }
             throw error
         } catch (error: Throwable) {
-            if (sessionImported) {
-                runCatching { SupabaseProvider.client.auth.clearSession() }
+            if (importAttempted) {
+                clearImportedSessionIfOwned(importedAccessToken, importedRefreshToken)
             }
             throw DeviceLinkAuthException(DeviceLinkAuthFailure.Complete, error)
+        }
+    }
+
+    private suspend fun clearImportedSessionIfOwned(accessToken: String?, refreshToken: String?) {
+        runCatching {
+            AuthRepository.clearRemoteSessionIfMatches(accessToken, refreshToken)
+        }.onFailure { error ->
+            log.w(error) { "Unable to clear the cancelled device-link session" }
         }
     }
 
@@ -249,6 +282,16 @@ object DeviceLinkAuthRepository {
 
     private fun isCurrentGeneration(generation: Long): Boolean =
         synchronized(stateLock) { activeGeneration == generation }
+
+    private fun setStateIfCurrent(generation: Long, state: DeviceLinkAuthState): Boolean =
+        synchronized(stateLock) {
+            if (activeGeneration != generation) {
+                false
+            } else {
+                _state.value = state
+                true
+            }
+        }
 
     private fun ServerConfiguration.deviceLinkUrl(): String =
         if (isCustom) "${backendUrl.trimEnd('/')}/link" else officialLinkUrl

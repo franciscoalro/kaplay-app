@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.kaplay.app.core.network.SupabaseProvider
 import com.kaplay.app.core.storage.LocalAccountDataCleaner
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.currentSessionOrNull
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -15,16 +16,20 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 import kaplay.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 
 object AuthRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val sessionMutationLock = Mutex()
     private val log = Logger.withTag("AuthRepository")
 
     private val _state = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -58,22 +63,47 @@ object AuthRepository {
                         val user = status.session.user
                         val userId = user?.id.orEmpty()
                         if (!validateRemoteSession(userId)) return@collect
-                        _state.value = AuthState.Authenticated(
-                            userId = userId,
-                            email = user?.email,
-                            isAnonymous = false,
-                        )
+                        withSessionMutation {
+                            if (AuthStorage.loadAnonymousUserId() != null) return@withSessionMutation
+                            val currentSession = SupabaseProvider.client.auth.currentSessionOrNull()
+                            if (currentSession != null &&
+                                currentSession.accessToken != status.session.accessToken
+                            ) {
+                                return@withSessionMutation
+                            }
+                            _state.value = AuthState.Authenticated(
+                                userId = userId,
+                                email = user?.email,
+                                isAnonymous = false,
+                            )
+                        }
                     }
                     is SessionStatus.NotAuthenticated -> {
-                        _state.value = AuthState.Unauthenticated
+                        withSessionMutation {
+                            if (AuthStorage.loadAnonymousUserId() == null &&
+                                SupabaseProvider.client.auth.currentSessionOrNull() == null
+                            ) {
+                                _state.value = AuthState.Unauthenticated
+                            }
+                        }
                     }
                     is SessionStatus.Initializing -> {
-                        if (AuthStorage.loadAnonymousUserId() == null) {
-                            _state.value = AuthState.Loading
+                        withSessionMutation {
+                            if (AuthStorage.loadAnonymousUserId() == null &&
+                                SupabaseProvider.client.auth.currentSessionOrNull() == null
+                            ) {
+                                _state.value = AuthState.Loading
+                            }
                         }
                     }
                     is SessionStatus.RefreshFailure -> {
-                        _state.value = AuthState.Unauthenticated
+                        withSessionMutation {
+                            if (AuthStorage.loadAnonymousUserId() == null &&
+                                SupabaseProvider.client.auth.currentSessionOrNull() == null
+                            ) {
+                                _state.value = AuthState.Unauthenticated
+                            }
+                        }
                     }
                 }
             }
@@ -118,9 +148,11 @@ object AuthRepository {
 
     suspend fun signUpWithEmail(email: String, password: String): Result<Unit> = runCatching {
         _error.value = null
-        SupabaseProvider.client.auth.signUpWith(Email) {
-            this.email = email
-            this.password = password
+        withSessionMutation {
+            SupabaseProvider.client.auth.signUpWith(Email) {
+                this.email = email
+                this.password = password
+            }
         }
         AuthStorage.markOnboardingCompleted()
         Unit
@@ -132,9 +164,11 @@ object AuthRepository {
 
     suspend fun signInWithEmail(email: String, password: String): Result<Unit> = runCatching {
         _error.value = null
-        SupabaseProvider.client.auth.signInWith(Email) {
-            this.email = email
-            this.password = password
+        withSessionMutation {
+            SupabaseProvider.client.auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
         }
         AuthStorage.markOnboardingCompleted()
     }.onFailure { e ->
@@ -152,6 +186,35 @@ object AuthRepository {
         } catch (e: Throwable) {
             log.e(e) { "Password reset request failed" }
             Result.failure(e)
+        }
+    }
+
+    internal suspend fun <T> withSessionMutation(block: suspend () -> T): T {
+        sessionMutationLock.lock()
+        return try {
+            block()
+        } finally {
+            sessionMutationLock.unlock()
+        }
+    }
+
+    internal suspend fun clearRemoteSessionIfMatches(
+        accessToken: String?,
+        refreshToken: String?,
+    ): Boolean = withContext(NonCancellable) {
+        withSessionMutation {
+            val currentSession = runCatching {
+                SupabaseProvider.client.auth.currentSessionOrNull()
+            }.getOrNull()
+            if (currentSession == null ||
+                currentSession.accessToken != accessToken ||
+                currentSession.refreshToken != refreshToken
+            ) {
+                false
+            } else {
+                SupabaseProvider.client.auth.clearSession()
+                true
+            }
         }
     }
 
@@ -177,12 +240,15 @@ object AuthRepository {
         val remoteSignOut = if (wasAnonymous) {
             Result.success(Unit)
         } else {
-            runCatching { SupabaseProvider.client.auth.signOut() }
+            runCatching {
+                withSessionMutation { SupabaseProvider.client.auth.signOut() }
+            }
         }
 
         val fallbackSessionClear = if (remoteSignOut.isFailure) {
-            runCatching { SupabaseProvider.client.auth.clearSession() }
-                .onFailure { error -> log.w(error) { "Failed to clear Supabase session after sign-out failure" } }
+            runCatching {
+                withSessionMutation { SupabaseProvider.client.auth.clearSession() }
+            }.onFailure { error -> log.w(error) { "Failed to clear Supabase session after sign-out failure" } }
         } else {
             Result.success(Unit)
         }
@@ -212,7 +278,9 @@ object AuthRepository {
         _error.value = null
         val anonymousClear = runCatching { AuthStorage.clearAnonymousUserId() }
         validatedRemoteUserId = null
-        val sessionClear = runCatching { SupabaseProvider.client.auth.clearSession() }
+        val sessionClear = runCatching {
+            withSessionMutation { SupabaseProvider.client.auth.clearSession() }
+        }
         _state.value = AuthState.Unauthenticated
         val failure = anonymousClear.exceptionOrNull() ?: sessionClear.exceptionOrNull()
         val cancellation = sessionClear.exceptionOrNull() as? CancellationException
@@ -242,7 +310,7 @@ object AuthRepository {
         AuthStorage.clearAnonymousUserId()
         validatedRemoteUserId = null
         runCatching {
-            SupabaseProvider.client.auth.clearSession()
+            withSessionMutation { SupabaseProvider.client.auth.clearSession() }
         }.onFailure { e ->
             log.w(e) { "Failed to clear Supabase session after remote invalidation; continuing local reset" }
         }
@@ -256,7 +324,7 @@ object AuthRepository {
     suspend fun deleteAccount(): Result<Unit> = runCatching {
         _error.value = null
         SupabaseProvider.client.functions.invoke("delete-account")
-        SupabaseProvider.client.auth.signOut()
+        withSessionMutation { SupabaseProvider.client.auth.signOut() }
         validatedRemoteUserId = null
         try {
             LocalAccountDataCleaner.wipe()

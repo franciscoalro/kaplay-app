@@ -57,11 +57,19 @@ internal fun DeviceLinkAuthSection(
     val uriHandler = LocalUriHandler.current
     var openFailed by remember(state) { mutableStateOf(false) }
     var cancelFocused by remember(state) { mutableStateOf(false) }
+    var previousState by remember { mutableStateOf<DeviceLinkAuthState?>(null) }
+    val idleFocusRequester = remember { FocusRequester() }
     val openFocusRequester = remember { FocusRequester() }
     val retryFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(state, enabled) {
+        val stateBeforeTransition = previousState
+        previousState = state
         when {
+            enabled && state is DeviceLinkAuthState.Idle &&
+                stateBeforeTransition != null && stateBeforeTransition !is DeviceLinkAuthState.Idle -> {
+                idleFocusRequester.requestFocus()
+            }
             enabled && state is DeviceLinkAuthState.Waiting && !state.isCompleting -> {
                 openFocusRequester.requestFocus()
             }
@@ -78,6 +86,7 @@ internal fun DeviceLinkAuthSection(
                 enabled = enabled,
                 height = height,
                 scale = scale,
+                modifier = Modifier.focusRequester(idleFocusRequester),
                 onClick = onStart,
             )
         }

@@ -47,6 +47,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +59,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -736,8 +739,19 @@ internal fun AuthForm(
 ) {
     val uriHandler = LocalUriHandler.current
     var forgotPasswordFocused by remember { mutableStateOf(false) }
+    var resetWasLoading by remember { mutableStateOf(false) }
+    val forgotPasswordFocusRequester = remember { FocusRequester() }
     val deviceLinkCompleting = (deviceLinkAuthState as? DeviceLinkAuthState.Waiting)?.isCompleting == true
     val authActionsEnabled = !isLoading && !isResetLoading && !deviceLinkCompleting
+
+    LaunchedEffect(isResetLoading, authActionsEnabled, isSignUp) {
+        if (isResetLoading) {
+            resetWasLoading = true
+        } else if (resetWasLoading && !isSignUp && authActionsEnabled) {
+            forgotPasswordFocusRequester.requestFocus()
+            resetWasLoading = false
+        }
+    }
     val submitEnabled = canSubmitAuth(email, password, isLoading || isResetLoading || deviceLinkCompleting)
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -811,7 +825,8 @@ internal fun AuthForm(
                     Text(
                         text = stringResource(Res.string.compose_auth_forgot_password),
                         modifier = Modifier
-                            .onFocusChanged { forgotPasswordFocused = it.isFocused }
+                            .focusRequester(forgotPasswordFocusRequester)
+                             .onFocusChanged { forgotPasswordFocused = it.isFocused }
                             .clip(RoundedCornerShape(8.dp))
                             .border(
                                 width = if (forgotPasswordFocused) 2.dp else 0.dp,
