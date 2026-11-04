@@ -2,8 +2,11 @@ package com.kaplay.app.features.auth
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.test.assertAll
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -68,6 +71,32 @@ class AuthScreenTest {
     }
 
     @Test
+    fun resetLoadingDisablesCredentialEditing() {
+        setForm(
+            isSignUp = false,
+            email = "user@example.com",
+            password = "secret1",
+            isResetLoading = true,
+        )
+
+        compose.onAllNodes(hasSetTextAction()).assertAll { it.assertIsNotEnabled() }
+        compose.onNodeWithContentDescription("Show password").assertIsNotEnabled()
+    }
+
+    @Test
+    fun deviceLinkActionIsAvailableWhenServerSupportsIt() {
+        var deviceLinkClicks = 0
+        setForm(
+            isSignUp = false,
+            deviceLinkEnabled = true,
+            onStartDeviceLink = { deviceLinkClicks++ },
+        )
+
+        compose.onNodeWithText("Sign In with Link").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(1, deviceLinkClicks) }
+    }
+
+    @Test
     fun passwordVisibilityActionIsFocusableAndInvokesCallback() {
         var visibilityClicks = 0
         setForm(
@@ -84,8 +113,10 @@ class AuthScreenTest {
         email: String = "",
         password: String = "",
         isResetLoading: Boolean = false,
+        deviceLinkEnabled: Boolean = false,
         onForgotPassword: () -> Unit = {},
         onPasswordVisibilityToggle: () -> Unit = {},
+        onStartDeviceLink: () -> Unit = {},
     ) {
         compose.setContent {
             MaterialTheme {
@@ -100,7 +131,7 @@ class AuthScreenTest {
                     resetMessageIsError = false,
                     isResetLoading = isResetLoading,
                     deviceLinkAuthState = com.kaplay.app.core.auth.DeviceLinkAuthState.Idle,
-                    deviceLinkEnabled = false,
+                    deviceLinkEnabled = deviceLinkEnabled,
                     metrics = MobileAuthFormMetrics,
                     onEmailChange = {},
                     onPasswordChange = {},
@@ -108,7 +139,7 @@ class AuthScreenTest {
                     onSubmit = {},
                     onToggleAuthMode = {},
                     onContinueWithoutAccount = {},
-                    onStartDeviceLink = {},
+                    onStartDeviceLink = onStartDeviceLink,
                     onCancelDeviceLink = {},
                     onForgotPassword = onForgotPassword,
                     onEmailBoundsChange = { _: Rect -> },
