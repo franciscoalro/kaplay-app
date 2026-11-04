@@ -119,7 +119,7 @@ import org.jetbrains.compose.resources.stringResource
 
 private val AuthBackground = Color(0xFF090610)
 private val AuthDeepPurple = Color(0xFF210B38)
-private val AuthAccent = Color(0xFFA844F5)
+internal val AuthAccent = Color(0xFFA844F5)
 private val AuthAccentSoft = Color(0xFFC878FF)
 internal val AuthTextPrimary = Color(0xFFF8F8FA)
 internal val AuthTextSecondary = Color(0xFFD6CDE0)
