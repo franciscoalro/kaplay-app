@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 
 private val SheetShape = RoundedCornerShape(KAPlayTokens.Space.s28)
 
@@ -103,6 +104,7 @@ fun KAPlayBottomSheetActionRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
+    subtitle: String? = null,
     selected: Boolean = false,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
@@ -111,7 +113,7 @@ fun KAPlayBottomSheetActionRow(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = KAPlayTokens.Space.s8)
-            .heightIn(min = KAPlayTokens.Space.s56)
+            .heightIn(min = if (subtitle != null) 60.dp else KAPlayTokens.Space.s56)
             .clip(tokens.shapes.compactCard)
             .background(if (selected) tokens.colors.accent.copy(alpha = tokens.opacity.hover) else Color.Transparent)
             .clickable(onClick = onClick)
@@ -130,20 +132,33 @@ fun KAPlayBottomSheetActionRow(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = tokens.colors.accent,
+                    tint = if (selected) KAColors.PrimaryLight else tokens.colors.accent,
                     modifier = Modifier.size(KAPlayTokens.Icon.md),
                 )
             }
         }
-        Text(
-            text = title,
+        Column(
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = if (selected) FontWeight.SemiBold else null,
-            color = tokens.colors.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else null,
+                color = tokens.colors.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KAColors.TextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
         trailingContent?.invoke(this)
     }
 }

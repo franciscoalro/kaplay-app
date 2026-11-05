@@ -24,6 +24,7 @@ internal fun MetaDetails.sortedPlayableEpisodes(): List<MetaVideo> =
     videos
         .filter { it.season != null || it.episode != null }
         .sortedWith(metaVideoSeasonEpisodeComparator)
+        .deduplicateCanonicalEpisodes()
 
 internal fun List<MetaVideo>.filterUnavailableFutureSeasons(
     todayIsoDate: String,
