@@ -164,6 +164,7 @@ fun LibraryScreen(
         selectedTypeName?.let { runCatching { CloudLibraryItemType.valueOf(it) }.getOrNull() }
     }
     var selectedCloudItemKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedCategory by rememberSaveable { mutableStateOf(LibraryCategoryFilter.FAVORITES) }
     var selectedLibrarySectionKey by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedLibraryType by rememberSaveable { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
@@ -195,8 +196,24 @@ fun LibraryScreen(
             emptyList()
         }
     }
+    val categoryFilteredSections = remember(sortedSections, selectedCategory, watchProgressUiState.entries, watchedUiState.watchedKeys) {
+        when (selectedCategory) {
+            LibraryCategoryFilter.FAVORITES -> sortedSections
+            LibraryCategoryFilter.IN_PROGRESS -> {
+                val inProgressIds = watchProgressUiState.entries.map { it.parentMetaId }.toSet()
+                sortedSections.map { section ->
+                    section.copy(items = section.items.filter { it.id in inProgressIds })
+                }.filter { it.items.isNotEmpty() }
+            }
+            LibraryCategoryFilter.WATCHED -> {
+                sortedSections.map { section ->
+                    section.copy(items = section.items.filter { it.id in watchedUiState.watchedKeys })
+                }.filter { it.items.isNotEmpty() }
+            }
+        }
+    }
     val verticalProjection = remember(
-        uiState.sections,
+        categoryFilteredSections,
         uiState.sourceMode,
         selectedLibrarySectionKey,
         selectedLibraryType,
@@ -206,7 +223,7 @@ fun LibraryScreen(
     ) {
         if (sourceMode == LibraryViewMode.Saved && displaySettings.layoutMode == LibraryLayoutMode.VERTICAL) {
             buildLibraryVerticalProjection(
-                sections = uiState.sections,
+                sections = categoryFilteredSections,
                 sourceMode = uiState.sourceMode,
                 selectedSectionKey = selectedLibrarySectionKey,
                 selectedType = selectedLibraryType,
@@ -285,7 +302,7 @@ fun LibraryScreen(
     ) {
         disintegration.sync(
             sourceMode = uiState.sourceMode,
-            sections = sortedSections,
+            sections = categoryFilteredSections,
             previewLimit = LIBRARY_SECTION_PREVIEW_LIMIT,
             request = disintegrationRequest,
         )
@@ -378,6 +395,14 @@ fun LibraryScreen(
                             },
                             modifier = Modifier.padding(horizontal = 16.dp),
                         )
+                        if (sourceMode == LibraryViewMode.Saved) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LibraryCategoryFilterRow(
+                                selectedCategory = selectedCategory,
+                                onCategorySelected = { selectedCategory = it },
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                        }
                         Spacer(modifier = Modifier.height(6.dp))
                     }
                 }
@@ -855,7 +880,36 @@ private fun CloudLibraryToolbar(
 }
 
 @Composable
-private fun LibraryChip(
+internal fun LibraryCategoryFilterRow(
+    selectedCategory: LibraryCategoryFilter,
+    onCategorySelected: (LibraryCategoryFilter) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LibraryChip(
+            label = "Favoritos",
+            selected = selectedCategory == LibraryCategoryFilter.FAVORITES,
+            onClick = { onCategorySelected(LibraryCategoryFilter.FAVORITES) },
+        )
+        LibraryChip(
+            label = "Em andamento",
+            selected = selectedCategory == LibraryCategoryFilter.IN_PROGRESS,
+            onClick = { onCategorySelected(LibraryCategoryFilter.IN_PROGRESS) },
+        )
+        LibraryChip(
+            label = "Assistidos",
+            selected = selectedCategory == LibraryCategoryFilter.WATCHED,
+            onClick = { onCategorySelected(LibraryCategoryFilter.WATCHED) },
+        )
+    }
+}
+
+@Composable
+internal fun LibraryChip(
     label: String,
     selected: Boolean,
     loading: Boolean = false,

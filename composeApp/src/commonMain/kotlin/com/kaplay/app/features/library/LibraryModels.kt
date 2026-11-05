@@ -49,6 +49,12 @@ data class LibrarySection(
 internal fun librarySectionItemKey(sectionType: String, item: LibraryItem): String =
     "$sectionType|${item.type}|${item.id}"
 
+enum class LibraryCategoryFilter {
+    FAVORITES,
+    IN_PROGRESS,
+    WATCHED,
+}
+
 enum class LibrarySourceMode {
     LOCAL,
     TRAKT,
