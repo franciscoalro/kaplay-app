@@ -502,13 +502,15 @@ private fun SeasonTextChipScrollRow(
 
     LaunchedEffect(seasons, currentSeason) {
         val currentIndex = seasons.indexOf(currentSeason)
-        if (currentIndex >= 0) {
+        if (currentIndex > 0) {
             if (hasPositionedSeasonRow) {
                 seasonListState.animateScrollToItem(currentIndex)
             } else {
                 seasonListState.scrollToItem(currentIndex)
                 hasPositionedSeasonRow = true
             }
+        } else if (currentIndex == 0 && hasPositionedSeasonRow) {
+            seasonListState.animateScrollToItem(0)
         }
     }
 
@@ -523,48 +525,49 @@ private fun SeasonTextChipScrollRow(
         items(seasons, key = { season -> season }) { season ->
             val isSelected = season == currentSeason
             var isFocused by remember(season) { mutableStateOf(false) }
+            val chipShape = RoundedCornerShape(sizing.seasonChipRadius)
             Box(
                 modifier = Modifier
                     .defaultMinSize(minHeight = 48.dp)
-                    .clip(KAShapes.Chip)
-                    .background(
-                        if (isSelected) {
-                            KAColors.Primary
-                        } else {
-                            KAColors.SurfaceVariant
-                        },
-                    )
                     .focusable()
                     .onFocusChanged { isFocused = it.isFocused }
-                    .then(
-                        if (isFocused) {
-                            Modifier.border(2.dp, Color.White, KAShapes.Chip)
-                        } else {
-                            Modifier
-                        },
-                    )
                     .combinedClickable(
                         onClick = { onSelect(season) },
                         onLongClick = onLongPress?.let { handler -> { handler(season) } },
-                    )
-                    .padding(
-                        horizontal = sizing.seasonChipHorizontalPadding,
-                        vertical = sizing.seasonChipVerticalPadding,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = season.label(),
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = sizing.seasonChipTextSize,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                    ),
-                    color = if (isSelected) {
-                        Color.White
-                    } else {
-                        KAColors.TextSecondary
-                    },
-                )
+                Box(
+                    modifier = Modifier
+                        .height(38.dp)
+                        .clip(chipShape)
+                        .background(
+                            if (isSelected) {
+                                KAColors.Primary
+                            } else {
+                                KAColors.SurfaceVariant
+                            },
+                        )
+                        .then(
+                            if (isFocused) {
+                                Modifier.border(2.dp, Color.White, chipShape)
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .padding(horizontal = sizing.seasonChipHorizontalPadding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = season.label(),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = sizing.seasonChipTextSize,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        ),
+                        color = Color.White,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }
@@ -1480,25 +1483,25 @@ private fun seriesContentSizing(maxWidthDp: Float): SeriesContentSizing =
         else -> SeriesContentSizing(
             seasonHeaderSize = 18.sp,
             seasonToggleTextSize = 12.sp,
-            seasonChipGap = 16.dp,
-            seasonChipRadius = 12.dp,
-            seasonChipHorizontalPadding = 16.dp,
-            seasonChipVerticalPadding = 12.dp,
-            seasonChipTextSize = 15.sp,
+            seasonChipGap = 10.dp,
+            seasonChipRadius = 10.dp,
+            seasonChipHorizontalPadding = 14.dp,
+            seasonChipVerticalPadding = 0.dp,
+            seasonChipTextSize = 13.sp,
             seasonPosterWidth = 100.dp,
             seasonPosterHeight = 150.dp,
             seasonPosterRadius = 8.dp,
             cardHeight = 120.dp,
             imageWidth = 120.dp,
-            cardGap = 16.dp,
+            cardGap = 10.dp,
             contentHorizontalPadding = 12.dp,
             contentVerticalPadding = 12.dp,
             contentSpacing = 4.dp,
-            titleTextSize = 15.sp,
+            titleTextSize = 14.sp,
             titleLineHeight = 18.sp,
             titleMaxLines = 2,
-            bodyTextSize = 13.sp,
-            bodyLineHeight = 18.sp,
+            bodyTextSize = 12.sp,
+            bodyLineHeight = 16.sp,
             overviewMaxLines = 2,
             metaTextSize = 12.sp,
             badgeTextSize = 11.sp,

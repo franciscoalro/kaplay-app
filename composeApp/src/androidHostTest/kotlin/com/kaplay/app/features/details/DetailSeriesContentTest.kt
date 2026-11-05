@@ -1,6 +1,7 @@
 package com.kaplay.app.features.details
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -48,5 +49,23 @@ class DetailSeriesContentTest {
 
         compose.onNodeWithText("2", substring = true).performClick()
         compose.runOnIdle { assertEquals(2, selectedSeason) }
+    }
+
+    @Test
+    fun seasonOneIsDisplayedOnInitialRender() {
+        val meta = MetaDetails(id = "series_1", type = "series", name = "Test Series")
+        compose.setContent {
+            DetailSeriesListHeader(
+                meta = meta,
+                groupedEpisodes = emptyMap(),
+                seasons = listOf(1, 2, 3),
+                currentSeason = 1,
+                horizontalScrollPadding = 16.dp,
+                onSeasonSelect = {},
+                onSeasonLongPress = null,
+            )
+        }
+
+        compose.onNodeWithText("1", substring = true).assertIsDisplayed()
     }
 }
