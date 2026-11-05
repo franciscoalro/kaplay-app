@@ -62,6 +62,12 @@ import kaplay.composeapp.generated.resources.random_episode_title
 import kaplay.composeapp.generated.resources.shuffle_stop
 import org.jetbrains.compose.resources.stringResource
 
+import androidx.compose.ui.unit.sp
+
+internal val DetailButtonRadius = 12.dp
+internal val DetailButtonShape = RoundedCornerShape(DetailButtonRadius)
+internal val DetailActionGap = 8.dp
+
 data class DetailSecondaryAction(
     val label: String,
     val icon: ImageVector,
@@ -86,7 +92,7 @@ fun DetailActionButtons(
     val playPainter = appIconPainter(AppIconResource.PlayerPlay)
     val buttonHeight = if (isTablet) 52.dp else 48.dp
     val iconButtonSize = buttonHeight
-    val playShape = KAShapes.Button
+    val playShape = DetailButtonShape
     val hapticFeedback = LocalHapticFeedback.current
     var actionsExpanded by remember { mutableStateOf(false) }
     val menuProgress by animateFloatAsState(
@@ -146,9 +152,9 @@ fun DetailActionButtons(
                     Text(
                         text = playLabel,
                         style = if (isTablet) {
-                            MaterialTheme.typography.titleMedium
+                            MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                         } else {
-                            MaterialTheme.typography.titleSmall
+                            MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -157,7 +163,7 @@ fun DetailActionButtons(
             }
 
             if (pinnedAction != null) {
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(DetailActionGap))
                 DetailIconAction(
                     label = pinnedAction.label,
                     icon = pinnedAction.icon,
@@ -172,7 +178,7 @@ fun DetailActionButtons(
             }
 
             if (hasSecondaryActions) {
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(DetailActionGap))
                 secondaryActions.forEachIndexed { index, action ->
                     Box(
                         modifier = Modifier
@@ -205,10 +211,10 @@ fun DetailActionButtons(
                     }
 
                     if (index != secondaryActions.lastIndex) {
-                        Spacer(modifier = Modifier.width(12.dp * menuProgress))
+                        Spacer(modifier = Modifier.width(DetailActionGap * menuProgress))
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp * menuProgress))
+                Spacer(modifier = Modifier.width(DetailActionGap * menuProgress))
             }
 
             if (hasSecondaryActions) {
@@ -217,9 +223,9 @@ fun DetailActionButtons(
                     modifier = Modifier
                         .size(iconButtonSize)
                         .then(
-                            if (isMenuFocused) Modifier.border(2.dp, Color.White, KAShapes.Button) else Modifier
+                            if (isMenuFocused) Modifier.border(2.dp, Color.White, DetailButtonShape) else Modifier
                         ),
-                    shape = KAShapes.Button,
+                    shape = DetailButtonShape,
                     color = if (actionsExpanded) {
                         KAColors.Primary
                     } else {
@@ -329,7 +335,7 @@ private fun DetailIconAction(
             .then(
                 if (isFocused) Modifier.border(2.dp, Color.White, KAShapes.Button) else Modifier
             ),
-        shape = KAShapes.Button,
+        shape = DetailButtonShape,
         color = if (active) {
             KAColors.Primary
         } else {

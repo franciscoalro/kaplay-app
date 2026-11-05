@@ -9,8 +9,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.kaplay.app.core.ui.KAColors
-import com.kaplay.app.core.ui.KAShapes
 import com.kaplay.app.features.details.components.DetailActionButtons
+import com.kaplay.app.features.details.components.DetailActionGap
+import com.kaplay.app.features.details.components.DetailButtonRadius
 import com.kaplay.app.features.details.components.DetailSecondaryAction
 import org.junit.Rule
 import org.junit.runner.RunWith
@@ -27,7 +28,8 @@ class DetailActionButtonsTest {
 
     @Test
     fun buttonTokensMatchDesignSystemSpec() {
-        assertEquals(10.dp, KAShapes.ButtonRadius)
+        assertEquals(12.dp, DetailButtonRadius)
+        assertEquals(8.dp, DetailActionGap)
         assertEquals(androidx.compose.ui.graphics.Color(0xFF9729D7), KAColors.Primary)
         assertEquals(androidx.compose.ui.graphics.Color(0xFF23232B), KAColors.SurfaceVariant)
     }
