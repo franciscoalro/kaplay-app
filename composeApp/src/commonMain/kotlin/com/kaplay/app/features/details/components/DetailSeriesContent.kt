@@ -85,6 +85,8 @@ import com.kaplay.app.core.ui.KAPlayProgressBar
 import com.kaplay.app.core.ui.kaplayCardDepth
 import com.kaplay.app.core.ui.kaplayHorizontalScrollBleed
 import com.kaplay.app.core.ui.posterCardClickable
+import com.kaplay.app.features.details.canonicalEpisodeKey
+import com.kaplay.app.features.details.deduplicateCanonicalEpisodes
 import com.kaplay.app.features.details.MetaDetails
 import com.kaplay.app.features.details.EpisodeRatingsVisibility
 import com.kaplay.app.features.details.MetaEpisodeCardStyle
@@ -822,11 +824,12 @@ private fun EpisodeHorizontalRow(
 ) {
     val rowMetrics = rememberEpisodeHorizontalCardMetrics(maxWidthDp)
     val listState = rememberLazyListState()
-    var hasPositioned by remember(episodes) { mutableStateOf(false) }
+    val displayedEpisodes = remember(episodes) { episodes.deduplicateCanonicalEpisodes() }
+    var hasPositioned by remember(displayedEpisodes) { mutableStateOf(false) }
 
-    LaunchedEffect(episodes, preferredEpisodeNumber) {
+    LaunchedEffect(displayedEpisodes, preferredEpisodeNumber) {
         val targetIndex = if (preferredEpisodeNumber != null) {
-            episodes.indexOfFirst { it.episode == preferredEpisodeNumber }
+            displayedEpisodes.indexOfFirst { it.episode == preferredEpisodeNumber }
         } else {
             -1
         }
@@ -851,10 +854,10 @@ private fun EpisodeHorizontalRow(
         ),
         horizontalArrangement = Arrangement.spacedBy(rowMetrics.itemSpacing),
     ) {
-        itemsIndexed(
-            items = episodes,
-            key = { index, episode -> "${episode.season}:${episode.episode}:${episode.id}#$index" },
-        ) { _, episode ->
+        items(
+            items = displayedEpisodes,
+            key = { episode -> "${episode.season}:${episode.episode}:${episode.id}" },
+        ) { episode ->
             val episodeVideoId = buildPlaybackVideoId(
                 parentMetaId = parentMetaId,
                 seasonNumber = episode.season,

@@ -232,7 +232,7 @@ fun DetailHero(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = if (isTablet) 32.dp else 18.dp)
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     if (logoUrl != null && !logoLoadError) {
@@ -257,7 +257,7 @@ fun DetailHero(
                     }
 
                     if (meta.genres.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = meta.genres.take(3).joinToString(" \u2022 "),
                             style = MaterialTheme.typography.bodyMedium,

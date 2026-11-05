@@ -74,4 +74,45 @@ class SeriesSeasonSupportTest {
         assertEquals(listOf(1), groupedEpisodes.keys.toList())
         assertEquals((1..episodeCount).toList(), groupedEpisodes.getValue(1).map(MetaVideo::episode))
     }
+
+    @Test
+    fun `grouped episodes deduplicate duplicate canonical episodes while preserving distinct episodes`() {
+        val meta = MetaDetails(
+            id = "kusuriya",
+            type = "series",
+            name = "The Apothecary Diaries",
+            videos = listOf(
+                MetaVideo(id = "tomato:6945:37521", title = "E01 · Maomao", season = 1, episode = 1, thumbnail = "https://cdn.example/thumb1.jpg"),
+                MetaVideo(id = "tomato:6945:37522", title = "E01 · Maomao", season = 1, episode = 1, overview = "Maomao was kidnapped", thumbnail = "https://cdn.example/thumb1.jpg"),
+                MetaVideo(id = "tomato:6945:37523", title = "E02 · Mad Men", season = 1, episode = 2),
+                MetaVideo(id = "tomato:6945:37524", title = "E01 · Season 2 Opener", season = 2, episode = 1),
+            ),
+        )
+
+        val grouped = meta.groupedEpisodesForDisplay()
+
+        val season1 = grouped.getValue(1)
+        assertEquals(2, season1.size, "Season 1 should only have 2 distinct episodes, but had ${season1.size}")
+        assertEquals(listOf(1, 2), season1.map(MetaVideo::episode))
+        assertEquals("tomato:6945:37521", season1[0].id)
+        assertEquals("https://cdn.example/thumb1.jpg", season1[0].thumbnail)
+        assertEquals("Maomao was kidnapped", season1[0].overview)
+    }
+
+    @Test
+    fun `does not eliminate legitimate episodes with identical titles if season or episode differs`() {
+        val meta = MetaDetails(
+            id = "show",
+            type = "series",
+            name = "Show",
+            videos = listOf(
+                MetaVideo(id = "s1e1", title = "Pilot", season = 1, episode = 1),
+                MetaVideo(id = "s1e2", title = "Pilot", season = 1, episode = 2),
+            ),
+        )
+
+        val season1 = meta.groupedEpisodesForDisplay().getValue(1)
+        assertEquals(2, season1.size)
+        assertEquals(listOf(1, 2), season1.map(MetaVideo::episode))
+    }
 }

@@ -212,19 +212,22 @@ object MetaDetailsRepository {
                     val provider = com.kaplay.app.features.tomato.TomatoProvider
                     val details = provider.animeDetails(animeId)
                     val title = provider.displayTitleOrNull(details.name) ?: return@runCatching null
-                    val videos = details.seasons.flatMap { season ->
-                        kotlinx.coroutines.runBlocking {
-                            provider.seasonEpisodes(season)
-                        }.map { episode ->
-                            MetaVideo(
-                                id = provider.videoId(animeId, episode.episodeId),
-                                title = "E${episode.number?.toString()?.padStart(2, '0') ?: "??"}${episode.name?.let { " · $it" } ?: ""}",
-                                thumbnail = episode.thumbnail,
-                                season = season.number,
-                                episode = episode.number,
-                            )
+                    val videos = details.seasons
+                        .distinctBy { it.seasonId }
+                        .flatMap { season ->
+                            kotlinx.coroutines.runBlocking {
+                                provider.seasonEpisodes(season)
+                            }.map { episode ->
+                                MetaVideo(
+                                    id = provider.videoId(animeId, episode.episodeId),
+                                    title = "E${episode.number?.toString()?.padStart(2, '0') ?: "??"}${episode.name?.let { " · $it" } ?: ""}",
+                                    thumbnail = episode.thumbnail,
+                                    season = season.number,
+                                    episode = episode.number,
+                                )
+                            }
                         }
-                    }
+                        .deduplicateCanonicalEpisodes()
                     MetaDetails(
                         id = metaId,
                         type = "tv",

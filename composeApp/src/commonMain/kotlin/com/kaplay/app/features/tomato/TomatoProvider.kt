@@ -431,7 +431,8 @@ object TomatoProvider {
                     }
                 }
             }.distinct(),
-            seasons.mapIndexedNotNull { index, season -> seasonFromJson(season, index) },
+            seasons.mapIndexedNotNull { index, season -> seasonFromJson(season, index) }
+                .distinctBy { it.seasonId },
         )
     }
 
