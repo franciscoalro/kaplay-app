@@ -77,10 +77,10 @@
 - Consumes: `LibraryRepository`, `WatchProgressRepository`, `WatchedRepository`
 - Produces: 3 primary filters for saved content: Favoritos, Em andamento, Assistidos
 
-- [ ] **Step 1: Write test in `LibraryFilterTest.kt` asserting the 3 primary saved library filters**
-- [ ] **Step 2: Update `LibrarySavedControls` and `LibraryScreen.kt` to filter by Favoritos, Em andamento, Assistidos**
-- [ ] **Step 3: Verify test passes on CI (GREEN)**
-- [ ] **Step 4: Commit**
+- [x] **Step 1: Write test in `LibraryFilterTest.kt` asserting the 3 primary saved library filters**
+- [x] **Step 2: Update `LibrarySavedControls` and `LibraryScreen.kt` to filter by Favoritos, Em andamento, Assistidos**
+- [x] **Step 3: Verify test passes on CI (GREEN)** (Verified on CI run `42102017756`)
+- [x] **Step 4: Commit** (`790d3ae0`, `57f3359a`)
 
 ---
 
@@ -95,8 +95,18 @@
 - Consumes: `SettingsRootPage`
 - Produces: Clean settings list without supporters/licenses on root page, removed Tapframe text, preserved logo, version, updater
 
-- [ ] **Step 1: Write test in `SettingsCleanTest.kt` asserting absence of Tapframe footer and supporters from root page**
-- [ ] **Step 2: Clean `SettingsRootPage.kt` hiding supporters/licenses and removing "Feito por Tapframe e amigos"**
-- [ ] **Step 3: Run full CI test suite on GitHub Actions (`compileFullDebugKotlin` + host tests)**
-- [ ] **Step 4: Build Full Debug APK via `ka-play-build-only.yml` and collect SHA-256**
-- [ ] **Step 5: Document completion ledger in plan and report evidence**
+- [x] **Step 1: Write test in `SettingsCleanTest.kt` asserting absence of Tapframe footer and supporters from root page**
+- [x] **Step 2: Clean `SettingsRootPage.kt` hiding supporters/licenses and removing "Feito por Tapframe e amigos"**
+- [x] **Step 3: Run full CI test suite on GitHub Actions (`compileFullDebugKotlin` + host tests)** (Verified on CI run `42106173299`)
+- [x] **Step 4: Build Full Debug APK via `ka-play-build-only.yml` and collect SHA-256** (Verified on CI run `42108108637`)
+- [x] **Step 5: Document completion ledger in plan and report evidence**
+
+---
+
+## Completion Ledger
+
+- **Task 1 GREEN:** CI run `42097081542` (commit `255766aa`) verified `rememberLastProfileEnabled = true` by default and automatic direct entry to Home (`Main`) for unpinned profiles.
+- **Task 2 GREEN:** CI run `42098813591` (commit `730da9b1`) verified compact hero banner clamped strictly between 260 dp and 320 dp on mobile.
+- **Task 3 GREEN:** CI run `42102017756` (commit `57f3359a`) verified 3 primary saved library filters: `Favoritos`, `Em andamento`, and `Assistidos`.
+- **Task 4 GREEN:** CI run `42106173299` (commit `031d4cef`) verified clean settings root page (hidden supporters and licenses, removed Tapframe footer).
+- **Full Debug APK Artifact:** Workflow `ka-play-build-only.yml` run `42108108637` built `ka-play-full-debug.apk` (`com.kaplay.app.debug`, size: `167,539,238 bytes`, SHA-256: `31a36d4e30073ae3dae813076714effd36300e6a5e06b4d74599ef9a45ce1c45`).
