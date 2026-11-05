@@ -37,11 +37,11 @@
 - Consumes: `seasons: List<Int>`, `selectedSeason: Int`, `onSeasonSelected: (Int) -> Unit`, `KAColors`, `KAShapes`
 - Produces: `KASeasonDropdown` composable and its invocation in `SeriesSeasonSelector`
 
-- [ ] **Step 1: Write failing test in `DetailSeasonDropdownTest.kt` asserting dropdown trigger and item selection**
-- [ ] **Step 2: Run test on CI to verify failure (RED)**
-- [ ] **Step 3: Implement `KASeasonDropdown` and integrate in `DetailSeriesContent.kt`**
-- [ ] **Step 4: Run test on CI to verify success (GREEN)**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test in `DetailSeasonDropdownTest.kt` asserting dropdown trigger and item selection**
+- [x] **Step 2: Run test on CI to verify failure (RED)**
+- [x] **Step 3: Implement `KASeasonDropdown` and integrate in `DetailSeriesContent.kt`**
+- [x] **Step 4: Run test on CI to verify success (GREEN)** (Verified on CI run `42065324794`)
+- [x] **Step 5: Commit** (`91636161`, `3e072dcb`)
 
 ---
 
@@ -50,10 +50,17 @@
 **Files:**
 - Modify: `docs/superpowers/plans/2026-11-05-ka-play-season-dropdown-plan.md`
 
-- [ ] **Step 1: Run full CI test suite on GitHub Actions (`compileFullDebugKotlin` + host tests)**
-- [ ] **Step 2: Verify git status is clean and all tests pass**
-- [ ] **Step 3: Document completion ledger in plan**
-- [ ] **Step 4: Commit**
+- [x] **Step 1: Run full CI test suite on GitHub Actions (`compileFullDebugKotlin` + host tests)** (Verified on CI run `42065324794`)
+- [x] **Step 2: Verify git status is clean and all tests pass**
+- [x] **Step 3: Document completion ledger in plan**
+- [x] **Step 4: Commit**
+
+---
+
+## Completion Ledger
+
+- **Task 1 GREEN:** Implemented `KASeasonDropdown` with 10 dp radius, 48 dp height, `KAColors.SurfaceVariant` trigger, `KAColors.Surface` menu, `KAColors.PrimaryLight` selected highlight, and D-pad focus stroke. Tested in `DetailSeasonDropdownTest.kt`.
+- **Task 2 GREEN:** CI run `42065324794` passed `compileFullDebugKotlin` in 7m22s and Android host unit tests with 0 failures.
 
 ---
 
