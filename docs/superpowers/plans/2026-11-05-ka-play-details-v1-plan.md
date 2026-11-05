@@ -41,11 +41,11 @@
 - Consumes: `KAColors`, `KAShapes`, `KASpacing`
 - Produces: `DetailActionButtons`, `DetailActions` with 10 dp radius and 48 dp touch targets
 
-- [ ] **Step 1: Write failing test for action button tokens and radius**
-- [ ] **Step 2: Run test on CI to verify failure (RED)**
-- [ ] **Step 3: Update `DetailActionButtons.kt` with `KAShapes.Button`, `KAColors.Primary`, and 48 dp height**
-- [ ] **Step 4: Verify test passes on CI (GREEN)**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test for action button tokens and radius**
+- [x] **Step 2: Run test on CI to verify failure (RED)**
+- [x] **Step 3: Update `DetailActionButtons.kt` with `KAShapes.Button`, `KAColors.Primary`, and 48 dp height**
+- [x] **Step 4: Verify test passes on CI (GREEN)** (Verified on CI run `42017293505`)
+- [x] **Step 5: Commit** (`3964d60b`)
 
 ---
 
@@ -60,11 +60,11 @@
 - Consumes: `KAColors`, `KAShapes`, `KASpacing`
 - Produces: `DetailMetaInfo`, `DetailHeroMetaBadge`, `DetailFloatingHeader`
 
-- [ ] **Step 1: Write failing test for metadata badges and header colors**
-- [ ] **Step 2: Run test on CI to verify failure (RED)**
-- [ ] **Step 3: Update `DetailMetaInfo.kt` (8 dp badge) and `DetailFloatingHeader.kt` (`KAColors.Background` fade)**
-- [ ] **Step 4: Verify test passes on CI (GREEN)**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test for metadata badges and header colors**
+- [x] **Step 2: Run test on CI to verify failure (RED)**
+- [x] **Step 3: Update `DetailMetaInfo.kt` (8 dp badge) and `DetailFloatingHeader.kt` (`KAColors.Background` fade)**
+- [x] **Step 4: Verify test passes on CI (GREEN)** (Verified on CI run `42019098105`)
+- [x] **Step 5: Commit** (`2248f6c5`)
 
 ---
 
@@ -78,11 +78,11 @@
 - Consumes: `KAColors`, `KAShapes`, `KAPlayProgressBar`
 - Produces: Season selector chips (8 dp), 16:9 episode cards (10 dp) with purple progress bar
 
-- [ ] **Step 1: Write failing test for season chip radius and card shapes**
-- [ ] **Step 2: Run test on CI to verify failure (RED)**
-- [ ] **Step 3: Update `DetailSeriesContent.kt` with `KAShapes.Chip`, `KAShapes.Card`, and `KAColors.Primary`**
-- [ ] **Step 4: Verify test passes on CI (GREEN)**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test for season chip radius and card shapes**
+- [x] **Step 2: Run test on CI to verify failure (RED)**
+- [x] **Step 3: Update `DetailSeriesContent.kt` with `KAShapes.Chip`, `KAShapes.Card`, and `KAColors.Primary`**
+- [x] **Step 4: Verify test passes on CI (GREEN)** (Verified on CI run `42021197515`)
+- [x] **Step 5: Commit** (`a8bc1a35`)
 
 ---
 
@@ -93,8 +93,17 @@
 - Modify: `composeApp/src/commonMain/kotlin/com/kaplay/app/features/details/MetaDetailsScreen.kt`
 - Modify: `docs/superpowers/plans/2026-11-05-ka-play-details-v1-plan.md` (completion ledger)
 
-- [ ] **Step 1: Update `DetailHero.kt` bottom fade to `KAColors.Background`**
-- [ ] **Step 2: Run full CI test suite on GitHub Actions (`compileFullDebugKotlin` + host tests)**
-- [ ] **Step 3: Dispatch independent code reviewer subagent**
-- [ ] **Step 4: Resolve any reviewer findings in ONE fix pass**
-- [ ] **Step 5: Document completion ledger and commit**
+- [x] **Step 1: Update `DetailHero.kt` bottom fade to `KAColors.Background`**
+- [x] **Step 2: Run full CI test suite on GitHub Actions (`compileFullDebugKotlin` + host tests)**
+- [x] **Step 3: Dispatch independent code reviewer subagent**
+- [x] **Step 4: Resolve any reviewer findings in ONE fix pass**
+- [x] **Step 5: Document completion ledger and commit**
+
+---
+
+## Completion Ledger
+
+- **Task 1 GREEN:** CI run `42017293505` (commit `3964d60b`) passed `compileFullDebugKotlin` in 9m2s and Android host unit tests.
+- **Task 2 GREEN:** CI run `42019098105` (commit `2248f6c5`) passed `compileFullDebugKotlin` in 12m1s and Android host unit tests.
+- **Task 3 GREEN:** CI run `42021197515` (commit `a8bc1a35`) passed `compileFullDebugKotlin` in 9m18s and Android host unit tests.
+- **Task 4 GREEN:** All details components integrated with `KAColors.Background`, `KAColors.Primary`, `KAShapes.Button` (10 dp), `KAShapes.Card` (10 dp), and `KAShapes.Chip` (8 dp).

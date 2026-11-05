@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.graphicsLayer
 import coil3.compose.AsyncImage
+import com.kaplay.app.core.ui.KAColors
 import com.kaplay.app.core.ui.heroStretchHeight
 import com.kaplay.app.core.ui.heroStretchZoom
 import com.kaplay.app.features.details.MetaDetails
@@ -91,7 +92,7 @@ fun DetailHero(
         val heroChromeTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
             8.dp +
             ((40.dp - muteIconSize) / 2)
-        val bottomGradientColor = heroGradientColor ?: MaterialTheme.colorScheme.background
+        val bottomGradientColor = heroGradientColor ?: KAColors.Background
         var logoLoadError by remember(meta.id, meta.logo) {
             mutableStateOf(false)
         }
