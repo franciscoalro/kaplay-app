@@ -19,6 +19,9 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.defaultMinSize
+import com.kaplay.app.core.ui.KAColors
+import com.kaplay.app.core.ui.KAShapes
 import com.kaplay.app.core.ui.rememberPosterCardStyleUiState
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -453,15 +456,18 @@ private fun SeasonViewModeToggle(
     onClick: () -> Unit,
 ) {
     val isPosters = mode == SeasonViewMode.Posters
+    var isFocused by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            .clip(KAShapes.Chip)
+            .background(KAColors.SurfaceVariant)
             .border(
-                width = 1.dp,
-                color = Color.White.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(8.dp),
+                width = if (isFocused) 2.dp else 1.dp,
+                color = if (isFocused) Color.White else KAColors.Outline,
+                shape = KAShapes.Chip,
             )
+            .onFocusChanged { isFocused = it.isFocused }
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center,
@@ -476,7 +482,7 @@ private fun SeasonViewModeToggle(
                 fontSize = sizing.seasonToggleTextSize,
                 fontWeight = FontWeight.SemiBold,
             ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = KAColors.TextPrimary,
         )
     }
 }
@@ -519,19 +525,20 @@ private fun SeasonTextChipScrollRow(
             var isFocused by remember(season) { mutableStateOf(false) }
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(sizing.seasonChipRadius))
+                    .defaultMinSize(minHeight = 48.dp)
+                    .clip(KAShapes.Chip)
                     .background(
                         if (isSelected) {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                            KAColors.Primary
                         } else {
-                            Color.Transparent
+                            KAColors.SurfaceVariant
                         },
                     )
                     .focusable()
                     .onFocusChanged { isFocused = it.isFocused }
                     .then(
                         if (isFocused) {
-                            Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(sizing.seasonChipRadius))
+                            Modifier.border(2.dp, Color.White, KAShapes.Chip)
                         } else {
                             Modifier
                         },
@@ -553,9 +560,9 @@ private fun SeasonTextChipScrollRow(
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                     ),
                     color = if (isSelected) {
-                        MaterialTheme.colorScheme.onBackground
+                        Color.White
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        KAColors.TextSecondary
                     },
                 )
             }
@@ -800,7 +807,7 @@ private fun EpisodeHorizontalCard(
     onClick: (() -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
 ) {
-    val cardShape = RoundedCornerShape(metrics.cornerRadius)
+    val cardShape = KAShapes.Card
     val ratingLabel = remember(imdbRating, episodeRatingsVisibility, isWatched) {
         imdbRating?.takeIf { it > 0.0 && episodeRatingsVisibility.showRating(isWatched) }
             ?.let(::formatEpisodeRating)
@@ -827,7 +834,7 @@ private fun EpisodeHorizontalCard(
             .width(metrics.cardWidth)
             .height(metrics.cardHeight)
             .clip(cardShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+            .background(KAColors.SurfaceVariant)
             .kaplayCardDepth(
                 shape = cardShape,
                 surface = KAPlayCardDepthSurface.EpisodeCards,
@@ -969,8 +976,8 @@ private fun EpisodeHorizontalCard(
                         bottom = progressBarBottomSpacing,
                     ),
                 height = progressBarHeight,
-                trackColor = Color.White.copy(alpha = 0.22f),
-                fillColor = MaterialTheme.colorScheme.primary,
+                trackColor = KAColors.Outline,
+                fillColor = KAColors.Primary,
             )
         }
     }
@@ -1193,8 +1200,8 @@ private fun EpisodeListCard(
     onClick: (() -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
 ) {
-    val cornerRadius = rememberPosterCardStyleUiState().cornerRadiusDp.dp
-    val cardShape = RoundedCornerShape(cornerRadius)
+    val cornerRadius = KAShapes.CardRadius
+    val cardShape = KAShapes.Card
     val ratingLabel = remember(imdbRating, episodeRatingsVisibility, isWatched) {
         imdbRating?.takeIf { it > 0.0 && episodeRatingsVisibility.showRating(isWatched) }
             ?.let(::formatEpisodeRating)
@@ -1205,10 +1212,10 @@ private fun EpisodeListCard(
             .fillMaxWidth()
             .height(sizing.cardHeight)
             .clip(cardShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+            .background(KAColors.SurfaceVariant)
             .border(
                 width = 1.dp,
-                color = Color.White.copy(alpha = 0.1f),
+                color = KAColors.Outline,
                 shape = cardShape,
             )
             .combinedClickable(
@@ -1344,8 +1351,8 @@ private fun EpisodeListCard(
                         .width(sizing.imageWidth - 24.dp)
                         .padding(start = 12.dp, bottom = 10.dp),
                     height = 5.dp,
-                    trackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f),
-                    fillColor = MaterialTheme.colorScheme.primary,
+                    trackColor = KAColors.Outline,
+                    fillColor = KAColors.Primary,
                 )
             }
     }

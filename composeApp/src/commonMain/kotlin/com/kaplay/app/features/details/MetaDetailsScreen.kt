@@ -1626,12 +1626,16 @@ fun MetaDetailsScreen(
         if (displayedMeta == null) {
             KAPlayBackButton(
                 onClick = onBack,
-                modifier = Modifier.padding(
-                    start = 12.dp,
-                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp,
-                ),
+                modifier = Modifier
+                    .padding(
+                        start = 12.dp,
+                        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp,
+                    )
+                    .size(48.dp),
                 containerColor = Color.Transparent,
                 contentColor = MaterialTheme.colorScheme.onBackground,
+                buttonSize = 48.dp,
+                iconSize = 24.dp,
             )
         }
         }
@@ -1826,9 +1830,12 @@ private fun DetailHeaderOverlay(
                     start = 12.dp,
                     top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp,
                 )
+                .size(48.dp)
                 .zIndex(2f),
             containerColor = Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onBackground,
+            buttonSize = 48.dp,
+            iconSize = 24.dp,
         )
     }
 

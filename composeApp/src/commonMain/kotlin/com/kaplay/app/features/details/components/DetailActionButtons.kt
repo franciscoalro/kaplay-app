@@ -4,6 +4,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -44,7 +46,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kaplay.app.core.ui.AppIconResource
+import com.kaplay.app.core.ui.KAColors
+import com.kaplay.app.core.ui.KAShapes
 import com.kaplay.app.core.ui.appIconPainter
+import androidx.compose.ui.graphics.Color
 import kaplay.composeapp.generated.resources.Res
 import kaplay.composeapp.generated.resources.action_play
 import kaplay.composeapp.generated.resources.details_actions_menu_label
@@ -79,9 +84,9 @@ fun DetailActionButtons(
     onPlayLongClick: (() -> Unit)? = null,
 ) {
     val playPainter = appIconPainter(AppIconResource.PlayerPlay)
-    val buttonHeight = if (isTablet) 56.dp else 52.dp
+    val buttonHeight = if (isTablet) 52.dp else 48.dp
     val iconButtonSize = buttonHeight
-    val playShape = RoundedCornerShape(40.dp)
+    val playShape = KAShapes.Button
     val hapticFeedback = LocalHapticFeedback.current
     var actionsExpanded by remember { mutableStateOf(false) }
     val menuProgress by animateFloatAsState(
@@ -104,17 +109,22 @@ fun DetailActionButtons(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            var isPlayFocused by remember { mutableStateOf(false) }
             Surface(
                 modifier = Modifier
                     .weight(1f)
-                    .height(buttonHeight),
+                    .height(buttonHeight)
+                    .then(
+                        if (isPlayFocused) Modifier.border(2.dp, Color.White, playShape) else Modifier
+                    ),
                 shape = playShape,
-                color = if (playEnabled) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = if (playEnabled) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                color = if (playEnabled) KAColors.Primary else KAColors.SurfaceVariant,
+                contentColor = if (playEnabled) Color.White else Color.White.copy(alpha = 0.45f),
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .onFocusChanged { isPlayFocused = it.isFocused }
                         .combinedClickable(
                             enabled = playEnabled,
                             onClick = {
@@ -202,23 +212,25 @@ fun DetailActionButtons(
             }
 
             if (hasSecondaryActions) {
+                var isMenuFocused by remember { mutableStateOf(false) }
                 Surface(
-                    modifier = Modifier.size(iconButtonSize),
-                    shape = CircleShape,
+                    modifier = Modifier
+                        .size(iconButtonSize)
+                        .then(
+                            if (isMenuFocused) Modifier.border(2.dp, Color.White, KAShapes.Button) else Modifier
+                        ),
+                    shape = KAShapes.Button,
                     color = if (actionsExpanded) {
-                        MaterialTheme.colorScheme.onBackground
+                        KAColors.Primary
                     } else {
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.82f)
+                        KAColors.SurfaceVariant
                     },
-                    contentColor = if (actionsExpanded) {
-                        MaterialTheme.colorScheme.background
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                    contentColor = Color.White,
                 ) {
                     Box(
                         modifier = Modifier
                             .size(iconButtonSize)
+                            .onFocusChanged { isMenuFocused = it.isFocused }
                             .clickable(role = Role.Button) {
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 actionsExpanded = !actionsExpanded
@@ -306,28 +318,30 @@ private fun DetailIconAction(
     size: Dp,
     onLongClick: (() -> Unit)? = null,
 ) {
+    var isFocused by remember { mutableStateOf(false) }
     Surface(
-        modifier = modifier.graphicsLayer {
-            alpha = progress
-            scaleX = 0.86f + (0.14f * progress)
-            scaleY = 0.86f + (0.14f * progress)
-        },
-        shape = CircleShape,
+        modifier = modifier
+            .graphicsLayer {
+                alpha = progress
+                scaleX = 0.86f + (0.14f * progress)
+                scaleY = 0.86f + (0.14f * progress)
+            }
+            .then(
+                if (isFocused) Modifier.border(2.dp, Color.White, KAShapes.Button) else Modifier
+            ),
+        shape = KAShapes.Button,
         color = if (active) {
-            MaterialTheme.colorScheme.onBackground
+            KAColors.Primary
         } else {
-            MaterialTheme.colorScheme.surfaceVariant
+            KAColors.SurfaceVariant
         },
-        contentColor = if (active) {
-            MaterialTheme.colorScheme.background
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        },
-        tonalElevation = 6.dp,
+        contentColor = Color.White,
+        tonalElevation = 0.dp,
     ) {
         Box(
             modifier = Modifier
                 .size(size)
+                .onFocusChanged { isFocused = it.isFocused }
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
