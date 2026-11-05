@@ -986,7 +986,7 @@ private fun EpisodeHorizontalCard(
     }
 }
 
-private data class EpisodeHorizontalCardMetrics(
+internal data class EpisodeHorizontalCardMetrics(
     val rowHorizontalPadding: Dp,
     val rowVerticalPadding: Dp,
     val itemSpacing: Dp,
