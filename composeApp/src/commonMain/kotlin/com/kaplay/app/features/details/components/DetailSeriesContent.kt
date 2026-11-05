@@ -810,7 +810,7 @@ private fun EpisodeHorizontalCard(
     onClick: (() -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
 ) {
-    val cardShape = KAShapes.Card
+    val cardShape = RoundedCornerShape(metrics.cornerRadius)
     val ratingLabel = remember(imdbRating, episodeRatingsVisibility, isWatched) {
         imdbRating?.takeIf { it > 0.0 && episodeRatingsVisibility.showRating(isWatched) }
             ?.let(::formatEpisodeRating)
@@ -917,7 +917,7 @@ private fun EpisodeHorizontalCard(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            if (!video.overview.isNullOrBlank()) {
+            if (!video.overview.isNullOrBlank() && metrics.overviewMaxLines > 0) {
                 Text(
                     text = video.overview,
                     style = MaterialTheme.typography.bodySmall.copy(
@@ -1084,30 +1084,36 @@ private fun rememberEpisodeHorizontalCardMetrics(maxWidthDp: Float): EpisodeHori
                 imdbLogoHeight = 12.dp,
             )
 
-            else -> EpisodeHorizontalCardMetrics(
-                rowHorizontalPadding = 0.dp,
-                rowVerticalPadding = 0.dp,
-                itemSpacing = 12.dp,
-                cardWidth = 296.dp,
-                cardHeight = 184.dp,
-                cornerRadius = userCornerRadius,
-                contentPadding = 10.dp,
-                contentBottomPadding = 12.dp,
-                titleTextSize = 14.sp,
-                titleLineHeight = 19.sp,
-                bodyTextSize = 11.sp,
-                bodyLineHeight = 15.sp,
-                overviewMaxLines = 2,
-                metaTextSize = 10.sp,
-                badgeTextSize = 9.sp,
-                badgeRadius = 5.dp,
-                badgeHorizontalPadding = 7.dp,
-                badgeVerticalPadding = 3.dp,
-                imdbLogoWidth = 22.dp,
-                imdbLogoHeight = 11.dp,
-            )
+            else -> compactEpisodeHorizontalCardMetrics(maxWidthDp, userCornerRadius)
         }
     }
+}
+
+internal fun compactEpisodeHorizontalCardMetrics(maxWidthDp: Float, userCornerRadius: Dp): EpisodeHorizontalCardMetrics {
+    val compactWidth = (maxWidthDp * 0.62f).coerceIn(220f, 260f).dp
+    val compactHeight = compactWidth * (9f / 16f)
+    return EpisodeHorizontalCardMetrics(
+        rowHorizontalPadding = 0.dp,
+        rowVerticalPadding = 0.dp,
+        itemSpacing = 10.dp,
+        cardWidth = compactWidth,
+        cardHeight = compactHeight,
+        cornerRadius = 8.dp,
+        contentPadding = 8.dp,
+        contentBottomPadding = 10.dp,
+        titleTextSize = 14.sp,
+        titleLineHeight = 17.sp,
+        bodyTextSize = 11.sp,
+        bodyLineHeight = 14.sp,
+        overviewMaxLines = 0,
+        metaTextSize = 12.sp,
+        badgeTextSize = 10.sp,
+        badgeRadius = 4.dp,
+        badgeHorizontalPadding = 6.dp,
+        badgeVerticalPadding = 2.dp,
+        imdbLogoWidth = 20.dp,
+        imdbLogoHeight = 10.dp,
+    )
 }
 
 @Composable
