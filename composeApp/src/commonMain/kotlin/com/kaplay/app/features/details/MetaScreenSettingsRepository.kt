@@ -163,19 +163,9 @@ object MetaScreenSettingsRepository {
             descriptionRes = Res.string.meta_section_overview_description,
         ),
         MetaScreenSectionDefinition(
-            key = MetaScreenSectionKey.PRODUCTION,
-            titleRes = Res.string.meta_section_production_title,
-            descriptionRes = Res.string.meta_section_production_description,
-        ),
-        MetaScreenSectionDefinition(
-            key = MetaScreenSectionKey.CAST,
-            titleRes = Res.string.settings_meta_cast,
-            descriptionRes = Res.string.meta_section_cast_description,
-        ),
-        MetaScreenSectionDefinition(
-            key = MetaScreenSectionKey.COMMENTS,
-            titleRes = Res.string.settings_meta_comments,
-            descriptionRes = Res.string.meta_section_comments_description,
+            key = MetaScreenSectionKey.EPISODES,
+            titleRes = Res.string.settings_meta_episodes,
+            descriptionRes = Res.string.meta_section_episodes_description,
         ),
         MetaScreenSectionDefinition(
             key = MetaScreenSectionKey.TRAILERS,
@@ -183,14 +173,24 @@ object MetaScreenSettingsRepository {
             descriptionRes = Res.string.meta_section_trailers_description,
         ),
         MetaScreenSectionDefinition(
-            key = MetaScreenSectionKey.EPISODES,
-            titleRes = Res.string.settings_meta_episodes,
-            descriptionRes = Res.string.meta_section_episodes_description,
+            key = MetaScreenSectionKey.CAST,
+            titleRes = Res.string.settings_meta_cast,
+            descriptionRes = Res.string.meta_section_cast_description,
+        ),
+        MetaScreenSectionDefinition(
+            key = MetaScreenSectionKey.PRODUCTION,
+            titleRes = Res.string.meta_section_production_title,
+            descriptionRes = Res.string.meta_section_production_description,
         ),
         MetaScreenSectionDefinition(
             key = MetaScreenSectionKey.DETAILS,
             titleRes = Res.string.meta_section_details_title,
             descriptionRes = Res.string.meta_section_details_description,
+        ),
+        MetaScreenSectionDefinition(
+            key = MetaScreenSectionKey.COMMENTS,
+            titleRes = Res.string.settings_meta_comments,
+            descriptionRes = Res.string.meta_section_comments_description,
         ),
         MetaScreenSectionDefinition(
             key = MetaScreenSectionKey.COLLECTION,

@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,6 +21,16 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import com.kaplay.app.core.ui.KAColors
 import com.kaplay.app.core.ui.KAShapes
 import com.kaplay.app.core.ui.rememberPosterCardStyleUiState
@@ -41,7 +52,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -426,25 +436,102 @@ private fun SeriesSeasonSelector(
                         onSelect = onSelect,
                         onLongPress = onLongPress,
                     )
-                    SeasonViewMode.Text -> SeasonTextChipScrollRow(
+                    SeasonViewMode.Text -> KASeasonDropdown(
                         seasons = seasons,
-                        currentSeason = currentSeason,
-                        sizing = sizing,
-                        horizontalScrollPadding = horizontalScrollPadding,
-                        onSelect = onSelect,
-                        onLongPress = onLongPress,
+                        selectedSeason = currentSeason,
+                        onSeasonSelected = onSelect,
+                        modifier = Modifier.padding(horizontal = horizontalScrollPadding),
                     )
                 }
             }
         } else {
-            SeasonTextChipScrollRow(
+            KASeasonDropdown(
                 seasons = seasons,
-                currentSeason = currentSeason,
-                sizing = sizing,
-                horizontalScrollPadding = horizontalScrollPadding,
-                onSelect = onSelect,
-                onLongPress = onLongPress,
+                selectedSeason = currentSeason,
+                onSeasonSelected = onSelect,
+                modifier = Modifier.padding(horizontal = horizontalScrollPadding),
             )
+        }
+    }
+}
+
+@Composable
+fun KASeasonDropdown(
+    seasons: List<Int>,
+    selectedSeason: Int,
+    onSeasonSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var isFocused by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        Surface(
+            onClick = { expanded = true },
+            color = KAColors.SurfaceVariant,
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(
+                width = if (isFocused) 2.dp else 1.dp,
+                color = if (isFocused) Color.White else KAColors.Outline,
+            ),
+            modifier = Modifier.onFocusChanged { isFocused = it.isFocused },
+        ) {
+            Row(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .padding(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = selectedSeason.label(),
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = KAColors.TextSecondary,
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .widthIn(min = 180.dp)
+                .heightIn(max = 320.dp)
+                .background(KAColors.Surface),
+        ) {
+            seasons.forEach { season ->
+                val selected = season == selectedSeason
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = season.label(),
+                            color = if (selected) KAColors.PrimaryLight else Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSeasonSelected(season)
+                    },
+                    trailingIcon = if (selected) {
+                        {
+                            Icon(
+                                imageVector = Icons.Rounded.Check,
+                                contentDescription = null,
+                                tint = KAColors.PrimaryLight,
+                            )
+                        }
+                    } else null,
+                )
+            }
         }
     }
 }
@@ -502,13 +589,15 @@ private fun SeasonTextChipScrollRow(
 
     LaunchedEffect(seasons, currentSeason) {
         val currentIndex = seasons.indexOf(currentSeason)
-        if (currentIndex >= 0) {
+        if (currentIndex > 0) {
             if (hasPositionedSeasonRow) {
                 seasonListState.animateScrollToItem(currentIndex)
             } else {
                 seasonListState.scrollToItem(currentIndex)
                 hasPositionedSeasonRow = true
             }
+        } else if (currentIndex == 0 && hasPositionedSeasonRow) {
+            seasonListState.animateScrollToItem(0)
         }
     }
 
@@ -523,48 +612,49 @@ private fun SeasonTextChipScrollRow(
         items(seasons, key = { season -> season }) { season ->
             val isSelected = season == currentSeason
             var isFocused by remember(season) { mutableStateOf(false) }
+            val chipShape = RoundedCornerShape(sizing.seasonChipRadius)
             Box(
                 modifier = Modifier
                     .defaultMinSize(minHeight = 48.dp)
-                    .clip(KAShapes.Chip)
-                    .background(
-                        if (isSelected) {
-                            KAColors.Primary
-                        } else {
-                            KAColors.SurfaceVariant
-                        },
-                    )
                     .focusable()
                     .onFocusChanged { isFocused = it.isFocused }
-                    .then(
-                        if (isFocused) {
-                            Modifier.border(2.dp, Color.White, KAShapes.Chip)
-                        } else {
-                            Modifier
-                        },
-                    )
                     .combinedClickable(
                         onClick = { onSelect(season) },
                         onLongClick = onLongPress?.let { handler -> { handler(season) } },
-                    )
-                    .padding(
-                        horizontal = sizing.seasonChipHorizontalPadding,
-                        vertical = sizing.seasonChipVerticalPadding,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = season.label(),
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = sizing.seasonChipTextSize,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                    ),
-                    color = if (isSelected) {
-                        Color.White
-                    } else {
-                        KAColors.TextSecondary
-                    },
-                )
+                Box(
+                    modifier = Modifier
+                        .height(38.dp)
+                        .clip(chipShape)
+                        .background(
+                            if (isSelected) {
+                                KAColors.Primary
+                            } else {
+                                KAColors.SurfaceVariant
+                            },
+                        )
+                        .then(
+                            if (isFocused) {
+                                Modifier.border(2.dp, Color.White, chipShape)
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .padding(horizontal = sizing.seasonChipHorizontalPadding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = season.label(),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = sizing.seasonChipTextSize,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        ),
+                        color = Color.White,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }
@@ -807,7 +897,7 @@ private fun EpisodeHorizontalCard(
     onClick: (() -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
 ) {
-    val cardShape = KAShapes.Card
+    val cardShape = RoundedCornerShape(metrics.cornerRadius)
     val ratingLabel = remember(imdbRating, episodeRatingsVisibility, isWatched) {
         imdbRating?.takeIf { it > 0.0 && episodeRatingsVisibility.showRating(isWatched) }
             ?.let(::formatEpisodeRating)
@@ -914,7 +1004,7 @@ private fun EpisodeHorizontalCard(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            if (!video.overview.isNullOrBlank()) {
+            if (!video.overview.isNullOrBlank() && metrics.overviewMaxLines > 0) {
                 Text(
                     text = video.overview,
                     style = MaterialTheme.typography.bodySmall.copy(
@@ -983,7 +1073,7 @@ private fun EpisodeHorizontalCard(
     }
 }
 
-private data class EpisodeHorizontalCardMetrics(
+internal data class EpisodeHorizontalCardMetrics(
     val rowHorizontalPadding: Dp,
     val rowVerticalPadding: Dp,
     val itemSpacing: Dp,
@@ -1081,30 +1171,36 @@ private fun rememberEpisodeHorizontalCardMetrics(maxWidthDp: Float): EpisodeHori
                 imdbLogoHeight = 12.dp,
             )
 
-            else -> EpisodeHorizontalCardMetrics(
-                rowHorizontalPadding = 0.dp,
-                rowVerticalPadding = 0.dp,
-                itemSpacing = 12.dp,
-                cardWidth = 296.dp,
-                cardHeight = 184.dp,
-                cornerRadius = userCornerRadius,
-                contentPadding = 10.dp,
-                contentBottomPadding = 12.dp,
-                titleTextSize = 14.sp,
-                titleLineHeight = 19.sp,
-                bodyTextSize = 11.sp,
-                bodyLineHeight = 15.sp,
-                overviewMaxLines = 2,
-                metaTextSize = 10.sp,
-                badgeTextSize = 9.sp,
-                badgeRadius = 5.dp,
-                badgeHorizontalPadding = 7.dp,
-                badgeVerticalPadding = 3.dp,
-                imdbLogoWidth = 22.dp,
-                imdbLogoHeight = 11.dp,
-            )
+            else -> compactEpisodeHorizontalCardMetrics(maxWidthDp, userCornerRadius)
         }
     }
+}
+
+internal fun compactEpisodeHorizontalCardMetrics(maxWidthDp: Float, userCornerRadius: Dp): EpisodeHorizontalCardMetrics {
+    val compactWidth = (maxWidthDp * 0.62f).coerceIn(220f, 260f).dp
+    val compactHeight = compactWidth * (9f / 16f)
+    return EpisodeHorizontalCardMetrics(
+        rowHorizontalPadding = 0.dp,
+        rowVerticalPadding = 0.dp,
+        itemSpacing = 10.dp,
+        cardWidth = compactWidth,
+        cardHeight = compactHeight,
+        cornerRadius = 8.dp,
+        contentPadding = 8.dp,
+        contentBottomPadding = 10.dp,
+        titleTextSize = 14.sp,
+        titleLineHeight = 17.sp,
+        bodyTextSize = 11.sp,
+        bodyLineHeight = 14.sp,
+        overviewMaxLines = 0,
+        metaTextSize = 12.sp,
+        badgeTextSize = 10.sp,
+        badgeRadius = 4.dp,
+        badgeHorizontalPadding = 6.dp,
+        badgeVerticalPadding = 2.dp,
+        imdbLogoWidth = 20.dp,
+        imdbLogoHeight = 10.dp,
+    )
 }
 
 @Composable
@@ -1480,25 +1576,25 @@ private fun seriesContentSizing(maxWidthDp: Float): SeriesContentSizing =
         else -> SeriesContentSizing(
             seasonHeaderSize = 18.sp,
             seasonToggleTextSize = 12.sp,
-            seasonChipGap = 16.dp,
-            seasonChipRadius = 12.dp,
-            seasonChipHorizontalPadding = 16.dp,
-            seasonChipVerticalPadding = 12.dp,
-            seasonChipTextSize = 15.sp,
+            seasonChipGap = 10.dp,
+            seasonChipRadius = 10.dp,
+            seasonChipHorizontalPadding = 14.dp,
+            seasonChipVerticalPadding = 0.dp,
+            seasonChipTextSize = 13.sp,
             seasonPosterWidth = 100.dp,
             seasonPosterHeight = 150.dp,
             seasonPosterRadius = 8.dp,
             cardHeight = 120.dp,
             imageWidth = 120.dp,
-            cardGap = 16.dp,
+            cardGap = 10.dp,
             contentHorizontalPadding = 12.dp,
             contentVerticalPadding = 12.dp,
             contentSpacing = 4.dp,
-            titleTextSize = 15.sp,
+            titleTextSize = 14.sp,
             titleLineHeight = 18.sp,
             titleMaxLines = 2,
-            bodyTextSize = 13.sp,
-            bodyLineHeight = 18.sp,
+            bodyTextSize = 12.sp,
+            bodyLineHeight = 16.sp,
             overviewMaxLines = 2,
             metaTextSize = 12.sp,
             badgeTextSize = 11.sp,

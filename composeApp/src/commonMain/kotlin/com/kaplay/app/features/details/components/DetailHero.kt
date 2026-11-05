@@ -211,7 +211,7 @@ fun DetailHero(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if (isTablet) 360.dp else 320.dp)
+                        .height(if (isTablet) 300.dp else (heroHeight * 0.72f).coerceAtLeast(180.dp))
                         .align(Alignment.BottomCenter)
                         .background(
                             Brush.verticalGradient(
@@ -242,7 +242,7 @@ fun DetailHero(
                             modifier = Modifier
                                 .fillMaxWidth(if (isTablet) 0.56f else 0.6f)
                                 .widthIn(max = contentMaxWidth)
-                                .height(if (isTablet) 72.dp else 80.dp),
+                                .height(if (isTablet) 68.dp else 56.dp),
                             alignment = Alignment.Center,
                             contentScale = ContentScale.Fit,
                             onError = { logoLoadError = true },
@@ -250,7 +250,7 @@ fun DetailHero(
                     } else {
                         Text(
                             text = meta.name,
-                            style = if (isTablet) MaterialTheme.typography.displaySmall else MaterialTheme.typography.displayLarge,
+                            style = if (isTablet) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineMedium,
                             color = MaterialTheme.colorScheme.onBackground,
                             textAlign = TextAlign.Center,
                         )
@@ -271,9 +271,9 @@ fun DetailHero(
     }
 }
 
-private fun detailHeroHeight(maxWidth: Dp, isTablet: Boolean): Dp =
-    if (!isTablet) {
-        (maxWidth * 1.33f).coerceIn(420.dp, 760.dp)
-    } else {
+internal fun detailHeroHeight(maxWidth: Dp, isTablet: Boolean): Dp =
+    if (isTablet) {
         (maxWidth * 0.42f).coerceIn(300.dp, 420.dp)
+    } else {
+        (maxWidth * 0.82f).coerceIn(280.dp, 340.dp)
     }

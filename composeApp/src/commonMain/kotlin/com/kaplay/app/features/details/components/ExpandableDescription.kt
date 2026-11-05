@@ -16,8 +16,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.kaplay.app.core.ui.KAColors
 import kaplay.composeapp.generated.resources.Res
 import kaplay.composeapp.generated.resources.details_show_less
 import kaplay.composeapp.generated.resources.details_show_more
@@ -26,10 +29,13 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 internal fun ExpandableDescription(
     text: String,
-    collapsedMaxLines: Int,
+    collapsedMaxLines: Int = 3,
     modifier: Modifier = Modifier,
-    style: TextStyle = MaterialTheme.typography.bodyMedium,
-    color: Color = MaterialTheme.colorScheme.onSurface,
+    style: TextStyle = MaterialTheme.typography.bodyMedium.copy(
+        fontSize = 14.sp,
+        lineHeight = 21.sp,
+    ),
+    color: Color = KAColors.TextSecondary,
 ) {
     var expanded by remember(text) { mutableStateOf(false) }
     var canExpand by remember(text) { mutableStateOf(false) }
@@ -53,15 +59,18 @@ internal fun ExpandableDescription(
             },
         )
         if (canExpand) {
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = if (expanded) {
                     stringResource(Res.string.details_show_less)
                 } else {
                     stringResource(Res.string.details_show_more)
                 },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = KAColors.PrimaryLight,
             )
         }
     }
