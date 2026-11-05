@@ -62,7 +62,7 @@ private data class StoredProfilePayload(
     val userId: String,
     val activeProfileIndex: Int = 1,
     val hasEverSelectedProfile: Boolean = false,
-    val rememberLastProfileEnabled: Boolean = false,
+    val rememberLastProfileEnabled: Boolean = true,
     val profiles: List<KAPlayProfile> = emptyList(),
 )
 

@@ -51,7 +51,7 @@ data class ProfileState(
     val activeProfile: KAPlayProfile? = null,
     val isLoaded: Boolean = false,
     val hasEverSelectedProfile: Boolean = false,
-    val rememberLastProfileEnabled: Boolean = false,
+    val rememberLastProfileEnabled: Boolean = true,
 )
 
 @Serializable

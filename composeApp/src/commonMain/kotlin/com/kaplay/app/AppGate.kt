@@ -251,16 +251,15 @@ internal fun AppGate(
 
     fun rememberedStartupProfile(profiles: List<KAPlayProfile>): KAPlayProfile? {
         val currentProfileState = ProfileRepository.state.value
-        if (
-            !currentProfileState.rememberLastProfileEnabled ||
-            !currentProfileState.hasEverSelectedProfile
-        ) {
+        if (!currentProfileState.rememberLastProfileEnabled) {
             return null
         }
 
-        return profiles
+        val activeProfile = profiles
             .find { it.profileIndex == ProfileRepository.activeProfileId }
-            ?.takeUnless { it.pinEnabled }
+            ?: (if (currentProfileState.hasEverSelectedProfile) null else profiles.firstOrNull())
+
+        return activeProfile?.takeUnless { it.pinEnabled }
     }
 
     fun selectProfile(profile: KAPlayProfile, sync: Boolean) {
