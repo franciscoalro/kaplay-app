@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,6 +21,16 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import com.kaplay.app.core.ui.KAColors
 import com.kaplay.app.core.ui.KAShapes
 import com.kaplay.app.core.ui.rememberPosterCardStyleUiState
@@ -426,25 +437,102 @@ private fun SeriesSeasonSelector(
                         onSelect = onSelect,
                         onLongPress = onLongPress,
                     )
-                    SeasonViewMode.Text -> SeasonTextChipScrollRow(
+                    SeasonViewMode.Text -> KASeasonDropdown(
                         seasons = seasons,
-                        currentSeason = currentSeason,
-                        sizing = sizing,
-                        horizontalScrollPadding = horizontalScrollPadding,
-                        onSelect = onSelect,
-                        onLongPress = onLongPress,
+                        selectedSeason = currentSeason,
+                        onSeasonSelected = onSelect,
+                        modifier = Modifier.padding(horizontal = horizontalScrollPadding),
                     )
                 }
             }
         } else {
-            SeasonTextChipScrollRow(
+            KASeasonDropdown(
                 seasons = seasons,
-                currentSeason = currentSeason,
-                sizing = sizing,
-                horizontalScrollPadding = horizontalScrollPadding,
-                onSelect = onSelect,
-                onLongPress = onLongPress,
+                selectedSeason = currentSeason,
+                onSeasonSelected = onSelect,
+                modifier = Modifier.padding(horizontal = horizontalScrollPadding),
             )
+        }
+    }
+}
+
+@Composable
+fun KASeasonDropdown(
+    seasons: List<Int>,
+    selectedSeason: Int,
+    onSeasonSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var isFocused by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        Surface(
+            onClick = { expanded = true },
+            color = KAColors.SurfaceVariant,
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(
+                width = if (isFocused) 2.dp else 1.dp,
+                color = if (isFocused) Color.White else KAColors.Outline,
+            ),
+            modifier = Modifier.onFocusChanged { isFocused = it.isFocused },
+        ) {
+            Row(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .padding(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = selectedSeason.label(),
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = KAColors.TextSecondary,
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .widthIn(min = 180.dp)
+                .heightIn(max = 320.dp)
+                .background(KAColors.Surface),
+        ) {
+            seasons.forEach { season ->
+                val selected = season == selectedSeason
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = season.label(),
+                            color = if (selected) KAColors.PrimaryLight else Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSeasonSelected(season)
+                    },
+                    trailingIcon = if (selected) {
+                        {
+                            Icon(
+                                imageVector = Icons.Rounded.Check,
+                                contentDescription = null,
+                                tint = KAColors.PrimaryLight,
+                            )
+                        }
+                    } else null,
+                )
+            }
         }
     }
 }

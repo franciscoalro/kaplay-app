@@ -47,6 +47,9 @@ class DetailSeriesContentTest {
             )
         }
 
+        // Click dropdown trigger to expand options
+        compose.onNodeWithText("1", substring = true).performClick()
+        // Click season 2 in dropdown
         compose.onNodeWithText("2", substring = true).performClick()
         compose.runOnIdle { assertEquals(2, selectedSeason) }
     }
