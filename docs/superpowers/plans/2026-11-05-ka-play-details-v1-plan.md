@@ -106,4 +106,5 @@
 - **Task 1 GREEN:** CI run `42017293505` (commit `3964d60b`) passed `compileFullDebugKotlin` in 9m2s and Android host unit tests.
 - **Task 2 GREEN:** CI run `42019098105` (commit `2248f6c5`) passed `compileFullDebugKotlin` in 12m1s and Android host unit tests.
 - **Task 3 GREEN:** CI run `42021197515` (commit `a8bc1a35`) passed `compileFullDebugKotlin` in 9m18s and Android host unit tests.
-- **Task 4 GREEN:** All details components integrated with `KAColors.Background`, `KAColors.Primary`, `KAShapes.Button` (10 dp), `KAShapes.Card` (10 dp), and `KAShapes.Chip` (8 dp).
+- **Task 4 GREEN:** All details components integrated with `KAColors.Background`, `KAColors.Primary`, `KAShapes.Button` (10 dp), `KAShapes.Card` (10 dp), and `KAShapes.Chip` (8 dp). CI run `42022798906` passed compile and unit tests.
+- **Review Fix Pass:** CI run `42026649264` (commit `46553abf`) verified all review fixes: Save button 48 dp (CRIT-01), Initial Back button 48 dp (CRIT-02), Action buttons D-pad focus border (IMP-01), EpisodeListCard token & progress parity (IMP-02), SeasonViewModeToggle 48 dp & focus (IMP-03), and Season text chips 48 dp (MIN-02).
