@@ -55,10 +55,14 @@ class EpisodeActionSheetTest {
     @Test
     fun resumeActionAppearsOnlyWhenProgressExists() {
         val progress = WatchProgressEntry(
+            contentType = "tv",
+            parentMetaId = "tomato:6945",
+            parentMetaType = "tv",
             videoId = "tomato:6945:37521",
+            title = "E01 · Maomao",
+            lastPositionMs = 300_000L,
             durationMs = 1_380_000L,
-            positionMs = 300_000L,
-            lastWatchedAt = 1000L,
+            lastUpdatedEpochMs = 1000L,
         )
 
         compose.setContent {

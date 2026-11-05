@@ -126,9 +126,9 @@ fun EpisodeWatchedActionSheet(
             }
 
             // 2. Resume playback (only if progress exists and is not completed)
-            val hasValidResume = progressEntry != null && progressEntry.positionMs > 15_000L && !progressEntry.isEffectivelyCompleted
+            val hasValidResume = progressEntry != null && progressEntry.lastPositionMs > 15_000L && !progressEntry.isCompleted
             if (hasValidResume && onResumeEpisode != null) {
-                val progressMinutes = (progressEntry.positionMs / 60_000L).coerceAtLeast(1L)
+                val progressMinutes = (progressEntry.lastPositionMs / 60_000L).coerceAtLeast(1L)
                 KAPlayBottomSheetActionRow(
                     icon = Icons.Rounded.PlayCircle,
                     title = "Continuar de onde parei",

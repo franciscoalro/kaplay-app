@@ -1414,10 +1414,10 @@ fun MetaDetailsScreen(
                                 progressEntry = episodeProgress,
                                 onDismiss = { selectedEpisodeForActions = null },
                                 onPlayFromBeginning = {
-                                    onEpisodeClick(selectedEpisode)
+                                    onEpisodePlayClick(selectedEpisode)
                                 },
                                 onResumeEpisode = {
-                                    onEpisodeClick(selectedEpisode)
+                                    onEpisodePlayClick(selectedEpisode)
                                 },
                                 onToggleWatched = {
                                     WatchingActions.toggleEpisodeWatched(
