@@ -170,7 +170,7 @@ private fun DetailFloatingHeaderAction(
 ) {
     Box(
         modifier = Modifier
-            .size(40.dp)
+            .size(48.dp)
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

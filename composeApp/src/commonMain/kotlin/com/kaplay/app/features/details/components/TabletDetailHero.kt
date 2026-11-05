@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.kaplay.app.core.format.extractReleaseYearForDisplay
 import com.kaplay.app.core.ui.KAPlayTokens
+import com.kaplay.app.core.ui.KAColors
 import com.kaplay.app.features.details.MetaDetails
 import com.kaplay.app.features.details.formatRuntimeForDisplay
 import kaplay.composeapp.generated.resources.Res
@@ -86,7 +87,7 @@ fun TabletDetailBackdrop(
     onHeroTrailerReady: () -> Unit,
     onHeroTrailerFinished: () -> Unit,
 ) {
-    val backgroundColor = heroGradientColor ?: MaterialTheme.colorScheme.background
+    val backgroundColor = heroGradientColor ?: KAColors.Background
     val scrollProgress = {
         val heroHeight = heroHeightPx()
         if (heroHeight <= 0) 0f else (scrollOffsetPx() / (heroHeight * 0.75f)).coerceIn(0f, 1f)
