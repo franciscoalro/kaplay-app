@@ -2186,7 +2186,7 @@ private fun LazyListScope.configuredMetaSectionItems(
 private fun DetailSectionContainer(
     horizontalPadding: Dp,
     contentMaxWidth: Dp,
-    bottomPadding: Dp = 20.dp,
+    bottomPadding: Dp = 16.dp,
     content: @Composable () -> Unit,
 ) {
     Box(

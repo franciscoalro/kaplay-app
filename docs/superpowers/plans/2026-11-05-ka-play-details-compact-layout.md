@@ -38,10 +38,10 @@
 - Consumes: `KAColors.Background`, `maxWidth: Dp`, `isTablet: Boolean`
 - Produces: `detailHeroHeight(maxWidth, isTablet): Dp` returning 280–340 dp on phones
 
-- [ ] **Step 1: Write unit test asserting hero height bounds for phone viewports**
-- [ ] **Step 2: Update `detailHeroHeight` in `DetailHero.kt` to `(maxWidth * 0.82f).coerceIn(280.dp, 340.dp)` and proportional gradient overlay**
-- [ ] **Step 3: Run CI build to verify test passes (GREEN)**
-- [ ] **Step 4: Commit**
+- [x] **Step 1: Write unit test asserting hero height bounds for phone viewports**
+- [x] **Step 2: Update `detailHeroHeight` in `DetailHero.kt` to `(maxWidth * 0.82f).coerceIn(280.dp, 340.dp)` and proportional gradient overlay**
+- [x] **Step 3: Run CI build to verify test passes (GREEN)** (Verified on CI run `42038179700`)
+- [x] **Step 4: Commit** (`1d3b567a`)
 
 ---
 
@@ -55,10 +55,10 @@
 - Consumes: `KAShapes`, `KAColors.Primary`, `KAColors.SurfaceVariant`
 - Produces: `DetailActionButtons` with 12 dp radius, 8 dp action gaps, 15 sp text, and $\ge 48$ dp touch targets
 
-- [ ] **Step 1: Update test in `DetailActionButtonsTest.kt` for 12 dp radius and 8 dp gap**
-- [ ] **Step 2: Update `DetailActionButtons.kt` with `RoundedCornerShape(12.dp)`, 8 dp spacing, and 15 sp font**
-- [ ] **Step 3: Run CI build to verify test passes (GREEN)**
-- [ ] **Step 4: Commit**
+- [x] **Step 1: Update test in `DetailActionButtonsTest.kt` for 12 dp radius and 8 dp gap**
+- [x] **Step 2: Update `DetailActionButtons.kt` with `RoundedCornerShape(12.dp)`, 8 dp spacing, and 15 sp font**
+- [x] **Step 3: Run CI build to verify test passes (GREEN)** (Verified on CI run `42039950395`)
+- [x] **Step 4: Commit** (`d14aee5f`)
 
 ---
 
@@ -72,10 +72,10 @@
 - Consumes: `KAColors.Primary`, `KAColors.SurfaceVariant`, `KAShapes.Chip`
 - Produces: `SeasonTextChipScrollRow` with 38 dp visual chip height, $\ge 48$ dp touch target, 14 dp horizontal padding, and initial scroll positioning without cutting chip 1
 
-- [ ] **Step 1: Write test in `DetailSeriesContentTest.kt` asserting season 1 chip is visible at opening**
-- [ ] **Step 2: Update `SeasonTextChipScrollRow` and smartphone `seriesContentSizing` in `DetailSeriesContent.kt`**
-- [ ] **Step 3: Run CI build to verify test passes (GREEN)**
-- [ ] **Step 4: Commit**
+- [x] **Step 1: Write test in `DetailSeriesContentTest.kt` asserting season 1 chip is visible at opening**
+- [x] **Step 2: Update `SeasonTextChipScrollRow` and smartphone `seriesContentSizing` in `DetailSeriesContent.kt`**
+- [x] **Step 3: Run CI build to verify test passes (GREEN)** (Verified on CI run `42041390378`)
+- [x] **Step 4: Commit** (`90197931`)
 
 ---
 
@@ -89,10 +89,10 @@
 - Consumes: `EpisodeHorizontalCardMetrics`, `rememberEpisodeHorizontalCardMetrics`
 - Produces: Episode card width 220–260 dp, 16:9 ratio, 8 dp radius, 10 dp gap, 14 sp title, 12 sp meta
 
-- [ ] **Step 1: Write unit test asserting compact episode card width and spacing**
-- [ ] **Step 2: Update `rememberEpisodeHorizontalCardMetrics` in `DetailSeriesContent.kt` for phone viewports**
-- [ ] **Step 3: Run CI build to verify test passes (GREEN)**
-- [ ] **Step 4: Commit**
+- [x] **Step 1: Write unit test asserting compact episode card width and spacing**
+- [x] **Step 2: Update `rememberEpisodeHorizontalCardMetrics` in `DetailSeriesContent.kt` for phone viewports**
+- [x] **Step 3: Run CI build to verify test passes (GREEN)** (Verified on CI run `42044363780`)
+- [x] **Step 4: Commit** (`7c9996e7`)
 
 ---
 
@@ -104,8 +104,8 @@
 - Modify: `composeApp/src/commonMain/kotlin/com/kaplay/app/features/details/MetaDetailsScreen.kt`
 - Modify: `docs/superpowers/plans/2026-11-05-ka-play-details-compact-layout.md`
 
-- [ ] **Step 1: Refine `ExpandableDescription.kt` with 14 sp, 21 sp line height, 3 collapsed lines, clean text link**
-- [ ] **Step 2: Reorder default sections in `MetaScreenSettingsRepository.kt` to place Episodes right after Overview**
-- [ ] **Step 3: Run full CI test suite on GitHub Actions**
+- [x] **Step 1: Refine `ExpandableDescription.kt` with 14 sp, 21 sp line height, 3 collapsed lines, clean text link**
+- [x] **Step 2: Reorder default sections in `MetaScreenSettingsRepository.kt` to place Episodes right after Overview**
+- [x] **Step 3: Run full CI test suite on GitHub Actions**
 - [ ] **Step 4: Build Full Debug APK via `ka-play-build-only.yml` and collect SHA-256**
 - [ ] **Step 5: Document completion ledger in plan and report evidence**

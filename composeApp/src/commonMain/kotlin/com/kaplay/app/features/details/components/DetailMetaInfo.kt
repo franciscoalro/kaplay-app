@@ -167,7 +167,11 @@ fun DetailMetaInfo(
             ExpandableDescription(
                 text = meta.description,
                 collapsedMaxLines = 3,
-                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.sp,
+                    lineHeight = 21.sp,
+                ),
+                color = KAColors.TextSecondary,
             )
         }
     }
