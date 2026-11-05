@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import coil3.compose.AsyncImage
+import com.kaplay.app.core.ui.KAColors
 import com.kaplay.app.core.ui.KAPlayBackButton
 import com.kaplay.app.core.ui.platformPhysicalTopInset
 import com.kaplay.app.features.details.MetaDetails
@@ -64,11 +65,7 @@ fun DetailFloatingHeader(
     }
     val headerTopPadding = (safeAreaTop - 6.dp).coerceAtLeast(safeAreaTop * 0.8f)
     val interactive = progress > 0.05f
-    val surfaceColor = backgroundColor ?: if (isIos) {
-        MaterialTheme.colorScheme.surface.copy(alpha = 1.0f)
-    } else {
-        MaterialTheme.colorScheme.background
-    }
+    val surfaceColor = backgroundColor ?: KAColors.Background
     var logoLoadError by remember(meta.id, meta.logo) {
         mutableStateOf(false)
     }
@@ -103,17 +100,17 @@ fun DetailFloatingHeader(
                 if (interactive && !useNativeNavigation) {
                     KAPlayBackButton(
                         onClick = onBack,
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(48.dp),
                         containerColor = Color.Transparent,
                         contentColor = MaterialTheme.colorScheme.onBackground,
-                        buttonSize = 40.dp,
+                        buttonSize = 48.dp,
                         iconSize = 24.dp,
                     )
                 } else {
                     // Native iOS navigation owns the back button, but retaining
                     // this slot keeps the Compose logo centered as the floating
                     // header replaces the hero while scrolling.
-                    Box(modifier = Modifier.size(40.dp))
+                    Box(modifier = Modifier.size(48.dp))
                 }
 
                 Box(

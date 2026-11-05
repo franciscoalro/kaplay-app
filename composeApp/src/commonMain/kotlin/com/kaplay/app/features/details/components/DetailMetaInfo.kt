@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kaplay.app.core.build.AppFeaturePolicy
+import com.kaplay.app.core.ui.KAColors
+import com.kaplay.app.core.ui.KAShapes
 import com.kaplay.app.core.ui.kaplayHorizontalScrollBleed
 import com.kaplay.app.features.details.MetaDetails
 import com.kaplay.app.features.details.MetaExternalRating
@@ -280,15 +282,15 @@ internal fun MetaLabelValueRow(
 @Composable
 internal fun DetailHeroMetaBadge(
     text: String,
-    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    contentColor: Color = KAColors.TextSecondary,
     secondaryText: String? = null,
 ) {
-    val borderColor = contentColor.copy(alpha = 0.55f)
+    val borderColor = KAColors.Outline
     Row(
         modifier = Modifier
             .border(
                 border = BorderStroke(1.dp, borderColor),
-                shape = RoundedCornerShape(6.dp),
+                shape = KAShapes.Chip,
             )
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
