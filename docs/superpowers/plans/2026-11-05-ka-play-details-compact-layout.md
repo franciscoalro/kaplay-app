@@ -106,6 +106,17 @@
 
 - [x] **Step 1: Refine `ExpandableDescription.kt` with 14 sp, 21 sp line height, 3 collapsed lines, clean text link**
 - [x] **Step 2: Reorder default sections in `MetaScreenSettingsRepository.kt` to place Episodes right after Overview**
-- [x] **Step 3: Run full CI test suite on GitHub Actions**
-- [ ] **Step 4: Build Full Debug APK via `ka-play-build-only.yml` and collect SHA-256**
-- [ ] **Step 5: Document completion ledger in plan and report evidence**
+- [x] **Step 3: Run full CI test suite on GitHub Actions** (Verified on CI run `42058261528`)
+- [x] **Step 4: Build Full Debug APK via `ka-play-build-only.yml` and collect SHA-256** (Verified on CI run `42060711623`)
+- [x] **Step 5: Document completion ledger in plan and report evidence**
+
+---
+
+## Completion Ledger
+
+- **Task 1 GREEN:** CI run `42038179700` (commit `1d3b567a`) verified compact hero banner (280–340 dp) on phones and proportional gradient overlay.
+- **Task 2 GREEN:** CI run `42039950395` (commit `d14aee5f`) verified 12 dp button radius, 8 dp action gaps, 15 sp play typography, and D-pad focus stroke.
+- **Task 3 GREEN:** CI run `42041390378` (commit `90197931`) verified compact season chips (38 dp height), $\ge 48$ dp touch target, 14 dp horizontal padding, and uncut season 1 initial display.
+- **Task 4 GREEN:** CI run `42044363780` (commit `7c9996e7`) verified compact episode cards (220–260 dp, 16:9 ratio, 8 dp radius, 10 dp gap, 14 sp title, 12 sp metadata).
+- **Task 5 GREEN:** CI run `42058261528` (commit `ec4afe72`) verified refined synopsis typography (14 sp, 21 sp line height, 3 lines collapsed, borderless `KAColors.PrimaryLight` text link) and reordered default sections (Episodes directly following Overview).
+- **Full Debug APK Artifact:** Workflow `ka-play-build-only.yml` run `42060711623` successfully built `ka-play-full-debug.apk` (`com.kaplay.app.debug`, size: `167,516,526 bytes`, SHA-256: `e26b4d8242f1e5618f061696862185f5213beb04a8f3190fb71c772dc18eb8fa`).
