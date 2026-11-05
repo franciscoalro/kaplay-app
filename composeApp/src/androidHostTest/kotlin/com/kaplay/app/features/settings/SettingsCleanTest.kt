@@ -1,8 +1,6 @@
 package com.kaplay.app.features.settings
 
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.ui.test.assertDoesNotExist
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import kaplay.composeapp.generated.resources.Res
@@ -26,14 +24,18 @@ class SettingsCleanTest {
         compose.setContent {
             tapframeText = stringResource(Res.string.compose_about_made_with)
             LazyColumn {
-                settingsRootPage(
+                settingsRootContent(
                     isTablet = false,
-                    onAccountClick = {},
-                    onAppearanceClick = {},
                     onPlaybackClick = {},
-                    onIntegrationsClick = {},
-                    onNotificationsClick = {},
+                    onAppearanceClick = {},
                     onAdvancedClick = {},
+                    onNotificationsClick = {},
+                    onContentDiscoveryClick = {},
+                    onIntegrationsClick = {},
+                    onTrackingClick = {},
+                    onSupportersContributorsClick = {},
+                    onLicensesAttributionsClick = {},
+                    onAccountClick = {},
                 )
             }
         }
