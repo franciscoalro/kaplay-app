@@ -38,11 +38,11 @@
 - Consumes: `MetaVideo`, `WatchProgressEntry`, `KAPlayBottomSheetActionRow`
 - Produces: `EpisodeWatchedActionSheet` with rich header, contextual resume action, and subtitle action rows
 
-- [ ] **Step 1: Write failing test in `EpisodeActionSheetTest.kt` asserting rich header, play action, and contextual resume visibility**
-- [ ] **Step 2: Add optional `subtitle: String? = null` to `KAPlayBottomSheetActionRow` in `BottomSheet.kt`**
-- [ ] **Step 3: Update `EpisodeWatchedActionSheet.kt` with rich thumbnail header and contextual action rows**
-- [ ] **Step 4: Verify test passes on CI (GREEN)**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing test in `EpisodeActionSheetTest.kt` asserting rich header, play action, and contextual resume visibility**
+- [x] **Step 2: Add optional `subtitle: String? = null` to `KAPlayBottomSheetActionRow` in `BottomSheet.kt`**
+- [x] **Step 3: Update `EpisodeWatchedActionSheet.kt` with rich thumbnail header and contextual action rows**
+- [x] **Step 4: Verify test passes on CI (GREEN)** (Verified on CI run `42082989662`)
+- [x] **Step 5: Commit** (`9b015236`, `c5cfb7b6`)
 
 ---
 
@@ -57,11 +57,11 @@
 - Consumes: `onEpisodeLongPress` (opens episode sheet)
 - Produces: Three-dots button `⋮` on `EpisodeHorizontalCard` and `EpisodeListCard` invoking episode action sheet
 
-- [ ] **Step 1: Write test asserting three-dots button exists on card and triggers episode actions**
-- [ ] **Step 2: Add three-dots button to `EpisodeHorizontalCard` and `EpisodeListCard`**
-- [ ] **Step 3: Wire progress entry and play actions in `MetaDetailsScreen.kt`**
-- [ ] **Step 4: Verify test passes on CI (GREEN)**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write test asserting three-dots button exists on card and triggers episode actions**
+- [x] **Step 2: Add three-dots button to `EpisodeHorizontalCard` and `EpisodeListCard`**
+- [x] **Step 3: Wire progress entry and play actions in `MetaDetailsScreen.kt`**
+- [x] **Step 4: Verify test passes on CI (GREEN)** (Verified on CI run `42082989662`)
+- [x] **Step 5: Commit** (`9b015236`, `c5cfb7b6`)
 
 ---
 
@@ -76,3 +76,10 @@
 - [ ] **Step 3: Push `build-tomato-cmp` to `buildci`**
 - [ ] **Step 4: Dispatch `android-release.yml` with `mode=publish -f android_only=true`**
 - [ ] **Step 5: Verify GitHub Release `0.9.27` assets and in-app updater endpoint**
+
+---
+
+## Completion Ledger
+
+- **Task 1 GREEN:** Implemented rich episode header (16:9 thumbnail, episode title, season/episode code, duration) and contextual actions (Play from beginning, Resume when progress exists, Toggle watched, Mark previous, Mark season, and View synopsis).
+- **Task 2 GREEN:** Added three-dots (`⋮`) button triggers to both `EpisodeHorizontalCard` and `EpisodeListCard` and wired actions in `MetaDetailsScreen.kt`. CI run `42082989662` passed `compileFullDebugKotlin` and host unit tests with 0 failures.
