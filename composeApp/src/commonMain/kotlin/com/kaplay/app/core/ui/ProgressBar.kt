@@ -17,8 +17,8 @@ fun KAPlayProgressBar(
     progress: Float,
     modifier: Modifier = Modifier,
     height: Dp = KAPlayTokens.Space.s4,
-    trackColor: Color = MaterialTheme.kaplay.colors.playerTimelineTrack,
-    fillColor: Color = MaterialTheme.kaplay.colors.playerTimelineFill,
+    trackColor: Color = KAColors.Outline,
+    fillColor: Color = KAColors.Primary,
 ) {
     val tokens = MaterialTheme.kaplay
     val clampedProgress = progress.coerceIn(0f, 1f)

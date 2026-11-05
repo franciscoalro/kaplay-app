@@ -57,15 +57,15 @@ object KAPlayTokens {
         val xxl = Space.s24
         val full = 999.dp
 
-        val card = xxl
-        val compactCard = lg
-        val sheet = xxl
-        val dialog = Space.s28
-        val button = xl
-        val chip = full
-        val poster = lg
+        val card = Space.s10
+        val compactCard = Space.s8
+        val sheet = Space.s16
+        val dialog = Space.s16
+        val button = Space.s10
+        val chip = Space.s8
+        val poster = Space.s8
         val avatar = full
-        val playerPanel = xxl
+        val playerPanel = Space.s16
     }
 
     object Border {

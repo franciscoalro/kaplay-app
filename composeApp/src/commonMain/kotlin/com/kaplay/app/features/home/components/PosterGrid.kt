@@ -42,6 +42,7 @@ internal fun posterGridColumnCountForWidth(screenWidth: Dp): Int =
         screenWidth >= 1200.dp -> 6
         screenWidth >= 1000.dp -> 5
         screenWidth >= 840.dp -> 4
+        screenWidth < 340.dp -> 2
         else -> 3
     }
 
@@ -59,7 +60,7 @@ internal fun PosterGridRow(
 
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.Top,
     ) {
         items.forEach { item ->

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -89,6 +90,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.DeviceLinkAuthRepository
 import com.kaplay.app.core.auth.DeviceLinkAuthState
+import com.kaplay.app.core.ui.KAColors
+import com.kaplay.app.core.ui.KAShapes
 import com.kaplay.app.features.settings.AppBrandWordmark
 import kotlin.math.abs
 import kotlin.math.cos
@@ -152,31 +155,31 @@ internal data class AuthFormMetrics(
 )
 
 internal val MobileAuthFormMetrics = AuthFormMetrics(
-    fieldHeight = 56.dp,
+    fieldHeight = 52.dp,
     fieldHorizontalPadding = 16.dp,
-    iconSize = 19.dp,
+    iconSize = 20.dp,
     passwordIconSize = 20.dp,
-    primaryTop = 22.dp,
-    primaryHeight = 54.dp,
-    toggleTop = 18.dp,
-    dividerTop = 28.dp,
-    secondaryTop = 24.dp,
-    secondaryHeight = 54.dp,
-    fieldBackground = AuthFieldBackgroundMobile,
+    primaryTop = 20.dp,
+    primaryHeight = 48.dp,
+    toggleTop = 16.dp,
+    dividerTop = 24.dp,
+    secondaryTop = 20.dp,
+    secondaryHeight = 48.dp,
+    fieldBackground = KAColors.Surface,
 )
 
 private val LargeAuthFormMetrics = AuthFormMetrics(
-    fieldHeight = 58.dp,
+    fieldHeight = 54.dp,
     fieldHorizontalPadding = 18.dp,
     iconSize = 20.dp,
-    passwordIconSize = 21.dp,
+    passwordIconSize = 20.dp,
     primaryTop = 24.dp,
-    primaryHeight = 56.dp,
+    primaryHeight = 50.dp,
     toggleTop = 18.dp,
-    dividerTop = 30.dp,
-    secondaryTop = 26.dp,
-    secondaryHeight = 56.dp,
-    fieldBackground = AuthFieldBackground,
+    dividerTop = 28.dp,
+    secondaryTop = 24.dp,
+    secondaryHeight = 50.dp,
+    fieldBackground = KAColors.Surface,
 )
 
 private fun largeAuthScale(screenWidth: Dp): Float =
@@ -382,7 +385,7 @@ fun AuthScreen(
                         resetMessageIsError = resetMessageIsError,
                         isResetLoading = isResetLoading,
                         deviceLinkAuthState = deviceLinkAuthState,
-                        deviceLinkEnabled = serverConnectionState.activeServer.capabilities.tvLogin,
+                        deviceLinkEnabled = false,
                         statusBarTop = statusBarTop,
                         onEmailChange = {
                             email = it
@@ -822,29 +825,28 @@ internal fun AuthForm(
                         ),
                     )
                 } else {
-                    Text(
-                        text = stringResource(Res.string.compose_auth_forgot_password),
+                    Box(
                         modifier = Modifier
+                            .heightIn(min = 48.dp)
                             .focusRequester(forgotPasswordFocusRequester)
-                             .onFocusChanged { forgotPasswordFocused = it.isFocused }
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(
-                                width = if (forgotPasswordFocused) 2.dp else 0.dp,
-                                color = AuthAccent,
-                                shape = RoundedCornerShape(8.dp),
-                            )
+                            .onFocusChanged { forgotPasswordFocused = it.isFocused }
                             .clickable(
                                 enabled = authActionsEnabled,
                                 onClick = onForgotPassword,
                             )
-                            .padding(horizontal = 6.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = AuthAccentSoft,
-                            fontSize = (13f * scale).sp,
-                            lineHeight = (18f * scale).sp,
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                    )
+                            .padding(horizontal = 4.dp),
+                        contentAlignment = Alignment.CenterEnd,
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.compose_auth_forgot_password),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = if (forgotPasswordFocused) KAColors.TextPrimary else KAColors.PrimaryLight,
+                                fontSize = (13f * scale).sp,
+                                lineHeight = (18f * scale).sp,
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                        )
+                    }
                 }
             }
         }
@@ -1001,100 +1003,19 @@ private fun AuthTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
-    val shape = RoundedCornerShape(20.dp)
-    var isFocused by remember { mutableStateOf(false) }
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(metrics.fieldHeight)
-            .background(metrics.fieldBackground, shape)
-            .border(
-                width = if (isFocused) 2.dp else 1.dp,
-                color = if (isFocused) AuthAccent else AuthFieldBorder,
-                shape = shape,
-            )
-            .padding(horizontal = metrics.fieldHorizontalPadding),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(metrics.iconSize),
-            tint = AuthTextMuted,
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .onFocusChanged { isFocused = it.hasFocus },
-            singleLine = true,
-            enabled = enabled,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                color = AuthTextPrimary,
-                fontSize = (16f * scale).sp,
-                lineHeight = (22f * scale).sp,
-                fontWeight = FontWeight.Normal,
-            ),
-            cursorBrush = SolidColor(AuthTextPrimary),
-            visualTransformation = if (isPassword && !passwordVisible) {
-                PasswordVisualTransformation()
-            } else {
-                VisualTransformation.None
-            },
-            keyboardOptions = keyboardOptions,
-            keyboardActions = keyboardActions,
-            decorationBox = { innerTextField ->
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    if (value.isEmpty()) {
-                        Text(
-                            text = placeholder,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                color = AuthTextMuted,
-                                fontSize = (16f * scale).sp,
-                                lineHeight = (22f * scale).sp,
-                                fontWeight = FontWeight.Normal,
-                            ),
-                        )
-                    }
-                    innerTextField()
-                }
-            },
-        )
-        if (isPassword) {
-            Spacer(modifier = Modifier.width(12.dp))
-            var visibilityFocused by remember { mutableStateOf(false) }
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .onFocusChanged { visibilityFocused = it.isFocused }
-                    .clip(RoundedCornerShape(16.dp))
-                    .border(
-                        width = if (visibilityFocused) 2.dp else 0.dp,
-                        color = AuthAccent,
-                        shape = RoundedCornerShape(16.dp),
-                    )
-                    .clickable(enabled = enabled, onClick = onPasswordVisibilityToggle),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = if (passwordVisible) Icons.Rounded.VisibilityOff
-                    else Icons.Rounded.Visibility,
-                    contentDescription = stringResource(
-                        if (passwordVisible) Res.string.compose_auth_hide_password
-                        else Res.string.compose_auth_show_password,
-                    ),
-                    modifier = Modifier.size(metrics.passwordIconSize),
-                    tint = AuthTextSecondary,
-                )
-            }
-        }
-    }
+    com.kaplay.app.core.ui.KAInputField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = placeholder,
+        modifier = modifier,
+        icon = icon,
+        isPassword = isPassword,
+        passwordVisible = passwordVisible,
+        onPasswordVisibilityToggle = onPasswordVisibilityToggle,
+        enabled = enabled,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+    )
 }
 
 @Composable
@@ -1107,41 +1028,14 @@ internal fun AuthPrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Button(
+    com.kaplay.app.core.ui.KAPrimaryButton(
+        text = text,
         onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height),
+        modifier = modifier,
         enabled = enabled,
-        shape = RoundedCornerShape(20.dp),
-        contentPadding = PaddingValues(0.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = AuthPrimaryButtonBackground,
-            contentColor = AuthPrimaryButtonText,
-            disabledContainerColor = if (isLoading) {
-                AuthPrimaryButtonBackground
-            } else {
-                AuthPrimaryButtonBackground.copy(alpha = 0.45f)
-            },
-            disabledContentColor = AuthPrimaryButtonText.copy(alpha = 0.55f),
-        ),
-    ) {
-        if (isLoading) {
-            KAPlayLoadingIndicator(
-                modifier = Modifier.size(20.dp * scale),
-                color = AuthPrimaryButtonText,
-            )
-        } else {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontSize = (16f * scale).sp,
-                    lineHeight = (22f * scale).sp,
-                    fontWeight = FontWeight.SemiBold,
-                ),
-            )
-        }
-    }
+        height = height,
+        isLoading = isLoading,
+    )
 }
 
 @Composable
@@ -1182,26 +1076,25 @@ private fun AuthModeToggle(
             transitionSpec = { fadeIn() togetherWith fadeOut() },
             label = "authToggleAction",
         ) { signUp ->
-            Text(
-                text = if (signUp) stringResource(Res.string.compose_auth_sign_in)
-                else stringResource(Res.string.compose_auth_sign_up),
+            Box(
                 modifier = Modifier
+                    .heightIn(min = 48.dp)
                     .onFocusChanged { actionFocused = it.isFocused }
-                    .clip(RoundedCornerShape(8.dp))
-                    .border(
-                        width = if (actionFocused) 2.dp else 0.dp,
-                        color = AuthAccent,
-                        shape = RoundedCornerShape(8.dp),
-                    )
                     .clickable(enabled = enabled, onClick = onToggleAuthMode)
-                    .padding(horizontal = 6.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = AuthTextPrimary,
-                    fontSize = (14f * scale).sp,
-                    lineHeight = (20f * scale).sp,
-                    fontWeight = FontWeight.SemiBold,
-                ),
-            )
+                    .padding(horizontal = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = if (signUp) stringResource(Res.string.compose_auth_sign_in)
+                    else stringResource(Res.string.compose_auth_sign_up),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = if (actionFocused) KAColors.TextPrimary else KAColors.PrimaryLight,
+                        fontSize = (14f * scale).sp,
+                        lineHeight = (20f * scale).sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                )
+            }
         }
     }
 }
@@ -1215,32 +1108,13 @@ internal fun AuthSecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Button(
+    com.kaplay.app.core.ui.KASecondaryButton(
+        text = text,
         onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height),
+        modifier = modifier,
         enabled = enabled,
-        shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(1.dp, AuthSecondaryButtonBorder.copy(alpha = 0.7f)),
-        contentPadding = PaddingValues(0.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = AuthSecondaryButtonBackground,
-            contentColor = AuthTextPrimary,
-            disabledContainerColor = AuthSecondaryButtonBackground.copy(alpha = 0.45f),
-            disabledContentColor = AuthTextPrimary.copy(alpha = 0.55f),
-        ),
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontSize = (15f * scale).sp,
-                lineHeight = (21f * scale).sp,
-                fontWeight = FontWeight.Medium,
-            ),
-            textAlign = TextAlign.Center,
-        )
-    }
+        height = height,
+    )
 }
 
 private fun Modifier.authGradientBackground(largeScreen: Boolean): Modifier = drawWithCache {

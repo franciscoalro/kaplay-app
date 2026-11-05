@@ -2,6 +2,7 @@ package com.kaplay.app.features.auth
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.assertAll
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -131,6 +132,23 @@ class AuthScreenTest {
         )
 
         compose.onNodeWithText("Cancel").assertIsNotEnabled()
+    }
+
+    @Test
+    fun formMetricsMatchDesignSystemV1() {
+        assertEquals(52.dp, MobileAuthFormMetrics.fieldHeight)
+        assertEquals(48.dp, MobileAuthFormMetrics.primaryHeight)
+        assertEquals(48.dp, MobileAuthFormMetrics.secondaryHeight)
+    }
+
+    @Test
+    fun mobileLayoutOmitsDeviceLinkActionByDefault() {
+        setForm(
+            isSignUp = false,
+            deviceLinkEnabled = false,
+        )
+
+        compose.onNodeWithText("Sign In with Link").assertDoesNotExist()
     }
 
     @Test

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
@@ -1266,18 +1267,18 @@ private fun HomeRewardButton(
     val label = homeRewardLabel(requiresAuthentication, rewardState)
     val enabled = homeRewardEnabled(rewardState)
     Surface(
-        modifier = modifier.height(38.dp),
+        modifier = modifier.heightIn(min = 48.dp),
         enabled = enabled,
         onClick = when {
             requiresAuthentication -> onRequestAuthentication
             rewardState.error != null -> AdRewardController::refresh
             else -> AdRewardController::showRewarded
         },
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 5.dp,
-        shadowElevation = 3.dp,
+        shape = com.kaplay.app.core.ui.KAShapes.Button,
+        color = com.kaplay.app.core.ui.KAColors.SurfaceVariant,
+        contentColor = com.kaplay.app.core.ui.KAColors.TextPrimary,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 11.dp),

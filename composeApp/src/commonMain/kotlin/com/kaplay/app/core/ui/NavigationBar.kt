@@ -118,60 +118,30 @@ fun KAPlayNavigationBar(
     compactSize: Boolean = false,
     content: @Composable KAPlayNavigationBarScope.() -> Unit,
 ) {
-    val labelFraction by animateFloatAsState(
-        targetValue = scrollState?.labelVisibility ?: 1f,
-        animationSpec = tween(
-            durationMillis = KAPlayTokens.Motion.sheetEnterMillis,
-            easing = KAPlayTokens.Motion.standard,
-        ),
-        label = "nav_label_alpha",
-    )
+    val bottomInsets = kaplayBottomNavigationBarInsets().asPaddingValues()
 
-    // Dynamic horizontal padding: pill shrinks when labels are hidden — driven by same labelFraction
-    val expandedHorizontalPadding = 28.dp
-    val collapsedHorizontalPadding = 58.dp
-    val horizontalPadding = expandedHorizontalPadding + (collapsedHorizontalPadding - expandedHorizontalPadding) * (1f - labelFraction)
-
-    // Outer container — no background, just safe padding
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(contentPadding),
-        contentAlignment = Alignment.BottomCenter,
+            .background(KAColors.Surface),
     ) {
-        // The floating pill
-        val pillModifier = Modifier
-            .padding(horizontal = horizontalPadding)
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(KAPlayTokens.Radius.full))
-            .then(
-                if (hazeState != null) {
-                    Modifier.hazeEffect(state = hazeState) {
-                        blurRadius = 24.dp
-                    }
-                } else {
-                    Modifier
-                },
-            )
-            .background(Color(0xFF1C1C1E).copy(alpha = if (hazeState != null) 0.55f else 0.82f))
-
-        Box(modifier = pillModifier) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = KAPlayTokens.Space.s6,
-                        vertical = KAPlayTokens.Space.s4,
-                    ),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                KAPlayNavigationBarScopeImpl(
-                    rowScope = this,
-                    labelFraction = labelFraction,
-                    compactSize = compactSize,
-                ).content()
-            }
+        androidx.compose.material3.HorizontalDivider(
+            thickness = 1.dp,
+            color = KAColors.Outline,
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = bottomInsets.calculateBottomPadding())
+                .padding(horizontal = KASpacing.SM, vertical = KASpacing.SM),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            KAPlayNavigationBarScopeImpl(
+                rowScope = this,
+                labelFraction = 1f,
+                compactSize = compactSize,
+            ).content()
         }
     }
 }
@@ -212,8 +182,8 @@ private class KAPlayNavigationBarScopeImpl(
     private val labelFraction: Float,
     private val compactSize: Boolean,
 ) : KAPlayNavigationBarScope {
-    private val iconSize = if (compactSize) 24.dp else 28.dp
-    private val itemVerticalPadding = if (compactSize) 4.dp else KAPlayTokens.Space.s6
+    private val iconSize = if (compactSize) 22.dp else 24.dp
+    private val itemVerticalPadding = if (compactSize) 2.dp else 4.dp
 
     @Composable
     override fun NavItem(
@@ -224,25 +194,15 @@ private class KAPlayNavigationBarScopeImpl(
         modifier: Modifier,
         label: String?,
     ) {
-        val tokens = MaterialTheme.kaplay
-        val palette = MaterialTheme.themePalette
         val iconColor by animateColorAsState(
-            targetValue = if (selected) tokens.colors.accent else tokens.colors.textMuted,
+            targetValue = if (selected) KAColors.Primary else KAColors.TextSecondary,
             label = "nav_icon_color",
-        )
-        // Selected item gets a pill-shaped highlight using accent at low opacity
-        val selectedBgColor by animateColorAsState(
-            targetValue = if (selected) tokens.colors.accent.copy(alpha = KAPlayTokens.Opacity.selected)
-            else Color.Transparent,
-            label = "nav_bg_color",
         )
 
         with(rowScope) {
             Column(
                 modifier = modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(KAPlayTokens.Radius.full))
-                    .background(selectedBgColor)
                     .selectable(
                         selected = selected,
                         enabled = true,
@@ -253,12 +213,10 @@ private class KAPlayNavigationBarScopeImpl(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(
-                    modifier = Modifier
-                        .size(iconSize)
-                        .then(if (selected) Modifier.gradientMask(palette.accentBrush()) else Modifier),
+                    modifier = Modifier.size(iconSize),
                     imageVector = icon,
                     contentDescription = contentDescription,
-                    tint = if (selected) Color.White else iconColor,
+                    tint = iconColor,
                 )
                 NavItemLabel(label = label, labelFraction = labelFraction, iconColor = iconColor, selected = selected, compactSize = compactSize)
             }
@@ -274,24 +232,15 @@ private class KAPlayNavigationBarScopeImpl(
         modifier: Modifier,
         label: String?,
     ) {
-        val tokens = MaterialTheme.kaplay
-        val palette = MaterialTheme.themePalette
         val iconColor by animateColorAsState(
-            targetValue = if (selected) tokens.colors.accent else tokens.colors.textMuted,
+            targetValue = if (selected) KAColors.Primary else KAColors.TextSecondary,
             label = "nav_icon_color",
-        )
-        val selectedBgColor by animateColorAsState(
-            targetValue = if (selected) tokens.colors.accent.copy(alpha = KAPlayTokens.Opacity.selected)
-            else Color.Transparent,
-            label = "nav_bg_color",
         )
 
         with(rowScope) {
             Column(
                 modifier = modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(KAPlayTokens.Radius.full))
-                    .background(selectedBgColor)
                     .selectable(
                         selected = selected,
                         enabled = true,
@@ -302,12 +251,10 @@ private class KAPlayNavigationBarScopeImpl(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(
-                    modifier = Modifier
-                        .size(iconSize)
-                        .then(if (selected) Modifier.gradientMask(palette.accentBrush()) else Modifier),
+                    modifier = Modifier.size(iconSize),
                     painter = painterResource(icon),
                     contentDescription = contentDescription,
-                    tint = if (selected) Color.White else iconColor,
+                    tint = iconColor,
                 )
                 NavItemLabel(label = label, labelFraction = labelFraction, iconColor = iconColor, selected = selected, compactSize = compactSize)
             }
@@ -322,14 +269,8 @@ private class KAPlayNavigationBarScopeImpl(
         label: String?,
         content: @Composable () -> Unit,
     ) {
-        val tokens = MaterialTheme.kaplay
-        val selectedBgColor by animateColorAsState(
-            targetValue = if (selected) tokens.colors.accent.copy(alpha = KAPlayTokens.Opacity.selected)
-            else Color.Transparent,
-            label = "nav_bg_color",
-        )
         val iconColor by animateColorAsState(
-            targetValue = if (selected) tokens.colors.accent else tokens.colors.textMuted,
+            targetValue = if (selected) KAColors.Primary else KAColors.TextSecondary,
             label = "nav_icon_color",
         )
 
@@ -337,8 +278,6 @@ private class KAPlayNavigationBarScopeImpl(
             Column(
                 modifier = modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(KAPlayTokens.Radius.full))
-                    .background(selectedBgColor)
                     .selectable(
                         selected = selected,
                         enabled = true,
@@ -398,18 +337,22 @@ fun KAPlayClassicNavigationBar(
     modifier: Modifier = Modifier,
     content: @Composable KAPlayNavigationBarScope.() -> Unit,
 ) {
-    val tokens = MaterialTheme.kaplay
-    Column(modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(KAColors.Surface),
+    ) {
         androidx.compose.material3.HorizontalDivider(
-            thickness = KAPlayTokens.Space.hairline,
-            color = tokens.colors.borderDefault,
+            thickness = 1.dp,
+            color = KAColors.Outline,
         )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(kaplayBottomNavigationBarInsets().asPaddingValues())
-                .padding(horizontal = KAPlayTokens.Space.s4, vertical = kaplayBottomNavigationExtraVerticalPadding),
-            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap, Alignment.CenterHorizontally),
+                .padding(horizontal = KASpacing.SM, vertical = kaplayBottomNavigationExtraVerticalPadding),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             KAPlayClassicNavigationBarScopeImpl(this).content()
         }
@@ -429,31 +372,25 @@ private class KAPlayClassicNavigationBarScopeImpl(
         modifier: Modifier,
         label: String?,
     ) {
-        val tokens = MaterialTheme.kaplay
-        val palette = MaterialTheme.themePalette
         val iconColor by animateColorAsState(
-            targetValue = if (selected) tokens.colors.accent else tokens.colors.textMuted,
+            targetValue = if (selected) KAColors.Primary else KAColors.TextSecondary,
             label = "classic_nav_icon_color",
         )
         with(rowScope) {
             Icon(
                 modifier = modifier
-                    .widthIn(max = tokens.components.navItemMaxWidth)
-                    .fillMaxWidth()
                     .weight(1f, fill = false)
-                    .clip(tokens.components.navItemShape)
                     .selectable(
                         selected = selected,
                         enabled = true,
                         role = Role.Tab,
                         onClick = onClick,
                     )
-                    .padding(KAPlayTokens.Space.s10)
-                    .size(tokens.components.navIconSize)
-                    .then(if (selected) Modifier.gradientMask(palette.accentBrush()) else Modifier),
+                    .padding(KASpacing.SM)
+                    .size(24.dp),
                 imageVector = icon,
                 contentDescription = contentDescription,
-                tint = if (selected) Color.White else iconColor,
+                tint = iconColor,
             )
         }
     }
@@ -467,31 +404,25 @@ private class KAPlayClassicNavigationBarScopeImpl(
         modifier: Modifier,
         label: String?,
     ) {
-        val tokens = MaterialTheme.kaplay
-        val palette = MaterialTheme.themePalette
         val iconColor by animateColorAsState(
-            targetValue = if (selected) tokens.colors.accent else tokens.colors.textMuted,
+            targetValue = if (selected) KAColors.Primary else KAColors.TextSecondary,
             label = "classic_nav_icon_color",
         )
         with(rowScope) {
             Icon(
                 modifier = modifier
-                    .widthIn(max = tokens.components.navItemMaxWidth)
-                    .fillMaxWidth()
                     .weight(1f, fill = false)
-                    .clip(tokens.components.navItemShape)
                     .selectable(
                         selected = selected,
                         enabled = true,
                         role = Role.Tab,
                         onClick = onClick,
                     )
-                    .padding(KAPlayTokens.Space.s10)
-                    .size(tokens.components.navIconSize)
-                    .then(if (selected) Modifier.gradientMask(palette.accentBrush()) else Modifier),
+                    .padding(KASpacing.SM)
+                    .size(24.dp),
                 painter = painterResource(icon),
                 contentDescription = contentDescription,
-                tint = if (selected) Color.White else iconColor,
+                tint = iconColor,
             )
         }
     }
