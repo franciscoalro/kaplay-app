@@ -91,6 +91,7 @@ import com.kaplay.app.features.home.components.posterGridColumnCountForWidth
 import com.kaplay.app.features.profiles.ProfileRepository
 import com.kaplay.app.features.tracking.TrackingRefreshIntent
 import com.kaplay.app.features.watched.WatchedRepository
+import com.kaplay.app.features.watchprogress.WatchProgressRepository
 import com.kaplay.app.features.watching.application.WatchingState
 import com.kaplay.app.core.poster.CustomPosterScreen
 import com.kaplay.app.core.poster.CustomPosterUrlRepository
@@ -136,6 +137,10 @@ fun LibraryScreen(
     val watchedUiState by remember {
         WatchedRepository.ensureLoaded()
         WatchedRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val watchProgressUiState by remember {
+        WatchProgressRepository.ensureLoaded()
+        WatchProgressRepository.uiState
     }.collectAsStateWithLifecycle()
     val fullyWatchedSeriesKeys by WatchedRepository.fullyWatchedSeriesKeys.collectAsStateWithLifecycle()
     val displaySettings by remember {
@@ -200,7 +205,10 @@ fun LibraryScreen(
         when (selectedCategory) {
             LibraryCategoryFilter.FAVORITES -> sortedSections
             LibraryCategoryFilter.IN_PROGRESS -> {
-                val inProgressIds = watchProgressUiState.entries.map { it.parentMetaId }.toSet()
+                val inProgressIds = watchProgressUiState.entries
+                    .filter { it.lastPositionMs > 0 && !it.isCompleted }
+                    .map { it.parentMetaId }
+                    .toSet()
                 sortedSections.map { section ->
                     section.copy(items = section.items.filter { it.id in inProgressIds })
                 }.filter { it.items.isNotEmpty() }
