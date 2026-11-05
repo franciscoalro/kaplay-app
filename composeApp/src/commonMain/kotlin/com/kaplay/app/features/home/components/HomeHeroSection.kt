@@ -84,9 +84,9 @@ private const val HERO_SCROLL_MAX_SCALE = 1.3f
 private const val HERO_SWIPE_THRESHOLD_FRACTION = 0.16f
 private const val HERO_SWIPE_VELOCITY_THRESHOLD = 300f
 private const val HERO_AUTO_SCROLL_INTERVAL_MS = 8_000L
-private const val MOBILE_HERO_VIEWPORT_RATIO = 0.45f
-private const val MOBILE_HERO_MIN_HEIGHT_DP = 200f
-private const val MOBILE_HERO_MAX_HEIGHT_DP = 260f
+internal const val MOBILE_HERO_VIEWPORT_RATIO = 0.48f
+internal const val MOBILE_HERO_MIN_HEIGHT_DP = 260f
+internal const val MOBILE_HERO_MAX_HEIGHT_DP = 320f
 
 internal data class HomeHeroLayout(
     val isTablet: Boolean,
@@ -540,7 +540,7 @@ internal fun homeHeroLayout(
         )
     }
 
-private fun mobileHeroHeight(
+internal fun mobileHeroHeight(
     maxWidthDp: Float,
     viewportHeightDp: Float?,
     mobileBelowSectionHeightHintDp: Float?,
