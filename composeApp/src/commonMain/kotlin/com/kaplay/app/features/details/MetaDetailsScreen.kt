@@ -1394,6 +1394,14 @@ fun MetaDetailsScreen(
                                     progressByVideoId = progressByVideoId,
                                 )
                             }
+                            val episodeVideoId = buildPlaybackVideoId(
+                                parentMetaId = meta.id,
+                                seasonNumber = selectedEpisode.season,
+                                episodeNumber = selectedEpisode.episode,
+                                fallbackVideoId = selectedEpisode.id,
+                            )
+                            val episodeProgress = progressByVideoId[episodeVideoId]
+
                             EpisodeWatchedActionSheet(
                                 episode = selectedEpisode,
                                 seasonLabel = selectedEpisode.season?.let {
@@ -1403,7 +1411,14 @@ fun MetaDetailsScreen(
                                 canMarkPreviousEpisodes = previousEpisodes.isNotEmpty(),
                                 arePreviousEpisodesWatched = arePreviousEpisodesWatched,
                                 isSeasonWatched = isSeasonWatched,
+                                progressEntry = episodeProgress,
                                 onDismiss = { selectedEpisodeForActions = null },
+                                onPlayFromBeginning = {
+                                    onEpisodeClick(selectedEpisode)
+                                },
+                                onResumeEpisode = {
+                                    onEpisodeClick(selectedEpisode)
+                                },
                                 onToggleWatched = {
                                     WatchingActions.toggleEpisodeWatched(
                                         meta = meta,

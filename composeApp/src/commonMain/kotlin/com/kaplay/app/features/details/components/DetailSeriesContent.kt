@@ -26,6 +26,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.semantics.Role
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -967,12 +970,34 @@ private fun EpisodeHorizontalCard(
                 ),
         )
 
-        KAPlayAnimatedWatchedBadge(
-            isVisible = isWatched,
+        Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(metrics.contentPadding),
-        )
+                .padding(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            KAPlayAnimatedWatchedBadge(
+                isVisible = isWatched,
+            )
+            if (onLongPress != null) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .clickable(role = Role.Button, onClick = onLongPress),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.MoreVert,
+                        contentDescription = "Ações do episódio",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
 
         Column(
             modifier = Modifier
@@ -1435,6 +1460,25 @@ private fun EpisodeListCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = sizing.overviewMaxLines,
                         overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            if (onLongPress != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .padding(end = 8.dp)
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .clickable(role = Role.Button, onClick = onLongPress),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.MoreVert,
+                        contentDescription = "Ações do episódio",
+                        tint = KAColors.TextSecondary,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
