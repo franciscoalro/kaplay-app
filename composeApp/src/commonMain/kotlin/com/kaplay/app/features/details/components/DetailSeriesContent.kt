@@ -204,6 +204,8 @@ fun DetailSeriesContent(
                 currentSeason = currentSeason,
                 sizing = sizing,
                 horizontalScrollPadding = horizontalScrollPadding,
+                isTablet = containerWidthDp >= 600f,
+                inlineHeader = shouldUseInlineSeasonHeader(containerWidthDp),
                 onSelect = { selectedSeasonOverride = it },
                 onLongPress = onSeasonLongPress,
             )
