@@ -39,4 +39,5 @@ jobs:
             --tests 'com.kaplay.app.features.details.DetailVerticalEpisodeListTest' \
             --tests 'com.kaplay.app.features.details.DetailEpisodeListCardTest' \
             --tests 'com.kaplay.app.features.details.DetailHeroCompactTest' \
+            --tests 'com.kaplay.app.features.details.RatingsVisibilityTest' \
             --no-daemon --no-parallel --max-workers=2 --stacktrace
