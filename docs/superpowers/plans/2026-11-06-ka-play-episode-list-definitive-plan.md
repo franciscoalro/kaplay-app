@@ -42,12 +42,12 @@
 - Consumes: existing `SeasonViewMode`, `MetaEpisodeCardStyle`, and `isTablet` policy.
 - Produces: `internal fun resolveEffectiveSeasonViewMode(isTablet: Boolean, configuredMode: SeasonViewMode): SeasonViewMode`, returning `Text` on phones and the stored mode on tablets.
 
-- [ ] **Step 1: Add a failing test** named `phoneAlwaysUsesTextSeasonSelectorEvenWhenPostersAreStored`; assert `resolveEffectiveSeasonViewMode(false, SeasonViewMode.Posters) == SeasonViewMode.Text`.
-- [ ] **Step 2: Run the focused host test and observe the expected unresolved-function failure.**
-- [ ] **Step 3: Implement the pure helper and use it in `SeriesSeasonSelector` with the existing tablet detection from `BoxWithConstraints`.**
-- [ ] **Step 4: Ensure the phone path renders only `KASeasonDropdown`; preserve the configured poster/text mode on tablets.**
-- [ ] **Step 5: Run the focused test and the existing details host tests; expect all to pass.**
-- [ ] **Step 6: Commit with `fix(details): force compact season dropdown on phones`.**
+- [x] **Step 1: Add a failing test** named `phoneAlwaysUsesTextSeasonSelectorEvenWhenPostersAreStored`; assert `resolveEffectiveSeasonViewMode(false, SeasonViewMode.Posters) == SeasonViewMode.Text`.
+- [x] **Step 2: Run the focused host test and observe the expected unresolved-function failure** (CI run `42221382736`).
+- [x] **Step 3: Implement the pure helper and use it in `SeriesSeasonSelector` with the existing width-based tablet detection from `BoxWithConstraints`.**
+- [x] **Step 4: Ensure the phone path renders only `KASeasonDropdown`; preserve the configured poster/text mode on tablets.**
+- [x] **Step 5: Run the focused test and the existing details host tests; all passed in CI run `42223252652`.**
+- [x] **Step 6: Commit with `fix(details): force compact season dropdown on phones`** (`6e143074`, call-site follow-up `15348a6a`).
 
 ---
 
@@ -61,12 +61,12 @@
 - Consumes: `DetailSeriesListHeader`, `KASeasonDropdown`, `SeriesContentSizing`.
 - Produces: compact header policy `internal fun shouldUseInlineSeasonHeader(maxWidthDp: Float): Boolean`, true at or above 360 dp and false below it.
 
-- [ ] **Step 1: Add failing tests** for inline header at 390 dp and stacked header below 360 dp.
-- [ ] **Step 2: Run the focused tests and observe the expected unresolved-function failure.**
-- [ ] **Step 3: Implement the pure width policy and update `DetailSeriesListHeader` to place the episode title/dropdown in one row when the policy is true, while allowing a two-row fallback for narrow widths.**
-- [ ] **Step 4: Keep the existing season selection callback and do not start playback from selector changes.**
-- [ ] **Step 5: Run focused details host tests and verify they pass.**
-- [ ] **Step 6: Commit with `feat(details): compact inline season header for phones`.**
+- [x] **Step 1: Add failing tests** for inline header at 390 dp and stacked header below 360 dp.
+- [x] **Step 2: Run the focused tests and observe the expected unresolved-function failure** (CI run `42221382736`).
+- [x] **Step 3: Implement the pure width policy and update `DetailSeriesListHeader`/`SeriesSeasonSelector` to place the season title/dropdown in one row when the policy is true, with a stacked fallback below 360 dp.**
+- [x] **Step 4: Keep the existing season selection callback and do not start playback from selector changes.**
+- [x] **Step 5: Run focused details host tests and verify they pass** (CI run `42223252652`).
+- [x] **Step 6: Commit with `feat(details): compact inline season header for phones`** (implemented in `6e143074`, fixed call site in `15348a6a`).
 
 ---
 
