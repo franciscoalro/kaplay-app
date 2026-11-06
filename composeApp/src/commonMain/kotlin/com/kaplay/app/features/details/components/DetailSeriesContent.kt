@@ -298,6 +298,16 @@ fun DetailSeriesContent(
 internal fun countUniqueSeasonEpisodes(episodes: List<MetaVideo>): Int =
     episodes.distinctBy { Triple(it.season, it.episode, it.id) }.size
 
+internal fun buildEpisodeMetadataLine(
+    runtimeLabel: String?,
+    ratingLabel: String?,
+    formattedDate: String?,
+): String = buildList {
+    runtimeLabel?.let(::add)
+    ratingLabel?.let { "★ $it" }?.let(::add)
+    formattedDate?.let(::add)
+}.joinToString(" • ")
+
 internal fun resolveEffectiveSeasonViewMode(
     isTablet: Boolean,
     configuredMode: SeasonViewMode,
@@ -1368,10 +1378,10 @@ private fun EpisodeListCard(
             .fillMaxWidth()
             .heightIn(min = 96.dp)
             .clip(cardShape)
-            .background(KAColors.SurfaceVariant)
+            .background(KAColors.Surface)
             .border(
                 width = if (isCardFocused) 2.dp else 1.dp,
-                color = if (isCardFocused) Color.White else KAColors.Outline,
+                color = if (isCardFocused) Color.White else KAColors.Outline.copy(alpha = 0.35f),
                 shape = cardShape,
             )
             .onFocusChanged { isCardFocused = it.isFocused }
@@ -1464,15 +1474,11 @@ private fun EpisodeListCard(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            val metaLine = buildList {
-                localizedSeasonEpisodeCode(
-                    seasonNumber = video.season,
-                    episodeNumber = video.episode,
-                )?.takeIf(String::isNotBlank)?.let(::add)
-                runtimeLabel?.let(::add)
-                ratingLabel?.let { "★ $it" }?.let(::add)
-                formattedDate?.let(::add)
-            }.joinToString(" \u2022 ")
+            val metaLine = buildEpisodeMetadataLine(
+                runtimeLabel = runtimeLabel,
+                ratingLabel = ratingLabel,
+                formattedDate = formattedDate,
+            )
 
             if (metaLine.isNotBlank()) {
                 Text(
