@@ -9,6 +9,7 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.performTouchInput
 import com.kaplay.app.features.details.components.DetailSeriesListEpisode
 import com.kaplay.app.features.details.components.KASeasonDropdown
+import com.kaplay.app.features.details.components.buildEpisodeMetadataLine
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -50,6 +51,31 @@ class DetailEpisodeListCardTest {
 
         compose.onNodeWithText("Season 1").performTouchInput { longClick() }
         compose.runOnIdle { assertEquals(true, longPressed) }
+    }
+
+    @Test
+    fun metadataLineDoesNotRepeatSeasonEpisodeCode() {
+        val line = buildEpisodeMetadataLine(
+            runtimeLabel = "23 min",
+            ratingLabel = "8.1",
+            formattedDate = "2024",
+        )
+
+        assertEquals("23 min • ★ 8.1 • 2024", line)
+        assertEquals(false, line.contains("S1"))
+        assertEquals(false, line.contains("E01"))
+    }
+
+    @Test
+    fun metadataLineKeepsRuntimeRatingAndDate() {
+        assertEquals(
+            "23 min • 2024",
+            buildEpisodeMetadataLine(
+                runtimeLabel = "23 min",
+                ratingLabel = null,
+                formattedDate = "2024",
+            ),
+        )
     }
 
     @Test
