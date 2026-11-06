@@ -675,12 +675,20 @@ fun MetaDetailsScreen(
                     seriesActionVideo?.id?.takeIf { it.isNotBlank() } ?: action.videoId
                 }
                 val hasEpisodes = meta.videos.any { it.season != null || it.episode != null }
+                val effectiveEpisodeCardStyle = resolveEffectiveEpisodeCardStyle(
+                    isTablet = isTablet,
+                    configuredStyle = metaScreenSettingsUiState.episodeCardStyle,
+                )
+                val effectiveSettings = remember(metaScreenSettingsUiState, effectiveEpisodeCardStyle) {
+                    metaScreenSettingsUiState.copy(episodeCardStyle = effectiveEpisodeCardStyle)
+                }
                 val episodeListGroupedEpisodes = remember(
+                    meta,
                     meta.videos,
                     meta.type,
-                    metaScreenSettingsUiState.episodeCardStyle,
+                    effectiveEpisodeCardStyle,
                 ) {
-                    if (metaScreenSettingsUiState.episodeCardStyle == MetaEpisodeCardStyle.List) {
+                    if (effectiveEpisodeCardStyle == MetaEpisodeCardStyle.List) {
                         meta.groupedEpisodesForDisplay()
                     } else {
                         emptyMap()
@@ -1220,11 +1228,11 @@ fun MetaDetailsScreen(
 
                                 configuredMetaSectionItems(
                                     settings = if (useTabletLayout) {
-                                        metaScreenSettingsUiState.copy(
-                                            items = metaScreenSettingsUiState.items.filterNot { it.key in tabletHeroSectionKeys },
+                                        effectiveSettings.copy(
+                                            items = effectiveSettings.items.filterNot { it.key in tabletHeroSectionKeys },
                                         )
                                     } else {
-                                        metaScreenSettingsUiState
+                                        effectiveSettings
                                     },
                                     isMdbListActive = mdbListSettings.isActive,
                                     meta = meta,
