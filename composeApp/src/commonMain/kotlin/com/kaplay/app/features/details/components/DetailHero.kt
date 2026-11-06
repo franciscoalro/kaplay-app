@@ -58,6 +58,8 @@ import org.jetbrains.compose.resources.stringResource
 import com.kaplay.app.core.ui.LocalVerticalBarPadding
 import com.kaplay.app.core.ui.verticalBarWidth
 
+internal const val DETAIL_HERO_ARTWORK_SCALE: Float = 1f
+
 @Composable
 fun DetailHero(
     meta: MetaDetails,
@@ -126,8 +128,8 @@ fun DetailHero(
                             .heroStretchZoom(stretchPx)
                             .graphicsLayer {
                                 translationY = scrollOffset() * 0.5f
-                                scaleX = 1.08f
-                                scaleY = 1.08f
+                                scaleX = DETAIL_HERO_ARTWORK_SCALE
+                                scaleY = DETAIL_HERO_ARTWORK_SCALE
                         },
                         alignment = if (isTablet) Alignment.TopCenter else Alignment.Center,
                         contentScale = ContentScale.Crop,
@@ -159,8 +161,8 @@ fun DetailHero(
                             .graphicsLayer {
                                 alpha = trailerAlpha
                                 translationY = scrollOffset() * 0.5f
-                                scaleX = 1.08f
-                                scaleY = 1.08f
+                                scaleX = DETAIL_HERO_ARTWORK_SCALE
+                                scaleY = DETAIL_HERO_ARTWORK_SCALE
                             },
                         onReady = onHeroTrailerReady,
                         onEnded = onHeroTrailerEnded,
@@ -207,6 +209,20 @@ fun DetailHero(
                         )
                     }
                 }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0.00f to Color.Black.copy(alpha = 0.22f),
+                                    0.24f to Color.Transparent,
+                                    1.00f to Color.Transparent,
+                                ),
+                            ),
+                        ),
+                )
 
                 Box(
                     modifier = Modifier
