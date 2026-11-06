@@ -38,11 +38,11 @@
 - Consumes: `isTablet: Boolean`, `metaScreenSettingsUiState.episodeCardStyle`
 - Produces: `effectiveEpisodeCardStyle` (returning `List` when `!isTablet`), `effectiveSettings` passed to `configuredMetaSectionItems` and `episodeListGroupedEpisodes`
 
-- [ ] **Step 1: Write unit test in `DetailVerticalEpisodeListTest.kt` asserting effective card style is List on smartphones**
-- [ ] **Step 2: Update `MetaScreenSettingsRepository.kt` default `episodeCardStyle` to `MetaEpisodeCardStyle.List`**
-- [ ] **Step 3: Update `MetaDetailsScreen.kt` to derive `effectiveEpisodeCardStyle` and pass `effectiveSettings`**
-- [ ] **Step 4: Verify test passes on CI (GREEN)**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write unit test in `DetailVerticalEpisodeListTest.kt` asserting effective card style is List on smartphones**
+- [x] **Step 2: Update `MetaScreenSettingsRepository.kt` default `episodeCardStyle` to `MetaEpisodeCardStyle.List`**
+- [x] **Step 3: Update `MetaDetailsScreen.kt` to derive `effectiveEpisodeCardStyle` and pass `effectiveSettings`**
+- [x] **Step 4: Verify test passes on CI (GREEN)** (Verified on CI run `42149706182`)
+- [x] **Step 5: Commit** (`5c67db8f`, `4107fea4`)
 
 ---
 
@@ -56,10 +56,10 @@
 - Consumes: `MetaVideo`, `WatchProgressEntry`, `onEpisodeClick`, `onEpisodeLongPress`
 - Produces: `EpisodeListCard` with 96 dp min height, 128 dp 16:9 thumbnail, 14 sp title, 12 sp meta, and 48 dp options button
 
-- [ ] **Step 1: Write test in `DetailEpisodeListCardTest.kt` asserting card hierarchy and 16:9 thumbnail structure**
-- [ ] **Step 2: Refactor `EpisodeListCard` in `DetailSeriesContent.kt` to compact 16:9 row layout**
-- [ ] **Step 3: Verify test passes on CI (GREEN)**
-- [ ] **Step 4: Commit**
+- [x] **Step 1: Write test in `DetailEpisodeListCardTest.kt` asserting card hierarchy and 16:9 thumbnail structure**
+- [x] **Step 2: Refactor `EpisodeListCard` in `DetailSeriesContent.kt` to compact 16:9 row layout**
+- [x] **Step 3: Verify test passes on CI (GREEN)** (Verified on CI run `42149706182`)
+- [x] **Step 4: Commit** (`5c67db8f`, `4107fea4`)
 
 ---
 
@@ -68,7 +68,14 @@
 **Files:**
 - Modify: `docs/superpowers/plans/2026-11-05-ka-play-vertical-episodes-plan.md`
 
-- [ ] **Step 1: Run full CI test suite on GitHub Actions (`compileFullDebugKotlin` + host tests)**
+- [x] **Step 1: Run full CI test suite on GitHub Actions (`compileFullDebugKotlin` + host tests)** (Verified on CI run `42149706182`)
 - [ ] **Step 2: Trigger `ka-play-build-only.yml` to build Full Debug APK (`com.kaplay.app.debug`)**
 - [ ] **Step 3: Collect APK SHA-256 and metadata without publishing release**
 - [ ] **Step 4: Document completion ledger in plan and report evidence**
+
+---
+
+## Completion Ledger
+
+- **Task 1 GREEN:** Configured `effectiveEpisodeCardStyle` to select `MetaEpisodeCardStyle.List` on mobile phones and preserve configured style on tablets. Tested in `DetailVerticalEpisodeListTest.kt`.
+- **Task 2 GREEN:** Refactored `EpisodeListCard` to a compact 16:9 row layout (min 96 dp height, 128 dp 16:9 thumbnail, 14 sp title, 12 sp meta, 48 dp three-dots options button). Tested in `DetailEpisodeListCardTest.kt`. CI run `42149706182` passed `compileFullDebugKotlin` in 7m23s and Android host tests with 0 failures.
