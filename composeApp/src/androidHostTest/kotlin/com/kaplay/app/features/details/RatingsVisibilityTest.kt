@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import com.kaplay.app.core.ui.KAPlayTheme
 import com.kaplay.app.features.details.components.DetailMetaInfo
 import com.kaplay.app.features.details.components.DetailSeriesContent
+import com.kaplay.app.features.watchprogress.buildPlaybackVideoId
 import com.kaplay.app.features.details.components.DetailSeriesListEpisode
 import com.kaplay.app.features.mdblist.MdbListMetadataService.PROVIDER_TMDB
 import com.kaplay.app.features.watched.watchedItemKeys
@@ -125,7 +126,13 @@ class RatingsVisibilityTest {
             compose.onNodeWithText("6.2").assertDoesNotExist()
 
             compose.runOnIdle {
-                progress.value = mapOf(episode.id to WatchProgressEntry(
+                progress.value = mapOf(
+                    buildPlaybackVideoId(
+                        parentMetaId = meta.id,
+                        seasonNumber = episode.season,
+                        episodeNumber = episode.episode,
+                        fallbackVideoId = episode.id,
+                    ) to WatchProgressEntry(
                     contentType = meta.type,
                     parentMetaId = meta.id,
                     parentMetaType = meta.type,
