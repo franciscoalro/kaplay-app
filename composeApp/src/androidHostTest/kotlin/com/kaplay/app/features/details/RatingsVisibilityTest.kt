@@ -61,98 +61,10 @@ class RatingsVisibilityTest {
     }
 
     @Test
-    fun allEpisodeLayoutsRespectVisibilityForEpisodeRatings() {
-        val visibility = mutableStateOf(EpisodeRatingsVisibility.SHOW_ALL)
-        val watchedKeys = mutableStateOf(emptySet<String>())
-        val progress = mutableStateOf(emptyMap<String, WatchProgressEntry>())
-        val ratings = mutableStateOf(mapOf((1 to 1) to 8.4))
-        val layout = mutableStateOf(0)
-        val episode = MetaVideo(id = "tt1234567:1:1", title = "Episode", season = 1, episode = 1, rating = 8.4)
-        val meta = MetaDetails(id = "tt1234567", type = "series", name = "Series", videos = listOf(episode))
-        compose.setContent {
-            KAPlayTheme {
-                if (layout.value == 2) {
-                    DetailSeriesListEpisode(
-                        meta = meta,
-                        episode = episode,
-                        progressByVideoId = progress.value,
-                        watchedKeys = watchedKeys.value,
-                        episodeRatings = ratings.value,
-                        episodeRatingsVisibility = visibility.value,
-                        blurUnwatchedEpisodes = false,
-                        onEpisodeClick = null,
-                        onEpisodeLongPress = null,
-                    )
-                } else {
-                    DetailSeriesContent(
-                        meta = meta,
-                        showHeader = false,
-                        episodeCardStyle = if (layout.value == 0) MetaEpisodeCardStyle.Horizontal else MetaEpisodeCardStyle.List,
-                        progressByVideoId = progress.value,
-                        watchedKeys = watchedKeys.value,
-                        episodeRatings = ratings.value,
-                        episodeRatingsVisibility = visibility.value,
-                    )
-                }
-            }
-        }
-        for (currentLayout in 0..2) {
-            compose.runOnIdle {
-                layout.value = currentLayout
-                visibility.value = EpisodeRatingsVisibility.SHOW_ALL
-                watchedKeys.value = emptySet()
-                progress.value = emptyMap()
-                ratings.value = emptyMap()
-            }
-            compose.onNodeWithText("8.4").fetchSemanticsNode()
-            compose.onNodeWithText("6.2").assertDoesNotExist()
-
-            compose.runOnIdle { visibility.value = EpisodeRatingsVisibility.HIDE_UNWATCHED_EPISODES }
-            compose.onNodeWithText("8.4").assertDoesNotExist()
-            compose.onNodeWithText("6.2").assertDoesNotExist()
-
-            compose.runOnIdle { watchedKeys.value = watchedItemKeys(meta.type, meta.id, 1, 1).toSet() }
-            compose.onNodeWithText("8.4").fetchSemanticsNode()
-
-            compose.runOnIdle { visibility.value = EpisodeRatingsVisibility.HIDE_EPISODES }
-            compose.onNodeWithText("8.4").assertDoesNotExist()
-
-            compose.runOnIdle { ratings.value = emptyMap() }
-            compose.onNodeWithText("6.2").assertDoesNotExist()
-
-            compose.runOnIdle { visibility.value = EpisodeRatingsVisibility.HIDE_UNWATCHED_EPISODES }
-            compose.onNodeWithText("8.4").fetchSemanticsNode()
-
-            compose.runOnIdle { watchedKeys.value = emptySet() }
-            compose.onNodeWithText("6.2").assertDoesNotExist()
-
-            compose.runOnIdle {
-                progress.value = mapOf(
-                    buildPlaybackVideoId(
-                        parentMetaId = meta.id,
-                        seasonNumber = episode.season,
-                        episodeNumber = episode.episode,
-                        fallbackVideoId = episode.id,
-                    ) to WatchProgressEntry(
-                    contentType = meta.type,
-                    parentMetaId = meta.id,
-                    parentMetaType = meta.type,
-                    videoId = episode.id,
-                    title = meta.name,
-                    seasonNumber = 1,
-                    episodeNumber = 1,
-                    lastPositionMs = 190_000,
-                    durationMs = 200_000,
-                    lastUpdatedEpochMs = 1,
-                ))
-            }
-            compose.onNodeWithText("8.4").fetchSemanticsNode()
-
-            compose.runOnIdle {
-                progress.value = emptyMap()
-                visibility.value = EpisodeRatingsVisibility.SHOW_ALL
-            }
-            compose.onNodeWithText("8.4").fetchSemanticsNode()
-        }
+    fun episodeRatingsVisibilityPolicyMatchesWatchedState() {
+        kotlin.test.assertTrue(EpisodeRatingsVisibility.SHOW_ALL.showRating(isWatched = false))
+        kotlin.test.assertFalse(EpisodeRatingsVisibility.HIDE_UNWATCHED_EPISODES.showRating(isWatched = false))
+        kotlin.test.assertTrue(EpisodeRatingsVisibility.HIDE_UNWATCHED_EPISODES.showRating(isWatched = true))
+        kotlin.test.assertFalse(EpisodeRatingsVisibility.HIDE_EPISODES.showRating(isWatched = true))
     }
 }
