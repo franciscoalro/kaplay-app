@@ -300,7 +300,7 @@ internal fun resolveEffectiveSeasonViewMode(
     configuredMode: SeasonViewMode,
 ): SeasonViewMode = if (isTablet) configuredMode else SeasonViewMode.Text
 
-internal fun shouldUseInlineSeasonHeader(maxWidthDp: Float): Boolean = maxWidthDp >= 360f
+internal fun shouldUseInlineSeasonHeader(availableWidthDp: Float): Boolean = availableWidthDp >= 360f
 
 @Composable
 internal fun DetailSeriesListHeader(
@@ -309,14 +309,15 @@ internal fun DetailSeriesListHeader(
     seasons: List<Int>,
     currentSeason: Int,
     horizontalScrollPadding: Dp,
+    isTablet: Boolean,
+    availableWidthDp: Float,
     onSeasonSelect: (Int) -> Unit,
     onSeasonLongPress: ((Int) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val sizing = seriesContentSizing(maxWidth.value)
-        val isTablet = maxWidth.value >= 600f
-        val inlineHeader = shouldUseInlineSeasonHeader(maxWidth.value)
+        val inlineHeader = shouldUseInlineSeasonHeader(availableWidthDp)
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             SeriesSeasonSelector(
                 meta = meta,
@@ -416,6 +417,7 @@ private fun SeriesSeasonSelector(
             seasons = seasons,
             selectedSeason = currentSeason,
             onSeasonSelected = onSelect,
+            onLongPress = { onLongPress?.invoke(currentSeason) },
             modifier = Modifier.padding(horizontal = horizontalScrollPadding),
         )
     }
@@ -484,6 +486,7 @@ fun KASeasonDropdown(
     seasons: List<Int>,
     selectedSeason: Int,
     onSeasonSelected: (Int) -> Unit,
+    onLongPress: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -491,14 +494,18 @@ fun KASeasonDropdown(
 
     Box(modifier = modifier) {
         Surface(
-            onClick = { expanded = true },
             color = KAColors.SurfaceVariant,
             shape = RoundedCornerShape(10.dp),
             border = BorderStroke(
                 width = if (isFocused) 2.dp else 1.dp,
                 color = if (isFocused) Color.White else KAColors.Outline,
             ),
-            modifier = Modifier.onFocusChanged { isFocused = it.isFocused },
+            modifier = Modifier
+                .combinedClickable(
+                    onClick = { expanded = true },
+                    onLongClick = { onLongPress?.invoke() },
+                )
+                .onFocusChanged { isFocused = it.isFocused },
         ) {
             Row(
                 modifier = Modifier

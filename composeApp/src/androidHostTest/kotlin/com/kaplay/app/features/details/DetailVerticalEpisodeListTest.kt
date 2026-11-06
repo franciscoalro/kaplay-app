@@ -58,6 +58,7 @@ class DetailVerticalEpisodeListTest {
     @Test
     fun inlineSeasonHeaderFitsStandardPhoneWidth() {
         assertEquals(true, shouldUseInlineSeasonHeader(390f))
+        assertEquals(true, shouldUseInlineSeasonHeader(360f))
         assertEquals(false, shouldUseInlineSeasonHeader(359f))
     }
 
