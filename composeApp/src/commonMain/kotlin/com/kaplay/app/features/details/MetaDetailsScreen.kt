@@ -675,24 +675,12 @@ fun MetaDetailsScreen(
                     seriesActionVideo?.id?.takeIf { it.isNotBlank() } ?: action.videoId
                 }
                 val hasEpisodes = meta.videos.any { it.season != null || it.episode != null }
-                val effectiveEpisodeCardStyle = resolveEffectiveEpisodeCardStyle(
-                    isTablet = isTablet,
-                    configuredStyle = metaScreenSettingsUiState.episodeCardStyle,
-                )
-                val effectiveSettings = remember(metaScreenSettingsUiState, effectiveEpisodeCardStyle) {
-                    metaScreenSettingsUiState.copy(episodeCardStyle = effectiveEpisodeCardStyle)
-                }
                 val episodeListGroupedEpisodes = remember(
                     meta,
                     meta.videos,
                     meta.type,
-                    effectiveEpisodeCardStyle,
                 ) {
-                    if (effectiveEpisodeCardStyle == MetaEpisodeCardStyle.List) {
-                        meta.groupedEpisodesForDisplay()
-                    } else {
-                        emptyMap()
-                    }
+                    meta.groupedEpisodesForDisplay()
                 }
                 val episodeListSeasons = remember(episodeListGroupedEpisodes) {
                     episodeListGroupedEpisodes.keys.sortedBy(::seasonSortKey)
@@ -1042,6 +1030,13 @@ fun MetaDetailsScreen(
                     val colorScheme = MaterialTheme.colorScheme
                     val useTabletLayout = minOf(maxWidth, maxHeight) >= 600.dp
                     val isTablet = useTabletLayout || maxWidth >= 720.dp
+                    val effectiveEpisodeCardStyle = resolveEffectiveEpisodeCardStyle(
+                        isTablet = isTablet,
+                        configuredStyle = metaScreenSettingsUiState.episodeCardStyle,
+                    )
+                    val effectiveSettings = remember(metaScreenSettingsUiState, effectiveEpisodeCardStyle) {
+                        metaScreenSettingsUiState.copy(episodeCardStyle = effectiveEpisodeCardStyle)
+                    }
                     val contentHorizontalPadding = if (isTablet) 32.dp else 18.dp
                     val contentMaxWidth = detailTabletContentMaxWidth(maxWidth, isTablet)
                     val backdropUrl = meta.background ?: meta.poster

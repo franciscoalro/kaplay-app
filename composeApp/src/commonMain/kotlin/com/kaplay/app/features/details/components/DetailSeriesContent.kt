@@ -18,6 +18,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
@@ -1408,7 +1409,7 @@ private fun EpisodeListCard(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .fillMaxWidth()
-                            .padding(horizontal = 6.dp, bottom = 6.dp),
+                            .padding(start = 6.dp, end = 6.dp, bottom = 6.dp),
                         height = 4.dp,
                         trackColor = KAColors.Outline,
                         fillColor = KAColors.Primary,
