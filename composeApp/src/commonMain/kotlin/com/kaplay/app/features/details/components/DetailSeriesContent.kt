@@ -1334,6 +1334,7 @@ private fun EpisodeListCard(
     val formattedDate = remember(video.released) { video.released?.let { formatReleaseDateForDisplay(it) } }
     val runtimeMinutes = video.runtime?.takeIf { it > 0 }
     val runtimeLabel = if (runtimeMinutes != null) formatEpisodeRuntime(runtimeMinutes) else null
+    var isCardFocused by remember { mutableStateOf(false) }
 
     Row(
         modifier = modifier
@@ -1342,10 +1343,11 @@ private fun EpisodeListCard(
             .clip(cardShape)
             .background(KAColors.SurfaceVariant)
             .border(
-                width = 1.dp,
-                color = KAColors.Outline,
+                width = if (isCardFocused) 2.dp else 1.dp,
+                color = if (isCardFocused) Color.White else KAColors.Outline,
                 shape = cardShape,
             )
+            .onFocusChanged { isCardFocused = it.isFocused }
             .combinedClickable(
                 enabled = onClick != null || onLongPress != null,
                 onClick = { onClick?.invoke() },
@@ -1441,6 +1443,7 @@ private fun EpisodeListCard(
                     episodeNumber = video.episode,
                 )?.takeIf(String::isNotBlank)?.let(::add)
                 runtimeLabel?.let(::add)
+                ratingLabel?.let { "★ $it" }?.let(::add)
                 formattedDate?.let(::add)
             }.joinToString(" \u2022 ")
 

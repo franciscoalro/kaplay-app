@@ -133,7 +133,7 @@ private data class StoredMetaScreenSettingsPayload(
     val heroTrailerPlayback: Boolean = false,
     @SerialName("tvStyleLayout")
     val tabLayout: Boolean = false,
-    val episodeCardStyle: String = "horizontal",
+    val episodeCardStyle: String = "list",
     @SerialName("blur_unwatched_episodes")
     val blurUnwatchedEpisodes: Boolean = false,
     @SerialName("poster_transition_enabled")
@@ -262,7 +262,7 @@ object MetaScreenSettingsRepository {
         backgroundMode = MetaScreenBackgroundMode.Normal
         heroTrailerPlayback = false
         tabLayout = false
-        episodeCardStyle = MetaEpisodeCardStyle.Horizontal
+        episodeCardStyle = MetaEpisodeCardStyle.List
         blurUnwatchedEpisodes = false
         posterTransitionEnabled = false
         showOverallRatings = true
@@ -350,7 +350,7 @@ object MetaScreenSettingsRepository {
         backgroundMode = MetaScreenBackgroundMode.Normal
         heroTrailerPlayback = false
         tabLayout = false
-        episodeCardStyle = MetaEpisodeCardStyle.Horizontal
+        episodeCardStyle = MetaEpisodeCardStyle.List
         blurUnwatchedEpisodes = false
         posterTransitionEnabled = false
         showOverallRatings = true
@@ -363,7 +363,7 @@ object MetaScreenSettingsRepository {
         cinematicBackground: Boolean,
         heroTrailerPlayback: Boolean = false,
         tabLayout: Boolean,
-        episodeCardStyle: MetaEpisodeCardStyle = MetaEpisodeCardStyle.Horizontal,
+        episodeCardStyle: MetaEpisodeCardStyle = MetaEpisodeCardStyle.List,
         blurUnwatchedEpisodes: Boolean = false,
         backgroundMode: MetaScreenBackgroundMode? = null,
         posterTransitionEnabled: Boolean = false,
@@ -404,7 +404,7 @@ object MetaScreenSettingsRepository {
         backgroundMode = MetaScreenBackgroundMode.Normal
         heroTrailerPlayback = false
         tabLayout = false
-        episodeCardStyle = MetaEpisodeCardStyle.Horizontal
+        episodeCardStyle = MetaEpisodeCardStyle.List
         blurUnwatchedEpisodes = false
         posterTransitionEnabled = false
         showOverallRatings = true
