@@ -148,19 +148,21 @@ fun DetailHero(
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colorStops = arrayOf(
-                                    0.00f to Color.Black.copy(alpha = 0.22f),
-                                    0.24f to Color.Transparent,
-                                    1.00f to Color.Transparent,
+                if (heroTrailerSourceUrl == null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0.00f to Color.Black.copy(alpha = 0.22f),
+                                        0.24f to Color.Transparent,
+                                        1.00f to Color.Transparent,
+                                    ),
                                 ),
                             ),
-                        ),
-                )
+                    )
+                }
 
                 if (heroTrailerSourceUrl != null) {
                     HeroTrailerPlayerSurface(
@@ -191,6 +193,19 @@ fun DetailHero(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
                                 onClick = onHeroTrailerMuteToggle,
+                            ),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0.00f to Color.Black.copy(alpha = 0.22f),
+                                        0.24f to Color.Transparent,
+                                        1.00f to Color.Transparent,
+                                    ),
+                                ),
                             ),
                     )
                     AnimatedContent(
