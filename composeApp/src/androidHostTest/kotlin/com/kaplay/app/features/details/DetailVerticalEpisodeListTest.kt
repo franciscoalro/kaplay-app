@@ -66,9 +66,9 @@ class DetailVerticalEpisodeListTest {
     @Test
     fun countsOnlyUniqueEpisodesForSelectedSeason() {
         val episodes = listOf(
-            MetaVideo(id = "s1e1", season = 1, episode = 1),
-            MetaVideo(id = "s1e1", season = 1, episode = 1),
-            MetaVideo(id = "s1e2", season = 1, episode = 2),
+            MetaVideo(id = "s1e1", title = "E01", season = 1, episode = 1),
+            MetaVideo(id = "s1e1", title = "E01", season = 1, episode = 1),
+            MetaVideo(id = "s1e2", title = "E02", season = 1, episode = 2),
         )
 
         assertEquals(2, countUniqueSeasonEpisodes(episodes))
@@ -76,10 +76,10 @@ class DetailVerticalEpisodeListTest {
 
     @Test
     fun countChangesWithSelectedSeason() {
-        val seasonOne = listOf(MetaVideo(id = "s1e1", season = 1, episode = 1))
+        val seasonOne = listOf(MetaVideo(id = "s1e1", title = "E01", season = 1, episode = 1))
         val seasonTwo = listOf(
-            MetaVideo(id = "s2e1", season = 2, episode = 1),
-            MetaVideo(id = "s2e2", season = 2, episode = 2),
+            MetaVideo(id = "s2e1", title = "E01", season = 2, episode = 1),
+            MetaVideo(id = "s2e2", title = "E02", season = 2, episode = 2),
         )
 
         assertEquals(1, countUniqueSeasonEpisodes(seasonOne))

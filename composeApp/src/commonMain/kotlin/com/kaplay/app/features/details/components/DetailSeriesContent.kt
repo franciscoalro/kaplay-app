@@ -295,6 +295,9 @@ fun DetailSeriesContent(
     }
 }
 
+internal fun countUniqueSeasonEpisodes(episodes: List<MetaVideo>): Int =
+    episodes.distinctBy { Triple(it.season, it.episode, it.id) }.size
+
 internal fun resolveEffectiveSeasonViewMode(
     isTablet: Boolean,
     configuredMode: SeasonViewMode,
@@ -318,6 +321,7 @@ internal fun DetailSeriesListHeader(
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val sizing = seriesContentSizing(maxWidth.value)
         val inlineHeader = shouldUseInlineSeasonHeader(availableWidthDp)
+        val episodeCount = countUniqueSeasonEpisodes(groupedEpisodes[currentSeason].orEmpty())
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             SeriesSeasonSelector(
                 meta = meta,
@@ -333,11 +337,7 @@ internal fun DetailSeriesListHeader(
             )
             if (seasons.size == 1) {
                 DetailSectionTitle(
-                    title = if (meta.type != "series" && currentSeason <= 0) {
-                        stringResource(Res.string.details_videos)
-                    } else {
-                        currentSeason.label()
-                    },
+                    title = "${stringResource(Res.string.settings_meta_episodes)} ($episodeCount)",
                 )
             }
         }
@@ -431,7 +431,9 @@ private fun SeriesSeasonSelector(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(Res.string.details_seasons),
+                text = "${stringResource(Res.string.settings_meta_episodes)} (${
+                    countUniqueSeasonEpisodes(groupedEpisodes[currentSeason].orEmpty())
+                })",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontSize = sizing.seasonHeaderSize,
                     fontWeight = FontWeight.SemiBold,
