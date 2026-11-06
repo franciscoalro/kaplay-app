@@ -6,32 +6,16 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.kaplay.app.features.details.components.EpisodeWatchedActionSheet
 import com.kaplay.app.features.watchprogress.WatchProgressEntry
-import org.junit.After
-import org.junit.Before
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import java.util.Locale
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class EpisodeActionSheetTest {
-    private lateinit var originalLocale: Locale
-
-    @Before
-    fun forcePortugueseLocale() {
-        originalLocale = Locale.getDefault()
-        Locale.setDefault(Locale("pt", "BR"))
-    }
-
-    @After
-    fun restoreLocale() {
-        Locale.setDefault(originalLocale)
-    }
-
     @get:Rule
     val compose = createComposeRule()
 
@@ -64,7 +48,7 @@ class EpisodeActionSheetTest {
         }
 
         compose.onNodeWithText("E01 · Maomao").assertIsDisplayed()
-        compose.onNodeWithText("Reproduzir").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Play").assertIsDisplayed().performClick()
         compose.runOnIdle { assertEquals(true, playFromBeginningClicked) }
     }
 
