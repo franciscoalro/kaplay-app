@@ -90,7 +90,7 @@ class EpisodeActionSheetTest {
                 arePreviousEpisodesWatched = false,
                 isSeasonWatched = false,
                 progressEntry = progress,
-                onResumeEpisode = {}
+                onResumeEpisode = {},
                 onDismiss = {},
                 onToggleWatched = {},
                 onTogglePreviousWatched = {},
