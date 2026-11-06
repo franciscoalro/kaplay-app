@@ -58,6 +58,8 @@ import org.jetbrains.compose.resources.stringResource
 import com.kaplay.app.core.ui.LocalVerticalBarPadding
 import com.kaplay.app.core.ui.verticalBarWidth
 
+internal const val DETAIL_HERO_ARTWORK_SCALE: Float = 1f
+
 @Composable
 fun DetailHero(
     meta: MetaDetails,
@@ -126,8 +128,8 @@ fun DetailHero(
                             .heroStretchZoom(stretchPx)
                             .graphicsLayer {
                                 translationY = scrollOffset() * 0.5f
-                                scaleX = 1.08f
-                                scaleY = 1.08f
+                                scaleX = DETAIL_HERO_ARTWORK_SCALE
+                                scaleY = DETAIL_HERO_ARTWORK_SCALE
                         },
                         alignment = if (isTablet) Alignment.TopCenter else Alignment.Center,
                         contentScale = ContentScale.Crop,
@@ -145,6 +147,23 @@ fun DetailHero(
                             .background(MaterialTheme.colorScheme.surface),
                     )
                 }
+
+                if (heroTrailerSourceUrl == null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0.00f to Color.Black.copy(alpha = 0.22f),
+                                        0.24f to Color.Transparent,
+                                        1.00f to Color.Transparent,
+                                    ),
+                                ),
+                            ),
+                    )
+                }
+
                 if (heroTrailerSourceUrl != null) {
                     HeroTrailerPlayerSurface(
                         sourceUrl = heroTrailerSourceUrl,
@@ -159,8 +178,8 @@ fun DetailHero(
                             .graphicsLayer {
                                 alpha = trailerAlpha
                                 translationY = scrollOffset() * 0.5f
-                                scaleX = 1.08f
-                                scaleY = 1.08f
+                                scaleX = DETAIL_HERO_ARTWORK_SCALE
+                                scaleY = DETAIL_HERO_ARTWORK_SCALE
                             },
                         onReady = onHeroTrailerReady,
                         onEnded = onHeroTrailerEnded,
@@ -174,6 +193,19 @@ fun DetailHero(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
                                 onClick = onHeroTrailerMuteToggle,
+                            ),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0.00f to Color.Black.copy(alpha = 0.22f),
+                                        0.24f to Color.Transparent,
+                                        1.00f to Color.Transparent,
+                                    ),
+                                ),
                             ),
                     )
                     AnimatedContent(

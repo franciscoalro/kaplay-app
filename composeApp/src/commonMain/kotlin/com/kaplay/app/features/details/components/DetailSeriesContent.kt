@@ -295,6 +295,19 @@ fun DetailSeriesContent(
     }
 }
 
+internal fun countUniqueSeasonEpisodes(episodes: List<MetaVideo>): Int =
+    episodes.distinctBy { it.canonicalEpisodeKey() }.size
+
+internal fun buildEpisodeMetadataLine(
+    runtimeLabel: String?,
+    ratingLabel: String?,
+    formattedDate: String?,
+): String = buildList {
+    runtimeLabel?.let(::add)
+    ratingLabel?.let { "★ $it" }?.let(::add)
+    formattedDate?.let(::add)
+}.joinToString(" • ")
+
 internal fun resolveEffectiveSeasonViewMode(
     isTablet: Boolean,
     configuredMode: SeasonViewMode,
@@ -318,6 +331,7 @@ internal fun DetailSeriesListHeader(
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val sizing = seriesContentSizing(maxWidth.value)
         val inlineHeader = shouldUseInlineSeasonHeader(availableWidthDp)
+        val episodeCount = countUniqueSeasonEpisodes(groupedEpisodes[currentSeason].orEmpty())
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             SeriesSeasonSelector(
                 meta = meta,
@@ -333,11 +347,7 @@ internal fun DetailSeriesListHeader(
             )
             if (seasons.size == 1) {
                 DetailSectionTitle(
-                    title = if (meta.type != "series" && currentSeason <= 0) {
-                        stringResource(Res.string.details_videos)
-                    } else {
-                        currentSeason.label()
-                    },
+                    title = "${stringResource(Res.string.settings_meta_episodes)} ($episodeCount)",
                 )
             }
         }
@@ -431,7 +441,9 @@ private fun SeriesSeasonSelector(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(Res.string.details_seasons),
+                text = "${stringResource(Res.string.settings_meta_episodes)} (${
+                    countUniqueSeasonEpisodes(groupedEpisodes[currentSeason].orEmpty())
+                })",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontSize = sizing.seasonHeaderSize,
                     fontWeight = FontWeight.SemiBold,
@@ -1366,10 +1378,10 @@ private fun EpisodeListCard(
             .fillMaxWidth()
             .heightIn(min = 96.dp)
             .clip(cardShape)
-            .background(KAColors.SurfaceVariant)
+            .background(KAColors.Surface)
             .border(
                 width = if (isCardFocused) 2.dp else 1.dp,
-                color = if (isCardFocused) Color.White else KAColors.Outline,
+                color = if (isCardFocused) Color.White else KAColors.Outline.copy(alpha = 0.35f),
                 shape = cardShape,
             )
             .onFocusChanged { isCardFocused = it.isFocused }
@@ -1462,15 +1474,11 @@ private fun EpisodeListCard(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            val metaLine = buildList {
-                localizedSeasonEpisodeCode(
-                    seasonNumber = video.season,
-                    episodeNumber = video.episode,
-                )?.takeIf(String::isNotBlank)?.let(::add)
-                runtimeLabel?.let(::add)
-                ratingLabel?.let { "★ $it" }?.let(::add)
-                formattedDate?.let(::add)
-            }.joinToString(" \u2022 ")
+            val metaLine = buildEpisodeMetadataLine(
+                runtimeLabel = runtimeLabel,
+                ratingLabel = ratingLabel,
+                formattedDate = formattedDate,
+            )
 
             if (metaLine.isNotBlank()) {
                 Text(

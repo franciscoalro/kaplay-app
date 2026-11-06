@@ -1,0 +1,43 @@
+name: KA Play Details targeted host tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'agentic/ka-play-details-polish-20261106'
+
+concurrency:
+  group: details-host-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  details-host-tests:
+    runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -XX:+UseG1GC -Dorg.gradle.workers.max=2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Init MPVKit submodule
+        run: |
+          git submodule sync -- MPVKit || true
+          git -c protocol.version=2 submodule update --init --depth=1 MPVKit || true
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Accept Android licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+      - name: Generate local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+      - name: Run Details host tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :composeApp:testAndroidHostTest \
+            --tests 'com.kaplay.app.features.details.DetailVerticalEpisodeListTest' \
+            --tests 'com.kaplay.app.features.details.DetailEpisodeListCardTest' \
+            --tests 'com.kaplay.app.features.details.DetailHeroCompactTest' \
+            --tests 'com.kaplay.app.features.details.RatingsVisibilityTest' \
+            --no-daemon --no-parallel --max-workers=2 --stacktrace

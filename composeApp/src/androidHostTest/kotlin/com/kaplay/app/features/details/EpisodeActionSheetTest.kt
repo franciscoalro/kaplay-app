@@ -48,7 +48,7 @@ class EpisodeActionSheetTest {
         }
 
         compose.onNodeWithText("E01 · Maomao").assertIsDisplayed()
-        compose.onNodeWithText("Reproduzir").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Play").assertIsDisplayed().performClick()
         compose.runOnIdle { assertEquals(true, playFromBeginningClicked) }
     }
 
@@ -74,6 +74,7 @@ class EpisodeActionSheetTest {
                 arePreviousEpisodesWatched = false,
                 isSeasonWatched = false,
                 progressEntry = progress,
+                onResumeEpisode = {},
                 onDismiss = {},
                 onToggleWatched = {},
                 onTogglePreviousWatched = {},

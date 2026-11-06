@@ -5,6 +5,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import com.kaplay.app.features.details.components.countUniqueSeasonEpisodes
 import com.kaplay.app.features.details.components.resolveEffectiveSeasonViewMode
 import com.kaplay.app.features.details.components.shouldUseInlineSeasonHeader
 
@@ -60,6 +61,39 @@ class DetailVerticalEpisodeListTest {
         assertEquals(true, shouldUseInlineSeasonHeader(390f))
         assertEquals(true, shouldUseInlineSeasonHeader(360f))
         assertEquals(false, shouldUseInlineSeasonHeader(359f))
+    }
+
+    @Test
+    fun countsOnlyUniqueEpisodesForSelectedSeason() {
+        val episodes = listOf(
+            MetaVideo(id = "s1e1", title = "E01", season = 1, episode = 1),
+            MetaVideo(id = "s1e1", title = "E01", season = 1, episode = 1),
+            MetaVideo(id = "s1e2", title = "E02", season = 1, episode = 2),
+        )
+
+        assertEquals(2, countUniqueSeasonEpisodes(episodes))
+    }
+
+    @Test
+    fun countDeduplicatesSameSeasonEpisodeAcrossDifferentIds() {
+        val episodes = listOf(
+            MetaVideo(id = "provider-a", title = "E01", season = 1, episode = 1),
+            MetaVideo(id = "provider-b", title = "E01", season = 1, episode = 1),
+        )
+
+        assertEquals(1, countUniqueSeasonEpisodes(episodes))
+    }
+
+    @Test
+    fun countChangesWithSelectedSeason() {
+        val seasonOne = listOf(MetaVideo(id = "s1e1", title = "E01", season = 1, episode = 1))
+        val seasonTwo = listOf(
+            MetaVideo(id = "s2e1", title = "E01", season = 2, episode = 1),
+            MetaVideo(id = "s2e2", title = "E02", season = 2, episode = 2),
+        )
+
+        assertEquals(1, countUniqueSeasonEpisodes(seasonOne))
+        assertEquals(2, countUniqueSeasonEpisodes(seasonTwo))
     }
 
     @Test

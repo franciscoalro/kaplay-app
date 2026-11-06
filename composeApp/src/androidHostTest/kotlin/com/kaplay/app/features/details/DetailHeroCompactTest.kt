@@ -1,6 +1,7 @@
 package com.kaplay.app.features.details
 
 import androidx.compose.ui.unit.dp
+import com.kaplay.app.features.details.components.DETAIL_HERO_ARTWORK_SCALE
 import com.kaplay.app.features.details.components.detailHeroHeight
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -20,6 +21,11 @@ class DetailHeroCompactTest {
             height in 280.dp..340.dp,
             "Expected hero height between 280.dp and 340.dp on phone, but was $height"
         )
+    }
+
+    @Test
+    fun heroArtworkBaseScaleDoesNotApplyFixedZoom() {
+        assertTrue(DETAIL_HERO_ARTWORK_SCALE == 1f)
     }
 
     @Test
