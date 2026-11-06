@@ -104,7 +104,7 @@
 
 - Targeted Details host workflow `42286201087` passed on `b97b449d`.
 - `kaplay-build` compiled the branch and ran the expanded Details filter, but the full regression invocation exposed three pre-existing Details test failures (`EpisodeActionSheetTest` x2 and `RatingsVisibilityTest` x1); none touch the changed hero/count/card paths. This is recorded as a regression-suite limitation, not masked.
-- `KA Play Android build only` run `42284208707` built and uploaded the Full Debug APK from `a23a52e8`; the final hero-only layering fix is source-equivalent for build output and requires a fresh build if a hash tied exactly to `b97b449d` is required. No release workflow was triggered.
-- Final APK artifact metadata: `167542254` bytes, SHA-256 `de401d9019a9338a63b43fafe9cd44fe64064a2dd2320dbdd9b593c07b2e645b`.
+- `KA Play Android build only` run `42287391037` built and uploaded the Full Debug APK from final docs commit `cc73d7ee`; its `build-only` job passed. The workflow's unrelated isolated Profile/Library screenshot jobs failed, and no Details screenshot was claimed. No release workflow was triggered.
+- Final APK artifact metadata: `167542446` bytes, SHA-256 `5c81057bd507b68cd4b2519611f011515394e3562b804ac521c2c1bdd07425cc`.
 - CI screenshots available from the build workflow cover Library/Profile smoke surfaces, not the Details screen; no Details screenshot claim is made.
 - Final fresh review at `b97b449d`: no findings; `git diff --check` passed.
