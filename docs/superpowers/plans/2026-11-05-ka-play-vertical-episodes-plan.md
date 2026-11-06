@@ -68,10 +68,10 @@
 **Files:**
 - Modify: `docs/superpowers/plans/2026-11-05-ka-play-vertical-episodes-plan.md`
 
-- [x] **Step 1: Run full CI test suite on GitHub Actions (`compileFullDebugKotlin` + host tests)** (Verified on CI run `42149706182`)
-- [ ] **Step 2: Trigger `ka-play-build-only.yml` to build Full Debug APK (`com.kaplay.app.debug`)**
-- [ ] **Step 3: Collect APK SHA-256 and metadata without publishing release**
-- [ ] **Step 4: Document completion ledger in plan and report evidence**
+- [x] **Step 1: Run full CI test suite on GitHub Actions (`compileFullDebugKotlin` + host tests)** (Verified on CI run `42149706182` and `42152031617`)
+- [x] **Step 2: Trigger `ka-play-build-only.yml` to build Full Debug APK (`com.kaplay.app.debug`)** (Verified on CI run `42152992587`)
+- [x] **Step 3: Collect APK SHA-256 and metadata without publishing release**
+- [x] **Step 4: Document completion ledger in plan and report evidence**
 
 ---
 
@@ -79,3 +79,5 @@
 
 - **Task 1 GREEN:** Configured `effectiveEpisodeCardStyle` to select `MetaEpisodeCardStyle.List` on mobile phones and preserve configured style on tablets. Tested in `DetailVerticalEpisodeListTest.kt`.
 - **Task 2 GREEN:** Refactored `EpisodeListCard` to a compact 16:9 row layout (min 96 dp height, 128 dp 16:9 thumbnail, 14 sp title, 12 sp meta, 48 dp three-dots options button). Tested in `DetailEpisodeListCardTest.kt`. CI run `42149706182` passed `compileFullDebugKotlin` in 7m23s and Android host tests with 0 failures.
+- **Review Enhancements GREEN:** Commit `612f72f8` added episode rating to `metaLine`, high-contrast D-pad focus border on list card, and aligned repository defaults to `List`. CI run `42152031617` passed with 0 test failures.
+- **Full Debug APK Artifact:** Workflow `ka-play-build-only.yml` run `42152992587` built `ka-play-full-debug.apk` (`com.kaplay.app.debug`, size: `167,538,814 bytes`, SHA-256: `563e74a1e799e0edd68f48ab01ffaf36f8e35d8e8666b355982e9bf59b85d078`). Release publish was avoided per instructions.
