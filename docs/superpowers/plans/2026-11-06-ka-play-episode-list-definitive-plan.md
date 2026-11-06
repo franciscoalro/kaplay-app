@@ -1,0 +1,92 @@
+# KA Play Definitive Vertical Episode List Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Make the existing smartphone details experience definitively vertical by forcing the compact season dropdown on phones, keeping the existing root `LazyColumn`, and preserving episode actions, progress, ratings, and season state.
+
+**Architecture:** Reuse `MetaDetailsScreen.addLazyEpisodeListItems()`, `DetailSeriesListHeader`, `DetailSeriesListEpisode`, `EpisodeListCard`, and `KASeasonDropdown`. Add only a small pure policy helper for the effective season selector mode; tablet preferences remain unchanged. No new screen, repository, persistence layer, or nested scroll container is introduced.
+
+**Tech Stack:** Kotlin Multiplatform, Compose Multiplatform, Material 3, Robolectric host tests, GitHub Actions buildci.
+
+**Spec:** User-provided KA PLAY — CORREÇÃO DEFINITIVA DA LISTA DE EPISÓDIOS Markdown.
+
+## Global Constraints
+
+- Smartphones must present episodes vertically.
+- Tablets may preserve the configured mode.
+- Do not erase saved preferences.
+- Do not create a second `LazyColumn` inside the main vertical scroll.
+- Reuse existing callbacks, `EpisodeWatchedActionSheet`, progress, watched, ratings, and canonical identifiers.
+- Use existing `KAColors` and `KAShapes`; do not create a competing theme.
+- Do not modify authentication, repositories, Supabase RPCs, stream resolution, or playback history.
+- Do not publish a Release or update all users from this plan; produce a Full Debug APK only.
+- All compilation and APK builds run remotely through GitHub Actions (`buildci`).
+
+## Review Focus
+
+1. **Stored horizontal selector preference on phone:** a persisted `Posters` mode must still render the compact dropdown on phones.
+2. **Season switching:** selecting another season must replace only the visible episode list and must not trigger playback.
+3. **Single scroll container:** the implementation must continue emitting `item`/`itemsIndexed` into the existing root `LazyColumn`.
+4. **Episode state preservation:** episode click, long-press/menu, progress, watched indicator, and ratings must remain wired through `DetailSeriesListEpisode`.
+5. **Narrow width header:** the season title and dropdown must remain readable and avoid overlap at phone widths.
+
+---
+
+### Task 1: Phone Season Selector Policy
+
+**Files:**
+- Modify: `composeApp/src/commonMain/kotlin/com/kaplay/app/features/details/components/DetailSeriesContent.kt`
+- Test: `composeApp/src/androidHostTest/kotlin/com/kaplay/app/features/details/DetailVerticalEpisodeListTest.kt`
+
+**Interfaces:**
+- Consumes: existing `SeasonViewMode`, `MetaEpisodeCardStyle`, and `isTablet` policy.
+- Produces: `internal fun resolveEffectiveSeasonViewMode(isTablet: Boolean, configuredMode: SeasonViewMode): SeasonViewMode`, returning `Text` on phones and the stored mode on tablets.
+
+- [x] **Step 1: Add a failing test** named `phoneAlwaysUsesTextSeasonSelectorEvenWhenPostersAreStored`; assert `resolveEffectiveSeasonViewMode(false, SeasonViewMode.Posters) == SeasonViewMode.Text`.
+- [x] **Step 2: Run the focused host test and observe the expected unresolved-function failure** (CI run `42221382736`).
+- [x] **Step 3: Implement the pure helper and use it in `SeriesSeasonSelector` with the existing width-based tablet detection from `BoxWithConstraints`.**
+- [x] **Step 4: Ensure the phone path renders only `KASeasonDropdown`; preserve the configured poster/text mode on tablets.**
+- [x] **Step 5: Run the focused test and the existing details host tests; all passed in CI run `42223252652`.**
+- [x] **Step 6: Commit with `fix(details): force compact season dropdown on phones`** (`6e143074`, call-site follow-up `15348a6a`).
+
+---
+
+### Task 2: Same-Line Season Header and Layout Regression Tests
+
+**Files:**
+- Modify: `composeApp/src/commonMain/kotlin/com/kaplay/app/features/details/components/DetailSeriesContent.kt`
+- Test: `composeApp/src/androidHostTest/kotlin/com/kaplay/app/features/details/DetailVerticalEpisodeListTest.kt`
+
+**Interfaces:**
+- Consumes: `DetailSeriesListHeader`, `KASeasonDropdown`, `SeriesContentSizing`.
+- Produces: compact header policy `internal fun shouldUseInlineSeasonHeader(maxWidthDp: Float): Boolean`, true at or above 360 dp and false below it.
+
+- [x] **Step 1: Add failing tests** for inline header at 390 dp and stacked header below 360 dp.
+- [x] **Step 2: Run the focused tests and observe the expected unresolved-function failure** (CI run `42221382736`).
+- [x] **Step 3: Implement the pure width policy and update `DetailSeriesListHeader`/`SeriesSeasonSelector` to place the season title/dropdown in one row when the policy is true, with a stacked fallback below 360 dp.**
+- [x] **Step 4: Keep the existing season selection callback and do not start playback from selector changes.**
+- [x] **Step 5: Run focused details host tests and verify they pass** (CI run `42223252652`).
+- [x] **Step 6: Commit with `feat(details): compact inline season header for phones`** (implemented in `6e143074`, fixed call site in `15348a6a`).
+
+---
+
+### Task 3: Full Verification and Debug APK
+
+**Files:**
+- Modify: `docs/superpowers/plans/2026-11-06-ka-play-episode-list-definitive-plan.md`
+
+- [x] **Step 1: Push the feature branch to `buildci` and run `kaplay-build` with compile and host tests** (run `42237684361`, SUCCESS).
+- [x] **Step 2: Trigger `ka-play-build-only.yml` on the feature branch; do not trigger `android-release.yml`** (run `42240301877`, build-only job SUCCESS).
+- [x] **Step 3: Collect Full Debug APK metadata and SHA-256** (`167,541,338` bytes; SHA-256 `59cbc4e9e9a799f001c9d8dcccd47a72c9011986bd1e9ba7a1bf390145e87b98`).
+- [x] **Step 4: Run the final branch review with a fresh reviewer and record Critical/Important fixes or deferred minors** (fresh review: no findings).
+- [x] **Step 5: Update this plan ledger with exact run IDs, test results, APK SHA-256, and release-isolation evidence.**
+
+## Completion Ledger
+
+- **Phone season mode:** persisted `SeasonViewMode.Posters` is ignored on smartphones; `KASeasonDropdown` is used instead. Tablets retain the configured mode.
+- **Header layout:** inline season header uses the parent viewport width at `>= 360.dp`; narrower layouts stack without overlap. Existing season callbacks remain wired, including long-press.
+- **Virtualization:** episode rendering continues through the existing root `LazyColumn` using `item` and `itemsIndexed`; no nested `LazyColumn` was added.
+- **CI:** `kaplay-build` run `42237684361` passed compile and Android host tests; Full Debug build-only run `42240301877` built the final HEAD successfully.
+- **APK:** `com.kaplay.app.debug`, `167,541,338` bytes, SHA-256 `59cbc4e9e9a799f001c9d8dcccd47a72c9011986bd1e9ba7a1bf390145e87b98`.
+- **Release isolation:** no `android-release.yml` was triggered; no merge or release was performed from this feature branch.
+- **Known validation gap:** CI metadata reports `functional_homologation=NOT_PERFORMED`; no real-device Details-screen screenshot was captured by the available build-only workflow.

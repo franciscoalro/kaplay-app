@@ -5,7 +5,10 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.performTouchInput
 import com.kaplay.app.features.details.components.DetailSeriesListEpisode
+import com.kaplay.app.features.details.components.KASeasonDropdown
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -32,6 +35,22 @@ class DetailEpisodeListCardTest {
         name = "The Apothecary Diaries",
         videos = listOf(testEpisode),
     )
+
+    @Test
+    fun seasonDropdownPreservesLongPressAction() {
+        var longPressed = false
+        compose.setContent {
+            KASeasonDropdown(
+                seasons = listOf(1, 2),
+                selectedSeason = 1,
+                onSeasonSelected = {},
+                onLongPress = { longPressed = true },
+            )
+        }
+
+        compose.onNodeWithText("Season 1").performTouchInput { longClick() }
+        compose.runOnIdle { assertEquals(true, longPressed) }
+    }
 
     @Test
     fun episodeListCardRendersTitleAndOptionsButton() {
