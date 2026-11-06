@@ -18,6 +18,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
@@ -1324,180 +1325,171 @@ private fun EpisodeListCard(
     onClick: (() -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
 ) {
-    val cornerRadius = KAShapes.CardRadius
-    val cardShape = KAShapes.Card
+    val cornerRadius = 10.dp
+    val cardShape = RoundedCornerShape(cornerRadius)
     val ratingLabel = remember(imdbRating, episodeRatingsVisibility, isWatched) {
         imdbRating?.takeIf { it > 0.0 && episodeRatingsVisibility.showRating(isWatched) }
             ?.let(::formatEpisodeRating)
     }
     val formattedDate = remember(video.released) { video.released?.let { formatReleaseDateForDisplay(it) } }
-    Box(
+    val runtimeMinutes = video.runtime?.takeIf { it > 0 }
+    val runtimeLabel = if (runtimeMinutes != null) formatEpisodeRuntime(runtimeMinutes) else null
+    var isCardFocused by remember { mutableStateOf(false) }
+
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(sizing.cardHeight)
+            .heightIn(min = 96.dp)
             .clip(cardShape)
             .background(KAColors.SurfaceVariant)
             .border(
-                width = 1.dp,
-                color = KAColors.Outline,
+                width = if (isCardFocused) 2.dp else 1.dp,
+                color = if (isCardFocused) Color.White else KAColors.Outline,
                 shape = cardShape,
             )
+            .onFocusChanged { isCardFocused = it.isFocused }
             .combinedClickable(
                 enabled = onClick != null || onLongPress != null,
                 onClick = { onClick?.invoke() },
                 onLongClick = onLongPress,
-            ),
+            )
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
+        // Thumbnail 16:9
+        Box(
+            modifier = Modifier
+                .width(128.dp)
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(8.dp))
+                .background(KAColors.Surface),
         ) {
-            // Image area - fixed width matching card height per spec
-            Box(
-                modifier = Modifier
-                    .width(sizing.imageWidth)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(topStart = cornerRadius, bottomStart = cornerRadius)),
-            ) {
-                val imageUrl = video.thumbnail ?: fallbackImage
-                val shouldBlurArtwork = blurUnwatchedEpisodes && !isWatched
-                if (imageUrl != null) {
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = video.title,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface),
-                    )
-                }
-
-                EpisodeCodeBadge(
-                    text = video.episodeBadge(),
-                    textSize = sizing.badgeTextSize,
-                    radius = sizing.badgeRadius,
-                    horizontalPadding = sizing.badgeHorizontalPadding,
-                    verticalPadding = sizing.badgeVerticalPadding,
-                    backgroundAlpha = 0.85f,
+            val imageUrl = video.thumbnail ?: fallbackImage
+            val shouldBlurArtwork = blurUnwatchedEpisodes && !isWatched
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = video.title,
                     modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(start = 8.dp, top = 8.dp),
+                        .fillMaxSize()
+                        .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
+                    contentScale = ContentScale.Crop,
                 )
-
-                KAPlayAnimatedWatchedBadge(
-                    isVisible = isWatched,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(1f)
-                    .padding(
-                        start = sizing.contentHorizontalPadding,
-                        end = sizing.contentHorizontalPadding,
-                        top = sizing.contentVerticalPadding,
-                        bottom = sizing.contentVerticalPadding,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(sizing.contentSpacing),
-            ) {
-                Text(
-                    text = video.title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = sizing.titleTextSize,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = sizing.titleLineHeight,
-                        letterSpacing = 0.sp,
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = sizing.titleMaxLines,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                if (formattedDate != null || ratingLabel != null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        formattedDate?.let { date ->
-                            Text(
-                                text = date,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontSize = sizing.metaTextSize,
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        ratingLabel?.let { rating ->
-                            ImdbEpisodeRatingBadge(
-                                rating = rating,
-                                logoWidth = 24.dp,
-                                logoHeight = 12.dp,
-                                textSize = sizing.metaTextSize,
-                            )
-                        }
-                    }
-                }
-
-                if (!video.overview.isNullOrBlank()) {
-                    Text(
-                        text = video.overview,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = sizing.bodyTextSize,
-                            lineHeight = sizing.bodyLineHeight,
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = sizing.overviewMaxLines,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-
-            if (onLongPress != null) {
+            } else {
                 Box(
                     modifier = Modifier
-                        .align(Alignment.CenterVertically)
-                        .padding(end = 8.dp)
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .clickable(role = Role.Button, onClick = onLongPress),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.MoreVert,
-                        contentDescription = "Ações do episódio",
-                        tint = KAColors.TextSecondary,
-                        modifier = Modifier.size(20.dp),
+                        .fillMaxSize()
+                        .background(KAColors.Surface),
+                )
+            }
+
+            EpisodeCodeBadge(
+                text = video.episodeBadge(),
+                textSize = sizing.badgeTextSize,
+                radius = sizing.badgeRadius,
+                horizontalPadding = sizing.badgeHorizontalPadding,
+                verticalPadding = sizing.badgeVerticalPadding,
+                backgroundAlpha = 0.85f,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 6.dp, top = 6.dp),
+            )
+
+            KAPlayAnimatedWatchedBadge(
+                isVisible = isWatched,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp),
+            )
+
+            progressEntry
+                ?.takeIf { it.durationMs > 0L && !it.isCompleted }
+                ?.let { entry ->
+                    KAPlayProgressBar(
+                        progress = entry.progressFraction,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .padding(start = 6.dp, end = 6.dp, bottom = 6.dp),
+                        height = 4.dp,
+                        trackColor = KAColors.Outline,
+                        fillColor = KAColors.Primary,
                     )
                 }
+        }
+
+        // Title and metadata column
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = video.title,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 18.sp,
+                    letterSpacing = 0.sp,
+                ),
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            val metaLine = buildList {
+                localizedSeasonEpisodeCode(
+                    seasonNumber = video.season,
+                    episodeNumber = video.episode,
+                )?.takeIf(String::isNotBlank)?.let(::add)
+                runtimeLabel?.let(::add)
+                ratingLabel?.let { "★ $it" }?.let(::add)
+                formattedDate?.let(::add)
+            }.joinToString(" \u2022 ")
+
+            if (metaLine.isNotBlank()) {
+                Text(
+                    text = metaLine,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 12.sp,
+                    ),
+                    color = KAColors.TextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            if (!video.overview.isNullOrBlank()) {
+                Text(
+                    text = video.overview,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                    ),
+                    color = KAColors.TextSecondary.copy(alpha = 0.85f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
 
-        progressEntry
-            ?.takeIf { it.durationMs > 0L && !it.isCompleted }
-            ?.let { entry ->
-                KAPlayProgressBar(
-                    progress = entry.progressFraction,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .width(sizing.imageWidth - 24.dp)
-                        .padding(start = 12.dp, bottom = 10.dp),
-                    height = 5.dp,
-                    trackColor = KAColors.Outline,
-                    fillColor = KAColors.Primary,
+        // Three-dots options button
+        if (onLongPress != null) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .clickable(role = Role.Button, onClick = onLongPress),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.MoreVert,
+                    contentDescription = "Opções do episódio",
+                    tint = KAColors.TextSecondary,
+                    modifier = Modifier.size(20.dp),
                 )
             }
+        }
     }
 }
 
