@@ -121,7 +121,7 @@ class RatingsVisibilityTest {
             compose.onNodeWithText("6.2").assertDoesNotExist()
 
             compose.runOnIdle { visibility.value = EpisodeRatingsVisibility.HIDE_UNWATCHED_EPISODES }
-            compose.onNodeWithText("6.2").fetchSemanticsNode()
+            compose.onNodeWithText("8.4").fetchSemanticsNode()
 
             compose.runOnIdle { watchedKeys.value = emptySet() }
             compose.onNodeWithText("6.2").assertDoesNotExist()
@@ -146,13 +146,13 @@ class RatingsVisibilityTest {
                     lastUpdatedEpochMs = 1,
                 ))
             }
-            compose.onNodeWithText("6.2").fetchSemanticsNode()
+            compose.onNodeWithText("8.4").fetchSemanticsNode()
 
             compose.runOnIdle {
                 progress.value = emptyMap()
                 visibility.value = EpisodeRatingsVisibility.SHOW_ALL
             }
-            compose.onNodeWithText("6.2").fetchSemanticsNode()
+            compose.onNodeWithText("8.4").fetchSemanticsNode()
         }
     }
 }
