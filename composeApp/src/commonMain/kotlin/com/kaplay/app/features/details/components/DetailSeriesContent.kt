@@ -293,6 +293,13 @@ fun DetailSeriesContent(
     }
 }
 
+internal fun resolveEffectiveSeasonViewMode(
+    isTablet: Boolean,
+    configuredMode: SeasonViewMode,
+): SeasonViewMode = if (isTablet) configuredMode else SeasonViewMode.Text
+
+internal fun shouldUseInlineSeasonHeader(maxWidthDp: Float): Boolean = maxWidthDp >= 360f
+
 @Composable
 internal fun DetailSeriesListHeader(
     meta: MetaDetails,
@@ -306,6 +313,8 @@ internal fun DetailSeriesListHeader(
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val sizing = seriesContentSizing(maxWidth.value)
+        val isTablet = maxWidth.value >= 600f
+        val inlineHeader = shouldUseInlineSeasonHeader(maxWidth.value)
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             SeriesSeasonSelector(
                 meta = meta,
@@ -314,6 +323,8 @@ internal fun DetailSeriesListHeader(
                 currentSeason = currentSeason,
                 sizing = sizing,
                 horizontalScrollPadding = horizontalScrollPadding,
+                isTablet = isTablet,
+                inlineHeader = inlineHeader,
                 onSelect = onSeasonSelect,
                 onLongPress = onSeasonLongPress,
             )
@@ -380,6 +391,8 @@ private fun SeriesSeasonSelector(
     currentSeason: Int,
     sizing: SeriesContentSizing,
     horizontalScrollPadding: Dp,
+    isTablet: Boolean,
+    inlineHeader: Boolean,
     onSelect: (Int) -> Unit,
     onLongPress: ((Int) -> Unit)?,
 ) {
@@ -394,6 +407,15 @@ private fun SeriesSeasonSelector(
             groupedEpisodes = groupedEpisodes,
             meta = meta,
         ) != null
+    }
+    val effectiveSeasonViewMode = resolveEffectiveSeasonViewMode(isTablet, seasonViewMode)
+    val seasonDropdown = @Composable {
+        KASeasonDropdown(
+            seasons = seasons,
+            selectedSeason = currentSeason,
+            onSeasonSelected = onSelect,
+            modifier = Modifier.padding(horizontal = horizontalScrollPadding),
+        )
     }
     Column(
         modifier = Modifier.animateContentSize(animationSpec = tween(280)),
@@ -412,7 +434,9 @@ private fun SeriesSeasonSelector(
                 ),
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            if (hasSeasonPosters) {
+            if (!isTablet && inlineHeader) {
+                seasonDropdown()
+            } else if (isTablet && hasSeasonPosters) {
                 SeasonViewModeToggle(
                     mode = seasonViewMode,
                     sizing = sizing,
@@ -425,9 +449,11 @@ private fun SeriesSeasonSelector(
             }
         }
 
-        if (hasSeasonPosters) {
+        if (!isTablet) {
+            if (!inlineHeader) seasonDropdown()
+        } else if (hasSeasonPosters) {
             Crossfade(
-                targetState = seasonViewMode,
+                targetState = effectiveSeasonViewMode,
                 animationSpec = tween(280),
                 label = "season_selector_layout",
             ) { mode ->
@@ -442,21 +468,11 @@ private fun SeriesSeasonSelector(
                         onSelect = onSelect,
                         onLongPress = onLongPress,
                     )
-                    SeasonViewMode.Text -> KASeasonDropdown(
-                        seasons = seasons,
-                        selectedSeason = currentSeason,
-                        onSeasonSelected = onSelect,
-                        modifier = Modifier.padding(horizontal = horizontalScrollPadding),
-                    )
+                    SeasonViewMode.Text -> seasonDropdown()
                 }
             }
         } else {
-            KASeasonDropdown(
-                seasons = seasons,
-                selectedSeason = currentSeason,
-                onSeasonSelected = onSelect,
-                modifier = Modifier.padding(horizontal = horizontalScrollPadding),
-            )
+            seasonDropdown()
         }
     }
 }
