@@ -75,6 +75,16 @@ class DetailVerticalEpisodeListTest {
     }
 
     @Test
+    fun countDeduplicatesSameSeasonEpisodeAcrossDifferentIds() {
+        val episodes = listOf(
+            MetaVideo(id = "provider-a", title = "E01", season = 1, episode = 1),
+            MetaVideo(id = "provider-b", title = "E01", season = 1, episode = 1),
+        )
+
+        assertEquals(1, countUniqueSeasonEpisodes(episodes))
+    }
+
+    @Test
     fun countChangesWithSelectedSeason() {
         val seasonOne = listOf(MetaVideo(id = "s1e1", title = "E01", season = 1, episode = 1))
         val seasonTwo = listOf(

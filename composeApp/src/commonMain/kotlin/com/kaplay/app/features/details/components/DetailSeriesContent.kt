@@ -296,7 +296,7 @@ fun DetailSeriesContent(
 }
 
 internal fun countUniqueSeasonEpisodes(episodes: List<MetaVideo>): Int =
-    episodes.distinctBy { Triple(it.season, it.episode, it.id) }.size
+    episodes.distinctBy { it.canonicalEpisodeKey() }.size
 
 internal fun buildEpisodeMetadataLine(
     runtimeLabel: String?,
