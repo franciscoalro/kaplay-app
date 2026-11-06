@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import com.kaplay.app.core.ui.KAPlayTheme
 import com.kaplay.app.features.details.components.DetailMetaInfo
 import com.kaplay.app.features.details.components.DetailSeriesContent
@@ -103,6 +104,7 @@ class RatingsVisibilityTest {
                 progress.value = emptyMap()
                 ratings.value = mapOf((1 to 1) to 8.4)
             }
+            compose.onRoot().printToLog("RatingsVisibility")
             compose.onNodeWithText("8.4").assertIsDisplayed()
             compose.onNodeWithText("6.2").assertDoesNotExist()
 
