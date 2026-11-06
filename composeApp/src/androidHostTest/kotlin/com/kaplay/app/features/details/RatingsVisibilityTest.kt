@@ -104,6 +104,7 @@ class RatingsVisibilityTest {
                 progress.value = emptyMap()
                 ratings.value = mapOf((1 to 1) to 8.4)
             }
+            println("RatingsVisibility layout=$currentLayout initial")
             compose.onNodeWithText("8.4").fetchSemanticsNode()
             compose.onNodeWithText("6.2").assertDoesNotExist()
 
