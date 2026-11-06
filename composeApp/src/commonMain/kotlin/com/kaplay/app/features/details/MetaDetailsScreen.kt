@@ -2107,7 +2107,7 @@ private fun LazyListScope.configuredMetaSectionItems(
                     currentSeason = currentSeason,
                     horizontalScrollPadding = contentHorizontalPadding,
                     isTablet = isTablet,
-                     availableWidthDp = maxWidth.value,
+                     availableWidthDp = if (isTablet) 600f else contentMaxWidth.value,
                      onSeasonSelect = onEpisodeListSeasonSelect,
                     onSeasonLongPress = onSeasonLongPress,
                 )
