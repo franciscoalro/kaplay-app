@@ -75,8 +75,18 @@
 **Files:**
 - Modify: `docs/superpowers/plans/2026-11-06-ka-play-episode-list-definitive-plan.md`
 
-- [ ] **Step 1: Push the feature branch to `buildci` and run `kaplay-build` with compile and host tests.**
-- [ ] **Step 2: Trigger `ka-play-build-only.yml` on the feature branch; do not trigger `android-release.yml`.**
-- [ ] **Step 3: Collect Full Debug APK metadata and SHA-256.**
-- [ ] **Step 4: Run the final branch review with a fresh reviewer and record Critical/Important fixes or deferred minors.**
-- [ ] **Step 5: Update this plan ledger with exact run IDs, test results, APK SHA-256, and release-isolation evidence.**
+- [x] **Step 1: Push the feature branch to `buildci` and run `kaplay-build` with compile and host tests** (run `42237684361`, SUCCESS).
+- [x] **Step 2: Trigger `ka-play-build-only.yml` on the feature branch; do not trigger `android-release.yml`** (run `42240301877`, build-only job SUCCESS).
+- [x] **Step 3: Collect Full Debug APK metadata and SHA-256** (`167,541,338` bytes; SHA-256 `59cbc4e9e9a799f001c9d8dcccd47a72c9011986bd1e9ba7a1bf390145e87b98`).
+- [x] **Step 4: Run the final branch review with a fresh reviewer and record Critical/Important fixes or deferred minors** (fresh review: no findings).
+- [x] **Step 5: Update this plan ledger with exact run IDs, test results, APK SHA-256, and release-isolation evidence.**
+
+## Completion Ledger
+
+- **Phone season mode:** persisted `SeasonViewMode.Posters` is ignored on smartphones; `KASeasonDropdown` is used instead. Tablets retain the configured mode.
+- **Header layout:** inline season header uses the parent viewport width at `>= 360.dp`; narrower layouts stack without overlap. Existing season callbacks remain wired, including long-press.
+- **Virtualization:** episode rendering continues through the existing root `LazyColumn` using `item` and `itemsIndexed`; no nested `LazyColumn` was added.
+- **CI:** `kaplay-build` run `42237684361` passed compile and Android host tests; Full Debug build-only run `42240301877` built the final HEAD successfully.
+- **APK:** `com.kaplay.app.debug`, `167,541,338` bytes, SHA-256 `59cbc4e9e9a799f001c9d8dcccd47a72c9011986bd1e9ba7a1bf390145e87b98`.
+- **Release isolation:** no `android-release.yml` was triggered; no merge or release was performed from this feature branch.
+- **Known validation gap:** CI metadata reports `functional_homologation=NOT_PERFORMED`; no real-device Details-screen screenshot was captured by the available build-only workflow.
