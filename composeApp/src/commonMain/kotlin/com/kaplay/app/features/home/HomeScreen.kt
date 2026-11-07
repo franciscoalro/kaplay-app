@@ -12,8 +12,11 @@ import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -34,11 +37,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kaplay.app.core.auth.AuthRepository
 import com.kaplay.app.core.auth.AuthState
@@ -1008,12 +1011,13 @@ fun HomeScreen(
             Modifier
         }
 
-        val homeViewportHeight = maxHeight
+        val rewardHeaderHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 56.dp
+        val homeViewportHeight = maxHeight - rewardHeaderHeight
         Box(modifier = Modifier.fillMaxSize()) {
             KAPlayScreen(
-                modifier = Modifier.fillMaxSize().then(heroStretchModifier),
+                modifier = Modifier.fillMaxSize().padding(top = rewardHeaderHeight).then(heroStretchModifier),
             horizontalPadding = 0.dp,
-            topPadding = if (showHeroSlot) 0.dp else null,
+            topPadding = 0.dp,
             listState = homeListState,
         ) {
             if (showHeroSlot) {
@@ -1210,10 +1214,8 @@ fun HomeScreen(
                                         entries = section.items.take(HOME_CATALOG_PREVIEW_LIMIT),
                                         modifier = Modifier.padding(bottom = 12.dp),
                                         sectionPadding = homeSectionPadding,
-                                        onViewAllClick = if (section.canOpenCatalog(HOME_CATALOG_PREVIEW_LIMIT)) {
-                                            onCatalogClick?.let { { it(section) } }
-                                        } else {
-                                            null
+                                        onViewAllClick = onCatalogClick?.let { callback ->
+                                            { callback(section) }
                                         },
                                         watchedKeys = watchedUiState.watchedKeys,
                                         fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
@@ -1227,16 +1229,21 @@ fun HomeScreen(
                 }
             }
             }
-            HomeRewardButton(
-                onRequestAuthentication = onRequestAuthentication,
+            Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
+                    .fillMaxWidth()
+                    .height(rewardHeaderHeight)
+                    .background(Color.Black)
                     .padding(
-                        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 10.dp,
+                        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
                         end = 14.dp,
-                    )
-                    .zIndex(5f),
-            )
+                    ),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                HomeRewardButton(onRequestAuthentication = onRequestAuthentication)
+            }
         }
     }
 }
