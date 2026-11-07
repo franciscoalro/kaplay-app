@@ -11,9 +11,9 @@ internal fun catalogGenres(items: List<MetaPreview>): List<String> =
         .flatMap { it.genres.asSequence() }
         .map(String::trim)
         .filter(String::isNotEmpty)
-        .associateBy { it.lowercase() }
-        .values
+        .distinctBy { it.lowercase() }
         .sortedBy { it.lowercase() }
+        .toList()
 
 internal fun filterCatalogItems(
     items: List<MetaPreview>,
