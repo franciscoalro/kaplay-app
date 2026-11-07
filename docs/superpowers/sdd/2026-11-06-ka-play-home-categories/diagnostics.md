@@ -38,14 +38,13 @@ cards even though `Ver tudo` could be offered after the 18-card Home preview.
 ## Verification
 
 - `git diff --check`: passed.
-- GitHub Actions `kaplay-build` run `42377059184`: Full Debug and Play Store Kotlin
+- GitHub Actions `kaplay-build` run `42378117097`: Full Debug and Play Store Kotlin
   compilation, security pattern check, Android host tests, and Full Debug APK job
   passed. The host test selection includes Tomato feed/category tests and Home
   catalog definition/section tests.
-- Full Debug artifact: `home-full-debug-apk`, artifact ID `13576321896`, from
-  commit `efdd128ddd44d99882c1f3c14c01275c2ece9159`.
-- APK SHA-256: pending a workflow log that prints the APK hash. GitHub's artifact
-  digest is for the ZIP archive and must not be represented as the APK hash.
+- Full Debug artifact: `home-full-debug-apk`, downloaded from run `42378117097`.
+- APK SHA-256: `98e2f4641f6d2449be16f7d8d7655c3f94047423037f1f8311aa43a63c6e5d08`.
+  This is the hash of `androidApp-full-debug.apk`, not GitHub's ZIP artifact digest.
 - Real Home screenshot: pending isolated device execution. The repository's
   `AGENTS.md` prohibits local Android builds and installation on the known device.
 

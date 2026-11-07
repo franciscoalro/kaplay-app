@@ -36,7 +36,9 @@ object TomatoCatalog {
     internal fun homeDefinitions(
         sections: List<TomatoProvider.FeedSectionPayload>,
     ): List<HomeCatalogDefinition> = (HOME_SECTIONS + sections.mapNotNull { section ->
-        section.key.takeIf { it.isNotBlank() }?.let { it to section.title }
+        TomatoProvider.sectionKey(section.title)
+            .takeIf { it.isNotBlank() }
+            ?.let { it to section.title }
     }).distinctBy { it.first }.map { (sectionId, title) ->
         HomeCatalogDefinition(
             key = "tomato:$sectionId",
@@ -113,9 +115,10 @@ object TomatoCatalog {
         val globalItems = if (sectionId == null) sections.flatMap { it.items }.distinctBy(TomatoTitle::id) else emptyList()
         val titles = titlesForSection(sectionId, sections, globalItems)
         val latestEpisode = section?.key?.let(TomatoProvider::isLatestEpisodeSection) == true
+        val sourceCount = section?.sourceItemCount ?: globalItems.size
         return CatalogPage(
             items = titles.map { title -> metaPreview(title, latestEpisode = latestEpisode) },
-            rawItemCount = titles.size,
+            rawItemCount = sourceCount.coerceAtLeast(titles.size),
             nextSkip = null,
         )
     }

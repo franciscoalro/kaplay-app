@@ -102,6 +102,38 @@ class TomatoCatalogTest {
     }
 
     @Test
+    fun sectionPageReportsSourceCountWhenSomeCardsNeedEnrichment() {
+        val visible = TomatoTitle(id = 1L, name = "Visible", image = null)
+        val section = TomatoProvider.FeedSectionPayload(
+            key = "aventura",
+            title = "Aventura",
+            items = listOf(visible),
+            sourceItemCount = 20,
+        )
+
+        val page = TomatoCatalog.feedPageFromSections("aventura", listOf(section))
+
+        assertEquals(1, page.items.size)
+        assertEquals(20, page.rawItemCount)
+        assertEquals(null, page.nextSkip)
+    }
+
+    @Test
+    fun sectionDefinitionsNormalizeDynamicProviderKeys() {
+        val definitions = TomatoCatalog.homeDefinitions(
+            listOf(
+                TomatoProvider.FeedSectionPayload(
+                    key = "Mistério & Suspense",
+                    title = "Mistério & Suspense",
+                    items = emptyList(),
+                ),
+            ),
+        )
+
+        assertTrue(definitions.any { it.key == "tomato:misterio-suspense" })
+    }
+
+    @Test
     fun sectionSelectorAcceptsCanonicalHomeKeyAndNullUsesGlobalFeed() {
         val emAlta = TomatoTitle(id = 1L, name = "Em alta", image = null)
         val aventura = TomatoTitle(id = 2L, name = "Aventura", image = null)

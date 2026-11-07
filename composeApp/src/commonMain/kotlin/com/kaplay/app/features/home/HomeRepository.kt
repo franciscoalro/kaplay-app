@@ -112,6 +112,11 @@ object HomeRepository {
                 }.forEach { (cacheKey, section) ->
                     loadedSections[cacheKey] = section
                 }
+                results.filter { (request, result) ->
+                    result.isFailure && request.manifestUrl == com.kaplay.app.features.tomato.TomatoCatalog.MANIFEST_URL
+                }.forEach { (request, _) ->
+                    loadedSections.remove(request.cacheKey)
+                }
                 if (firstErrorMessage == null) {
                     firstErrorMessage = results.firstNotNullOfOrNull { (_, result) ->
                         result.exceptionOrNull()?.message

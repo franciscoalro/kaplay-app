@@ -1214,8 +1214,10 @@ fun HomeScreen(
                                         entries = section.items.take(HOME_CATALOG_PREVIEW_LIMIT),
                                         modifier = Modifier.padding(bottom = 12.dp),
                                         sectionPadding = homeSectionPadding,
-                                        onViewAllClick = onCatalogClick?.let { callback ->
-                                            { callback(section) }
+                                        onViewAllClick = if (section.canOpenCatalog(HOME_CATALOG_PREVIEW_LIMIT)) {
+                                            onCatalogClick?.let { callback -> { callback(section) } }
+                                        } else {
+                                            null
                                         },
                                         watchedKeys = watchedUiState.watchedKeys,
                                         fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
