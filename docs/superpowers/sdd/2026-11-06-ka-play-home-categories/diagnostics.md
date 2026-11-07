@@ -38,10 +38,10 @@ cards even though `Ver tudo` could be offered after the 18-card Home preview.
 ## Verification
 
 - `git diff --check`: passed.
-- GitHub Actions `kaplay-build` run `42378117097`: Full Debug and Play Store Kotlin
-  compilation, security pattern check, Android host tests, and Full Debug APK job
-  passed. The host test selection includes Tomato feed/category tests and Home
-  catalog definition/section tests.
+- GitHub Actions `kaplay-build` run `42420103664` on the reviewed fix commit:
+  Full Debug and Play Store Kotlin compilation, security pattern check, and
+  Android host tests passed. The Home APK job is PR-only and was skipped on push.
+  The preceding PR run `42378117097` produced the Full Debug artifact.
 - Full Debug artifact: `home-full-debug-apk`, downloaded from run `42378117097`.
 - APK SHA-256: `98e2f4641f6d2449be16f7d8d7655c3f94047423037f1f8311aa43a63c6e5d08`.
   This is the hash of `androidApp-full-debug.apk`, not GitHub's ZIP artifact digest.
@@ -50,7 +50,9 @@ cards even though `Ver tudo` could be offered after the 18-card Home preview.
 
 ## Regression and rollback
 
-No host-test regressions were reported by run `42377059184`. Visual/device
-regressions are unverified. Revert the isolated Home branch commits to restore the
-previous catalog and reward behavior; do not merge until visual evidence and
-review are complete.
+No host-test regressions were reported by run `42420103664`. A local Full Debug
+attempt was blocked before compilation because no Android SDK/local.properties
+was available; the CI compile remains green. Visual/device regressions are
+unverified. Revert the isolated Home branch commits to restore the previous
+catalog and reward behavior; do not merge until visual evidence and review are
+complete.
