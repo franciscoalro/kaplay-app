@@ -54,6 +54,11 @@ internal object AdRewardController {
         }
     }
 
+    fun updateRemainingTime() {
+        val current = AdRewardRepository.currentState()
+        _state.value = _state.value.copy(remainingMs = current.remainingMs)
+    }
+
     fun showInterstitialThen(onContinue: () -> Unit) {
         val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
         val rewardActive = AdRewardRepository.currentState().remainingMs > 0L

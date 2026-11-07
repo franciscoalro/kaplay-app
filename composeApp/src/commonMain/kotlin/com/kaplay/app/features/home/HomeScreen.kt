@@ -72,6 +72,7 @@ import com.kaplay.app.features.home.components.HomeContinueWatchingSection
 import com.kaplay.app.features.home.components.HomeEmptyStateCard
 import com.kaplay.app.features.home.components.HomeHeroReservedSpace
 import com.kaplay.app.features.home.components.HomeHeroSection
+import com.kaplay.app.features.home.components.HomeRewardBanner
 import com.kaplay.app.features.home.components.HomeSkeletonHero
 import com.kaplay.app.features.home.components.HomeSkeletonRow
 import com.kaplay.app.features.home.components.HomeContinueWatchingSectionBottomPadding
@@ -971,6 +972,19 @@ fun HomeScreen(
         val homeSectionPadding = homeSectionHorizontalPaddingForWidth(maxWidth.value)
         val posterCardStyle = rememberPosterCardStyleUiState()
         val continueWatchingLayout = rememberContinueWatchingLayout(maxWidth.value, posterCardStyle)
+        val rewardState by AdRewardController.state.collectAsStateWithLifecycle()
+        val authState by AuthRepository.state.collectAsStateWithLifecycle()
+        val isRewardAuthenticationLoading = authState is AuthState.Loading
+        val requiresRewardAuthentication = authState !is AuthState.Authenticated ||
+            (authState as? AuthState.Authenticated)?.isAnonymous == true
+        LaunchedEffect(maxWidth < 600.dp) {
+            if (maxWidth < 600.dp) {
+                while (true) {
+                    delay(15_000L)
+                    AdRewardController.updateRemainingTime()
+                }
+            }
+        }
         val nativeBottomNavigationOverlayHeight =
             if (LocalKAPlayBottomNavigationOverlayPadding.current > 0.dp) {
                 kaplaySafeBottomPadding()
@@ -1050,6 +1064,20 @@ fun HomeScreen(
                             )
                         }
                     }
+                }
+            }
+
+            if (maxWidth < 600.dp) {
+                item(key = "home_reward_banner", contentType = "reward_banner") {
+                    HomeRewardBanner(
+                        rewardState = rewardState,
+                        requiresAuthentication = requiresRewardAuthentication,
+                        isAuthenticationLoading = isRewardAuthenticationLoading,
+                        onRequestAuthentication = onRequestAuthentication,
+                        onShowRewarded = AdRewardController::showRewarded,
+                        onRetry = AdRewardController::refresh,
+                        modifier = Modifier.padding(horizontal = homeSectionPadding),
+                    )
                 }
             }
 
@@ -1227,16 +1255,18 @@ fun HomeScreen(
                 }
             }
             }
-            HomeRewardButton(
-                onRequestAuthentication = onRequestAuthentication,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(
-                        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 10.dp,
-                        end = 14.dp,
-                    )
-                    .zIndex(5f),
-            )
+            if (maxWidth >= 600.dp) {
+                HomeRewardButton(
+                    onRequestAuthentication = onRequestAuthentication,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(
+                            top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 10.dp,
+                            end = 14.dp,
+                        )
+                        .zIndex(5f),
+                )
+            }
         }
     }
 }
@@ -1264,8 +1294,10 @@ private fun HomeRewardButton(
     val authState by AuthRepository.state.collectAsStateWithLifecycle()
     val isAnonymous = (authState as? AuthState.Authenticated)?.isAnonymous == true
     val requiresAuthentication = authState !is AuthState.Authenticated || isAnonymous
+    val isAuthenticationLoading = authState is AuthState.Loading
     val label = homeRewardLabel(requiresAuthentication, rewardState)
-    val enabled = homeRewardEnabled(rewardState)
+    val enabled = !isAuthenticationLoading &&
+        (requiresAuthentication || homeRewardEnabled(rewardState))
     Surface(
         modifier = modifier.heightIn(min = 48.dp),
         enabled = enabled,
