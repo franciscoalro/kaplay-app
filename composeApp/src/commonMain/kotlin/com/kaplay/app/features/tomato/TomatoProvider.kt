@@ -1,5 +1,6 @@
 package com.kaplay.app.features.tomato
 
+import co.touchlab.kermit.Logger
 import com.kaplay.app.core.network.createApiHttpClient
 import com.kaplay.app.features.plugins.PluginStorage
 import com.kaplay.app.features.streams.StreamItem
@@ -12,6 +13,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -33,6 +35,7 @@ import kotlinx.serialization.json.jsonPrimitive
  * hosts, headers or JSON shapes directly.
  */
 object TomatoProvider {
+    private val log = Logger.withTag("TomatoFeed")
     const val ANIME_ID_PREFIX = "tomato:"
     const val PROVIDER_NAME = "Tomato"
 
@@ -49,17 +52,20 @@ object TomatoProvider {
     internal val maxAttemptsPerRequest = 6
     internal val retryDelayMillis = 150L
     private const val FEED_ENRICH_LIMIT = 20
-    private const val FEED_DETAIL_LOOKUP_LIMIT = 24
     private val LATEST_EPISODE_SECTION_KEYS = setOf("novos-episodios", "ultimos-episodios", "latest-episodes")
 
     internal data class FeedSectionPayload(
         val key: String,
         val title: String,
         val items: List<TomatoTitle>,
+        val sourceItemCount: Int = items.size,
     )
 
     private val feedCacheMutex = Mutex()
+    @Volatile
     private var feedCache: List<FeedSectionPayload>? = null
+    @Volatile
+    private var feedCacheExpiresAtMillis: Long = 0L
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -94,6 +100,7 @@ object TomatoProvider {
                 mapOf(SETTINGS_TOKEN_KEY to normalized),
             ),
         )
+        clearFeedCache()
     }
 
     // ---------- transport ----------
@@ -301,20 +308,29 @@ object TomatoProvider {
 
     // ---------- catalog: feed + search ----------
 
+    internal fun detailLookupIds(rawSections: List<JsonObject>): List<Long> =
+        rawSections.flatMap { section ->
+            val key = sectionKey(section["title"]?.jsonPrimitive?.contentOrNull.orEmpty())
+            val items = runCatching { section["data"]?.jsonArray.orEmpty() }
+                .getOrDefault(emptyList())
+            feedItemsForSection(key, items.mapNotNull { item -> item as? JsonObject })
+                .take(FEED_ENRICH_LIMIT)
+                .filter { item -> displayTitleOrNull(titleOf(item)) == null }
+                .mapNotNull(::animeIdOf)
+                .distinct()
+        }.distinct()
+
     internal suspend fun feedSections(): List<FeedSectionPayload> = feedCacheMutex.withLock {
-        feedCache?.let { return@withLock it }
+        feedCache?.takeIf { currentTimeMillis() < feedCacheExpiresAtMillis }
+            ?.let { return@withLock it }
         val payload = requestJson("/v2/animes/feed", kind = "metadata", body = null, attempts = 6)
         val rawSections = (payload["data"] as? kotlinx.serialization.json.JsonArray)
             ?.mapNotNull { it as? JsonObject }
             ?.filter { it["title"]?.jsonPrimitive?.contentOrNull.orEmpty().isNotBlank() }
             ?: emptyList()
-        val allItems = rawSections.flatMap { section ->
-            val values = section["data"] ?: return@flatMap emptyList()
-            runCatching { values.jsonArray.mapNotNull { it as? JsonObject } }.getOrDefault(emptyList())
-        }
-        // The feed exposes IDs only. Resolve a bounded sample to avoid flooding Tomato
-        // with one detail request for every card across every Home row.
-        val ids = allItems.mapNotNull(::animeIdOf).distinct().take(FEED_DETAIL_LOOKUP_LIMIT)
+        // Resolve missing names per section so later categories are not starved by
+        // an arbitrary global lookup cap.
+        val ids = detailLookupIds(rawSections)
         val namesById = buildMap<Long, String> {
             ids.chunked(4).forEach { batch ->
                 val resolved = coroutineScope {
@@ -328,16 +344,34 @@ object TomatoProvider {
         val sections = rawSections.mapNotNull { section ->
             val title = section["title"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
             val key = sectionKey(title)
-            val items = feedItemsForSection(
+            val sourceItems = feedItemsForSection(
                 key,
                 runCatching { section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject } }
                     .getOrDefault(emptyList()),
-            ).take(FEED_ENRICH_LIMIT)
+            )
+            val items = sourceItems
                 .mapNotNull { item ->
                     val id = animeIdOf(item) ?: return@mapNotNull null
                     titleFromFeedItem(item, fallbackName = namesById[id])
                 }
-            FeedSectionPayload(key, title, items).takeIf { it.items.isNotEmpty() }
+            log.d { "category=$key source=${sourceItems.size} resolved=${items.size}" }
+            FeedSectionPayload(key, title, items, sourceItems.size)
+        }.filter { it.key.isNotBlank() }
+            .groupBy(FeedSectionPayload::key)
+            .map { (_, matching) ->
+                val first = matching.first()
+                first.copy(
+                    items = matching.flatMap(FeedSectionPayload::items)
+                        .distinctBy { title ->
+                            if (isLatestEpisodeSection(first.key)) title.episodeId ?: title.id else title.id
+                        },
+                    sourceItemCount = matching.sumOf(FeedSectionPayload::sourceItemCount),
+                )
+            }
+        feedCacheExpiresAtMillis = if (ids.all { !namesById[it].isNullOrBlank() }) {
+            Long.MAX_VALUE
+        } else {
+            currentTimeMillis() + 60_000L
         }
         return@withLock sections.also { feedCache = it }
     }
@@ -347,7 +381,10 @@ object TomatoProvider {
 
     fun clearFeedCache() {
         feedCache = null
+        feedCacheExpiresAtMillis = 0L
     }
+
+    internal fun cachedFeedSections(): List<FeedSectionPayload> = feedCache.orEmpty()
 
     internal fun isLatestEpisodeSection(sectionKey: String): Boolean =
         sectionKey in LATEST_EPISODE_SECTION_KEYS
@@ -377,7 +414,7 @@ object TomatoProvider {
         return raw?.jsonPrimitive?.intOrNull?.takeIf { it > 0 }?.toLong()
     }
 
-    private fun sectionKey(title: String): String =
+    internal fun sectionKey(title: String): String =
         title.lowercase()
             .replace('á', 'a').replace('ã', 'a').replace('â', 'a')
             .replace('é', 'e').replace('ê', 'e')

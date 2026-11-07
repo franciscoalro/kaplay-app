@@ -1,5 +1,6 @@
 package com.kaplay.app.features.home
 
+import co.touchlab.kermit.Logger
 import com.kaplay.app.features.addons.ManagedAddon
 import com.kaplay.app.features.addons.AddonRepository
 import com.kaplay.app.features.addons.enabledAddons
@@ -32,6 +33,7 @@ import kotlin.math.absoluteValue
 import kotlin.random.Random
 
 object HomeRepository {
+    private val log = Logger.withTag("HomeCatalog")
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -49,10 +51,12 @@ object HomeRepository {
 
     fun refresh(addons: List<ManagedAddon>, force: Boolean = false) {
         val activeAddons = addons.enabledAddons()
+        if (force) com.kaplay.app.features.tomato.TomatoProvider.clearFeedCache()
         val requests = buildHomeCatalogDefinitions(activeAddons)
+        HomeCatalogSettingsRepository.syncCatalogs(activeAddons)
         currentDefinitions = requests
         val requestCacheKeys = requests.mapTo(mutableSetOf(), HomeCatalogDefinition::cacheKey)
-        cachedSections = cachedSections.filterKeys(requestCacheKeys::contains)
+        cachedSections = if (force) emptyMap() else cachedSections.filterKeys(requestCacheKeys::contains)
         val requestKey = requests.joinToString(separator = "|", transform = HomeCatalogDefinition::cacheKey)
         currentRequestKey = requestKey
 
@@ -129,6 +133,14 @@ object HomeRepository {
             cachedSections = loadedSections.toMap()
             lastErrorMessage = firstErrorMessage
             activeRequestKey = null
+            val discoveredDefinitions = buildHomeCatalogDefinitions(activeAddons)
+            if (discoveredDefinitions.map(HomeCatalogDefinition::cacheKey) !=
+                requests.map(HomeCatalogDefinition::cacheKey)
+            ) {
+                HomeCatalogSettingsRepository.syncCatalogs(activeAddons)
+                refresh(activeAddons)
+                return@launch
+            }
             publishCurrentState(
                 isLoading = false,
                 requestKey = requestKey,
@@ -201,6 +213,12 @@ object HomeRepository {
                     title = customTitle.ifBlank { definition.titleFor(snapshot.showCatalogType) },
                 )
             }
+        sections.forEach { section ->
+            log.d {
+                "category=${section.key} displayed=${section.items.size} " +
+                    "available=${section.availableItemCount} hasMore=${section.hasMore}"
+            }
+        }
 
         val catalogHeroItems = if (snapshot.heroEnabled) {
             val heroRandom = Random((requestKey?.hashCode() ?: 0).absoluteValue + 1)
@@ -286,30 +304,17 @@ object HomeRepository {
 
     private suspend fun HomeCatalogDefinition.toTomatoSection(): HomeCatalogSection {
         val target = CatalogTarget.Tomato(query = null, sectionId = catalogId)
-        return try {
-            val page = com.kaplay.app.features.tomato.TomatoCatalog.feedPage(catalogId)
-            HomeCatalogSection(
-                key = key,
-                title = defaultTitle,
-                subtitle = addonName,
-                addonName = addonName,
-                target = target,
-                items = page.items,
-                availableItemCount = page.rawItemCount,
-                hasMore = false,
-            )
-        } catch (_: Throwable) {
-            HomeCatalogSection(
-                key = key,
-                title = defaultTitle,
-                subtitle = addonName,
-                addonName = addonName,
-                target = target,
-                items = emptyList(),
-                availableItemCount = 0,
-                hasMore = false,
-            )
-        }
+        val page = com.kaplay.app.features.tomato.TomatoCatalog.feedPage(catalogId)
+        return HomeCatalogSection(
+            key = key,
+            title = defaultTitle,
+            subtitle = addonName,
+            addonName = addonName,
+            target = target,
+            items = page.items.take(HOME_CATALOG_PREVIEW_FETCH_LIMIT),
+            availableItemCount = page.rawItemCount,
+            hasMore = false,
+        )
     }
 
     private suspend fun HomeCatalogDefinition.toServerSection(connectionId: String): HomeCatalogSection {

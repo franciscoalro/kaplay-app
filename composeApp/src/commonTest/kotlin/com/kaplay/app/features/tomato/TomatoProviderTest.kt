@@ -333,6 +333,59 @@ class TomatoProviderTest {
     }
 
     @Test
+    fun detailLookupIdsIncludeMissingNamesFromEveryFeedSection() {
+        val sections = json.parseToJsonElement(
+            """[
+                {"title":"Aventura","data":[{"anime_id":1,"thumbnail":"a"},{"anime_id":2,"thumbnail":"b"}]},
+                {"title":"Romance","data":[{"anime_id":3,"thumbnail":"c"}]}
+            ]""",
+        ).jsonArray.map { it.jsonObject }
+
+        assertEquals(listOf(1L, 2L, 3L), TomatoProvider.detailLookupIds(sections))
+    }
+
+    @Test
+    fun detailLookupDoesNotSpendCapacityOnNamedCardsOrEarlierSections() {
+        val first = (1..20).joinToString(",") { id -> """{"anime_id":$id}""" }
+        val sections = json.parseToJsonElement(
+            """[
+                {"title":"Em alta","data":[$first]},
+                {"title":"Aventura","data":[{"anime_id":21,"anime_name":"Named"},{"anime_id":22}]},
+                {"title":"Romance","data":[{"anime_id":23}]}
+            ]""",
+        ).jsonArray.map { it.jsonObject }
+
+        assertEquals((1L..20L).toList() + listOf(22L, 23L), TomatoProvider.detailLookupIds(sections))
+    }
+
+    @Test
+    fun dynamicFeedCategoriesAreNormalizedAndDoNotDuplicateFixedSections() {
+        val sections = listOf(
+            TomatoProvider.FeedSectionPayload("aventura", "AVENTURA", emptyList()),
+            TomatoProvider.FeedSectionPayload(TomatoProvider.sectionKey("Mistério & Suspense"), "Mistério & Suspense", emptyList()),
+            TomatoProvider.FeedSectionPayload("misterio-suspense", "Misterio Suspense", emptyList()),
+        )
+
+        val definitions = TomatoCatalog.homeDefinitions(sections)
+        assertEquals(10, definitions.size)
+        assertEquals(1, definitions.count { it.key == "tomato:aventura" })
+        assertEquals(1, definitions.count { it.key == "tomato:misterio-suspense" })
+        assertEquals(false, definitions.last().supportsPagination)
+    }
+
+    @Test
+    fun completeTomatoCategoryRetainsItemsBeyondHomePreview() {
+        val titles = (1L..105L).map { id -> TomatoTitle(id, "Anime $id", null) }
+        val section = TomatoProvider.FeedSectionPayload("aventura", "Aventura", titles)
+
+        val page = TomatoCatalog.feedPageFromSections("aventura", listOf(section))
+
+        assertEquals(105, page.rawItemCount)
+        assertEquals(105, page.items.size)
+        assertEquals(null, page.nextSkip)
+    }
+
+    @Test
     fun tomatoTitleFromFeedItemPopulatesEpisodeFields() {
         val item = json.parseToJsonElement(
             """{
