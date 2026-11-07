@@ -362,6 +362,7 @@ class TomatoProviderTest {
     fun dynamicFeedCategoriesAreNormalizedAndDoNotDuplicateFixedSections() {
         val sections = listOf(
             TomatoProvider.FeedSectionPayload("aventura", "AVENTURA", emptyList()),
+            TomatoProvider.FeedSectionPayload(TomatoProvider.sectionKey("Animes em alta"), "Animes em alta", emptyList()),
             TomatoProvider.FeedSectionPayload(TomatoProvider.sectionKey("Mistério & Suspense"), "Mistério & Suspense", emptyList()),
             TomatoProvider.FeedSectionPayload("misterio-suspense", "Misterio Suspense", emptyList()),
         )
