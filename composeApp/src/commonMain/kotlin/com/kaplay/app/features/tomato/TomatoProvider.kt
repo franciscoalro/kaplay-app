@@ -414,14 +414,19 @@ object TomatoProvider {
         return raw?.jsonPrimitive?.intOrNull?.takeIf { it > 0 }?.toLong()
     }
 
-    internal fun sectionKey(title: String): String =
-        title.lowercase()
+    internal fun sectionKey(title: String): String {
+        val normalized = title.lowercase()
             .replace('á', 'a').replace('ã', 'a').replace('â', 'a')
             .replace('é', 'e').replace('ê', 'e')
             .replace('í', 'i').replace('ó', 'o').replace('ô', 'o')
             .replace('ú', 'u').replace('ç', 'c')
             .replace(Regex("[^a-z0-9]+"), "-")
             .trim('-')
+        return when (normalized) {
+            "animes-em-alta" -> "em-alta"
+            else -> normalized
+        }
+    }
 
     suspend fun searchAnimes(query: String): List<TomatoTitle> {
         val payload = requestJson(
