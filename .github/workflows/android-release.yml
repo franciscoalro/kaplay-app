@@ -355,9 +355,11 @@ jobs:
           fi
           gh release create "${release_args[@]}" "${release_files[@]}"
 
+  # The sideload source is the iOS IPA catalog. Android-only releases publish
+  # their APKs to GitHub and are discovered by the in-app Android updater.
   store:
     name: Update sideload source
-    if: inputs.mode == 'publish'
+    if: inputs.mode == 'publish' && !inputs.android_only
     needs:
       - prepare
       - release

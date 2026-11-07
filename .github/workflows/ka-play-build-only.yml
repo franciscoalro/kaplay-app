@@ -191,7 +191,10 @@ jobs:
           target: default
           arch: x86_64
           profile: Nexus 5
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
+          # Some hosted runners expose /dev/kvm without granting the runner user
+          # access. Force software CPU emulation so adb cannot attach to a half-booted
+          # device (which was reported as API level 1 and broke split-APK install).
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-accel
           disable-animations: true
           script: |
             ./gradlew :androidApp:connectedFullDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kaplay.android.LibraryTrackingUiTest -Pandroid.testInstrumentationRunnerArguments.libraryScreenshots=true --no-daemon
