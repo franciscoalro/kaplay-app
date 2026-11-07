@@ -43,7 +43,7 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew :androidApp:assembleFullDebug --no-daemon --no-parallel --max-workers=2 --stacktrace
-          sha256sum androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk > androidApp/build/outputs/apk/full/debug/SHA256SUMS.txt
+          sha256sum androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk | tee androidApp/build/outputs/apk/full/debug/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: home-full-debug-apk

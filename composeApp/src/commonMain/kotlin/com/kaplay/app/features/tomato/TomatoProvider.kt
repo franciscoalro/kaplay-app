@@ -344,17 +344,19 @@ object TomatoProvider {
         val sections = rawSections.mapNotNull { section ->
             val title = section["title"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
             val key = sectionKey(title)
-            val sourceItems = feedItemsForSection(
-                key,
-                runCatching { section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject } }
-                    .getOrDefault(emptyList()),
-            )
+            val receivedItems = runCatching {
+                section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject }
+            }.getOrDefault(emptyList())
+            val sourceItems = feedItemsForSection(key, receivedItems)
             val items = sourceItems
                 .mapNotNull { item ->
                     val id = animeIdOf(item) ?: return@mapNotNull null
                     titleFromFeedItem(item, fallbackName = namesById[id])
                 }
-            log.d { "category=$key source=${sourceItems.size} resolved=${items.size}" }
+            log.d {
+                "category=$key received=${receivedItems.size} deduplicated=${sourceItems.size} " +
+                    "resolved=${items.size}"
+            }
             FeedSectionPayload(key, title, items, sourceItems.size)
         }.filter { it.key.isNotBlank() }
             .groupBy(FeedSectionPayload::key)
