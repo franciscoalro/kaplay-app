@@ -31,8 +31,10 @@ object TomatoCatalog {
 
     private const val FEED_ROW_LIMIT = 20
 
-    fun homeDefinitions(
-        sections: List<TomatoProvider.FeedSectionPayload> = TomatoProvider.cachedFeedSections(),
+    fun homeDefinitions(): List<HomeCatalogDefinition> = homeDefinitions(TomatoProvider.cachedFeedSections())
+
+    internal fun homeDefinitions(
+        sections: List<TomatoProvider.FeedSectionPayload>,
     ): List<HomeCatalogDefinition> = (HOME_SECTIONS + sections.mapNotNull { section ->
         section.key.takeIf { it.isNotBlank() }?.let { it to section.title }
     }).distinctBy { it.first }.map { (sectionId, title) ->
