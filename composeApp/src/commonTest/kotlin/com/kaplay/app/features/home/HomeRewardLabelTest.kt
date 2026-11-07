@@ -19,6 +19,20 @@ class HomeRewardLabelTest {
     }
 
     @Test
+    fun `active reward label takes precedence over a refresh error`() {
+        assertEquals(
+            "✨ 5m sem anúncios",
+            homeRewardLabel(
+                requiresAuthentication = false,
+                rewardState = AdRewardState(
+                    remainingMs = 5L * 60_000L,
+                    error = "offline",
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun `retry remains enabled when an existing reward has a sync error`() {
         assertEquals(true, homeRewardEnabled(AdRewardState(remainingMs = 60_000L, error = "offline")))
         assertEquals(false, homeRewardEnabled(AdRewardState(syncing = true)))

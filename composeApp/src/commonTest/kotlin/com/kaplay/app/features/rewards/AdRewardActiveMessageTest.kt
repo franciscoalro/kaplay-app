@@ -7,11 +7,11 @@ class AdRewardActiveMessageTest {
     @Test
     fun `active reward message uses the actual remaining duration`() {
         assertEquals(
-            "Você já está sem anúncios. Restam 2 horas e 5 minutos de benefício.",
+            "Seu benefício está ativo. Aguarde o término do tempo para liberar mais uma hora. Restam 2 horas e 5 minutos.",
             activeAdRewardMessage(2L * 60L * 60_000L + 5L * 60_000L),
         )
         assertEquals(
-            "Você já está sem anúncios. Restam 1 minuto de benefício.",
+            "Seu benefício está ativo. Aguarde o término do tempo para liberar mais uma hora. Restam 1 minuto.",
             activeAdRewardMessage(61_000L),
         )
     }
@@ -19,7 +19,7 @@ class AdRewardActiveMessageTest {
     @Test
     fun `active reward message handles less than one minute`() {
         assertEquals(
-            "Você já está sem anúncios. Restam menos de 1 minuto de benefício.",
+            "Seu benefício está ativo. Aguarde o término do tempo para liberar mais uma hora. Restam menos de 1 minuto.",
             activeAdRewardMessage(59_000L),
         )
     }

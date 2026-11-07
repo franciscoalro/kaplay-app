@@ -51,17 +51,17 @@ internal fun homeRewardBannerContent(
             isActionEnabled = false,
         )
 
-        rewardState.error != null -> HomeRewardBannerContent(
-            title = "Benefício indisponível agora",
-            subtitle = "Tente novamente em instantes",
-            actionLabel = "Tentar novamente",
-            isActionEnabled = true,
-        )
-
         remainingMs > 0L -> HomeRewardBannerContent(
             title = "1 hora sem anúncios ativa",
             subtitle = "Tempo restante: ${formatRewardRemaining(remainingMs)}",
             actionLabel = "Ativo",
+            isActionEnabled = true,
+        )
+
+        rewardState.error != null -> HomeRewardBannerContent(
+            title = "Benefício indisponível agora",
+            subtitle = "Tente novamente em instantes",
+            actionLabel = "Tentar novamente",
             isActionEnabled = true,
         )
 

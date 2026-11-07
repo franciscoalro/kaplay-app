@@ -1,17 +1,20 @@
 package com.kaplay.app.features.catalog
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -21,8 +24,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kaplay.app.core.ui.KAPlayBackButton
+import com.kaplay.app.core.ui.Chip
+import com.kaplay.app.core.ui.KASpacing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -105,6 +111,16 @@ fun CatalogScreen(
     )
     var headerHeightPx by remember { mutableIntStateOf(0) }
     var observedOfflineState by remember { mutableStateOf(false) }
+    var selectedGenre by remember(target) { mutableStateOf<String?>(null) }
+    val genres = remember(uiState.items) { catalogGenres(uiState.items) }
+    LaunchedEffect(genres) {
+        if (selectedGenre != null && genres.none { it.equals(selectedGenre, ignoreCase = true) }) {
+            selectedGenre = null
+        }
+    }
+    val visibleItems = remember(uiState.items, selectedGenre) {
+        filterCatalogItems(uiState.items, selectedGenre)
+    }
 
     LaunchedEffect(target, homeCatalogSettingsUiState.hideUnreleasedContent) {
         CatalogRepository.load(
@@ -189,7 +205,7 @@ fun CatalogScreen(
                             showLabels = !posterCardStyle.hideLabelsEnabled,
                         )
                     }
-                } else if (uiState.items.isEmpty()) {
+                } else if (visibleItems.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         CatalogEmptyState(
                             errorMessage = uiState.errorMessage,
@@ -205,7 +221,7 @@ fun CatalogScreen(
                     }
                 } else {
                     items(
-                        items = uiState.items.withDuplicateSafeLazyKeys { item -> item.stableKey() },
+                        items = visibleItems.withDuplicateSafeLazyKeys { item -> item.stableKey() },
                         key = { item -> item.lazyKey },
                     ) { keyedItem ->
                         val item = keyedItem.value
@@ -233,6 +249,9 @@ fun CatalogScreen(
             CatalogHeader(
                 title = title,
                 subtitle = subtitle,
+                genres = genres,
+                selectedGenre = selectedGenre,
+                onGenreSelected = { genre -> selectedGenre = genre },
                 modifier = Modifier.onSizeChanged { headerHeightPx = it.height },
                 onBack = onBack,
             )
@@ -244,16 +263,33 @@ fun CatalogScreen(
 private fun CatalogHeader(
     title: String,
     subtitle: String,
+    genres: List<String>,
+    selectedGenre: String?,
+    onGenreSelected: (String?) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (LocalUseNativeNavigation.current) {
-        Box(
+        Column(
             modifier = modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .height(44.dp),
-        )
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .height(44.dp),
+            )
+            if (genres.size > 1) {
+                CatalogGenreFilterRow(
+                    genres = genres,
+                    selectedGenre = selectedGenre,
+                    onGenreSelected = onGenreSelected,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = KASpacing.SM),
+                )
+            }
+        }
         return
     }
 
@@ -289,6 +325,46 @@ private fun CatalogHeader(
                     fontWeight = FontWeight.Medium,
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (genres.size > 1) {
+            CatalogGenreFilterRow(
+                genres = genres,
+                selectedGenre = selectedGenre,
+                onGenreSelected = onGenreSelected,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CatalogGenreFilterRow(
+    genres: List<String>,
+    selectedGenre: String?,
+    onGenreSelected: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scrollState = rememberScrollState()
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .horizontalScroll(scrollState),
+        horizontalArrangement = Arrangement.spacedBy(KASpacing.SM),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Chip(
+            label = stringResource(Res.string.discover_all_genres),
+            selected = selectedGenre == null,
+            onClick = { onGenreSelected(null) },
+            modifier = Modifier.heightIn(min = 48.dp),
+        )
+        genres.forEach { genre ->
+            Chip(
+                label = genre,
+                selected = genre.equals(selectedGenre, ignoreCase = true),
+                onClick = { onGenreSelected(genre) },
+                modifier = Modifier.heightIn(min = 48.dp),
             )
         }
     }

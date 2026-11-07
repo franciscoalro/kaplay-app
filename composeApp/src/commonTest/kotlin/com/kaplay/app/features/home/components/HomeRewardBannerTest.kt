@@ -31,6 +31,25 @@ class HomeRewardBannerTest {
     }
 
     @Test
+    fun `active reward stays visible when refresh also reports an error`() {
+        assertEquals(
+            HomeRewardBannerContent(
+                title = "1 hora sem anúncios ativa",
+                subtitle = "Tempo restante: 5min",
+                actionLabel = "Ativo",
+                isActionEnabled = true,
+            ),
+            homeRewardBannerContent(
+                requiresAuthentication = false,
+                rewardState = AdRewardState(
+                    remainingMs = 5L * 60_000L,
+                    error = "offline",
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun `remaining time is compact and never shows zero minutes`() {
         assertEquals("1min", formatRewardRemaining(1L))
         assertEquals("59min", formatRewardRemaining(59L * 60_000L))

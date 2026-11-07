@@ -10,10 +10,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.gestures.stopScroll
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -24,6 +27,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +50,8 @@ import com.kaplay.app.core.network.NetworkCondition
 import com.kaplay.app.core.network.NetworkStatusRepository
 import com.kaplay.app.core.ui.LocalKAPlayBottomNavigationOverlayPadding
 import com.kaplay.app.core.ui.LocalVerticalBarPadding
+import com.kaplay.app.core.ui.Chip
+import com.kaplay.app.core.ui.KASpacing
 import com.kaplay.app.core.ui.kaplayHorizontalScrollBleed
 import com.kaplay.app.core.ui.ScreenActivityEffect
 import com.kaplay.app.core.ui.KAPlayScreen
@@ -911,8 +917,20 @@ fun HomeScreen(
     val collectionsMap = remember(visibleCollections) {
         visibleCollections.associateBy { "collection_${it.id}" }
     }
-    val sectionsMap = remember(homeUiState.sections) {
-        homeUiState.sections.associateBy(HomeCatalogSection::key)
+    val homeGenres = remember(homeUiState.sections) {
+        homeCatalogGenres(homeUiState.sections)
+    }
+    var selectedHomeGenre by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(homeGenres) {
+        if (selectedHomeGenre != null && homeGenres.none { it.equals(selectedHomeGenre, ignoreCase = true) }) {
+            selectedHomeGenre = null
+        }
+    }
+    val visibleHomeSections = remember(homeUiState.sections, selectedHomeGenre) {
+        filterHomeCatalogSections(homeUiState.sections, selectedHomeGenre)
+    }
+    val sectionsMap = remember(visibleHomeSections) {
+        visibleHomeSections.associateBy(HomeCatalogSection::key)
     }
     val enabledHomeItems = remember(homeSettingsUiState.items) {
         homeSettingsUiState.items.filter { it.enabled }
@@ -947,7 +965,7 @@ fun HomeScreen(
             item.isCollection && collectionsMap[item.key] != null
         }
     }
-    val hasRenderableHomeRows = homeUiState.sections.isNotEmpty() || hasRenderableCollectionRows
+    val hasRenderableHomeRows = visibleHomeSections.isNotEmpty() || hasRenderableCollectionRows
     val showHeroSlot = shouldShowHomeHeroSlot(
         heroEnabled = homeSettingsUiState.heroEnabled,
         hasHeroItems = homeUiState.heroItems.isNotEmpty(),
@@ -1082,6 +1100,21 @@ fun HomeScreen(
                 }
             }
 
+            if (homeGenres.size > 1) {
+                item(key = "home_genre_filters", contentType = "genre_filters") {
+                    HomeGenreFilterRow(
+                        genres = homeGenres,
+                        selectedGenre = selectedHomeGenre,
+                        onGenreSelected = { genre -> selectedHomeGenre = genre },
+                        modifier = Modifier.padding(
+                            start = homeSectionPadding,
+                            end = homeSectionPadding,
+                            bottom = KASpacing.LG,
+                        ),
+                    )
+                }
+            }
+
             when {
                 isInitialHomeContentLoading -> {
                     homeContinueWatchingSections(
@@ -1109,7 +1142,7 @@ fun HomeScreen(
                 }
 
                 !hasActiveAddons && !hasServerLibraries && !hasRenderableCollectionRows &&
-                    homeUiState.sections.isEmpty() && homeUiState.heroItems.isEmpty() -> {
+                    visibleHomeSections.isEmpty() && homeUiState.heroItems.isEmpty() -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
                         continueWatchingItems = continueWatchingItems,
@@ -1160,7 +1193,7 @@ fun HomeScreen(
                     }
                 }
 
-                homeUiState.sections.isEmpty() && homeUiState.heroItems.isEmpty() &&
+                visibleHomeSections.isEmpty() && homeUiState.heroItems.isEmpty() &&
                     (!continueWatchingPreferences.isVisible || !hasContinueWatchingRows) &&
                     !hasRenderableCollectionRows -> {
                     item(key = "home_empty", contentType = "empty") {
@@ -1223,7 +1256,7 @@ fun HomeScreen(
                                 item(key = keyedSettingsItem.lazyKey, contentType = "collection") {
                                     HomeCollectionRowSection(
                                         collection = collection,
-                                        modifier = Modifier.padding(bottom = 12.dp),
+                                        modifier = Modifier.padding(bottom = KASpacing.XL),
                                         sectionPadding = homeSectionPadding,
                                         animateGifs = animateCollectionGifs,
                                         onFolderClick = onFolderClick,
@@ -1237,7 +1270,7 @@ fun HomeScreen(
                                     HomeCatalogRowSection(
                                         section = section,
                                         entries = section.items.take(HOME_CATALOG_PREVIEW_LIMIT),
-                                        modifier = Modifier.padding(bottom = 12.dp),
+                                        modifier = Modifier.padding(bottom = KASpacing.XL),
                                         sectionPadding = homeSectionPadding,
                                         onViewAllClick = if (section.canOpenCatalog(HOME_CATALOG_PREVIEW_LIMIT)) {
                                             onCatalogClick?.let { { it(section) } }
@@ -1272,6 +1305,39 @@ fun HomeScreen(
     }
 }
 
+@Composable
+private fun HomeGenreFilterRow(
+    genres: List<String>,
+    selectedGenre: String?,
+    onGenreSelected: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scrollState = rememberScrollState()
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .horizontalScroll(scrollState),
+        horizontalArrangement = Arrangement.spacedBy(KASpacing.SM),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Chip(
+            label = stringResource(Res.string.discover_all_genres),
+            selected = selectedGenre == null,
+            onClick = { onGenreSelected(null) },
+            modifier = Modifier.heightIn(min = 48.dp),
+        )
+        genres.forEach { genre ->
+            Chip(
+                label = genre,
+                selected = genre.equals(selectedGenre, ignoreCase = true),
+                onClick = { onGenreSelected(genre) },
+                modifier = Modifier.heightIn(min = 48.dp),
+            )
+        }
+    }
+}
+
 internal fun homeRewardEnabled(rewardState: AdRewardState): Boolean =
     !rewardState.syncing
 
@@ -1281,8 +1347,8 @@ internal fun homeRewardLabel(
 ): String = when {
     requiresAuthentication -> "Entrar • 1h grátis"
     rewardState.syncing -> "Sincronizando…"
-    rewardState.error != null -> "Tentar novamente"
     rewardState.remainingMs > 0L -> "✨ ${((rewardState.remainingMs / 60_000L).coerceAtLeast(1L))}m sem anúncios"
+    rewardState.error != null -> "Tentar novamente"
     else -> "🎁 1h grátis"
 }
 

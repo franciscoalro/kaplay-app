@@ -23,5 +23,5 @@ internal fun activeAdRewardMessage(remainingMs: Long): String {
             }
         }
     }
-    return "Você já está sem anúncios. Restam $remainingText de benefício."
+    return "Seu benefício está ativo. Aguarde o término do tempo para liberar mais uma hora. Restam $remainingText."
 }
