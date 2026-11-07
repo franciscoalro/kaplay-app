@@ -972,13 +972,14 @@ fun HomeScreen(
         val homeSectionPadding = homeSectionHorizontalPaddingForWidth(maxWidth.value)
         val posterCardStyle = rememberPosterCardStyleUiState()
         val continueWatchingLayout = rememberContinueWatchingLayout(maxWidth.value, posterCardStyle)
+        val isMobileHome = maxWidth < 600.dp
         val rewardState by AdRewardController.state.collectAsStateWithLifecycle()
         val authState by AuthRepository.state.collectAsStateWithLifecycle()
         val isRewardAuthenticationLoading = authState is AuthState.Loading
         val requiresRewardAuthentication = authState !is AuthState.Authenticated ||
             (authState as? AuthState.Authenticated)?.isAnonymous == true
-        LaunchedEffect(maxWidth < 600.dp) {
-            if (maxWidth < 600.dp) {
+        LaunchedEffect(isMobileHome) {
+            if (isMobileHome) {
                 while (true) {
                     delay(15_000L)
                     AdRewardController.updateRemainingTime()
@@ -1067,7 +1068,7 @@ fun HomeScreen(
                 }
             }
 
-            if (maxWidth < 600.dp) {
+            if (isMobileHome) {
                 item(key = "home_reward_banner", contentType = "reward_banner") {
                     HomeRewardBanner(
                         rewardState = rewardState,
@@ -1255,7 +1256,7 @@ fun HomeScreen(
                 }
             }
             }
-            if (maxWidth >= 600.dp) {
+            if (!isMobileHome) {
                 HomeRewardButton(
                     onRequestAuthentication = onRequestAuthentication,
                     modifier = Modifier
