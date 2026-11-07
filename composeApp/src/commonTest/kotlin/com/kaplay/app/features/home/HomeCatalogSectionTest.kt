@@ -36,6 +36,19 @@ class HomeCatalogSectionTest {
         assertFalse(section.canOpenCatalog(previewLimit = 18))
     }
 
+    @Test
+    fun `counts one five and twenty without inventing pagination`() {
+        assertFalse(section(availableItemCount = 1, hasMore = false).canOpenCatalog(18))
+        assertFalse(section(availableItemCount = 5, hasMore = false).canOpenCatalog(18))
+        assertTrue(section(availableItemCount = 20, hasMore = false).canOpenCatalog(18))
+    }
+
+    @Test
+    fun `paginated catalog with more than one hundred items remains navigable`() {
+        assertTrue(section(availableItemCount = 18, hasMore = true).canOpenCatalog(18))
+        assertTrue(section(availableItemCount = 105, hasMore = true).canOpenCatalog(18))
+    }
+
     private fun section(
         availableItemCount: Int,
         hasMore: Boolean,

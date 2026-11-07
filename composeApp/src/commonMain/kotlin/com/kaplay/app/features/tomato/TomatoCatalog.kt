@@ -31,7 +31,13 @@ object TomatoCatalog {
 
     private const val FEED_ROW_LIMIT = 20
 
-    fun homeDefinitions(): List<HomeCatalogDefinition> = HOME_SECTIONS.map { (sectionId, title) ->
+    fun homeDefinitions(): List<HomeCatalogDefinition> = homeDefinitions(TomatoProvider.cachedFeedSections())
+
+    internal fun homeDefinitions(
+        sections: List<TomatoProvider.FeedSectionPayload>,
+    ): List<HomeCatalogDefinition> = (HOME_SECTIONS + sections.mapNotNull { section ->
+        section.key.takeIf { it.isNotBlank() }?.let { it to section.title }
+    }).distinctBy { it.first }.map { (sectionId, title) ->
         HomeCatalogDefinition(
             key = "tomato:$sectionId",
             defaultTitle = title,
@@ -93,12 +99,19 @@ object TomatoCatalog {
 
     suspend fun feedPage(sectionId: String? = null): CatalogPage {
         val sections = TomatoProvider.feedSections()
+        return feedPageFromSections(sectionId, sections)
+    }
+
+    internal fun feedPageFromSections(
+        sectionId: String?,
+        sections: List<TomatoProvider.FeedSectionPayload>,
+    ): CatalogPage {
         val section = sectionId?.let { id ->
             val normalizedId = id.removePrefix("tomato:")
             sections.firstOrNull { it.key == normalizedId }
         }
-        val globalItems = if (sectionId == null) TomatoProvider.feedAnimes() else emptyList()
-        val titles = titlesForSection(sectionId, sections, globalItems).take(FEED_ROW_LIMIT)
+        val globalItems = if (sectionId == null) sections.flatMap { it.items }.distinctBy(TomatoTitle::id) else emptyList()
+        val titles = titlesForSection(sectionId, sections, globalItems)
         val latestEpisode = section?.key?.let(TomatoProvider::isLatestEpisodeSection) == true
         return CatalogPage(
             items = titles.map { title -> metaPreview(title, latestEpisode = latestEpisode) },

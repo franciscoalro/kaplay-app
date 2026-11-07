@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - '**'
+  pull_request:
+    branches:
+      - build-tomato-cmp
   workflow_dispatch:
     inputs:
       publish_release:
@@ -17,6 +20,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  home-full-debug-apk:
+    name: Build Home fullDebug APK
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Init MPVKit submodule
+        run: |
+          git submodule sync -- MPVKit || true
+          git -c protocol.version=2 submodule update --init --depth=1 MPVKit || true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Generate runner local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+      - name: Assemble Full Debug and record SHA-256
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :androidApp:assembleFullDebug --no-daemon --no-parallel --max-workers=2 --stacktrace
+          sha256sum androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk | tee androidApp/build/outputs/apk/full/debug/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: home-full-debug-apk
+          path: |
+            androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk
+            androidApp/build/outputs/apk/full/debug/SHA256SUMS.txt
+          if-no-files-found: error
+
   compile-full-debug:
     name: compileFullDebugKotlin
     runs-on: ubuntu-latest
@@ -105,6 +140,8 @@ jobs:
             --tests 'com.kaplay.app.features.rewards.RewardStorageTest' \
             --tests 'com.kaplay.app.features.rewards.RewardClaimGateTest' \
             --tests 'com.kaplay.app.features.home.HomeRewardLabelTest' \
+            --tests 'com.kaplay.app.features.home.HomeCatalogDefinitionTest' \
+            --tests 'com.kaplay.app.features.home.HomeCatalogSectionTest' \
             --tests 'com.kaplay.app.features.profiles.ProfileSyncStatusPresenterTest' \
             --tests 'com.kaplay.app.core.sync.ProfileSyncContractTest' \
             --no-daemon --no-parallel --max-workers=2 --stacktrace

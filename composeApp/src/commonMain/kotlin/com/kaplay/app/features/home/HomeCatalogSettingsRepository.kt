@@ -142,7 +142,13 @@ object HomeCatalogSettingsRepository {
     fun syncCatalogs(addons: List<ManagedAddon>) {
         ensureLoaded()
         val collections = CollectionRepository.collections.value
-        val syncInput = CatalogSyncInput(addons, collections, Locale.current.toLanguageTag(), ServerRepository.uiState.value.revision)
+        val syncInput = CatalogSyncInput(
+            addons,
+            collections,
+            Locale.current.toLanguageTag(),
+            ServerRepository.uiState.value.revision,
+            com.kaplay.app.features.tomato.TomatoCatalog.homeDefinitions().map(HomeCatalogDefinition::key),
+        )
         if (lastCatalogSync == syncInput) return
         definitions = buildHomeCatalogDefinitions(addons)
         collectionDefinitions = buildCollectionDefinitions(collections)
@@ -644,4 +650,5 @@ private data class CatalogSyncInput(
     val collections: List<Collection>,
     val locale: String,
     val serverRevision: Int,
+    val tomatoSectionKeys: List<String>,
 )
