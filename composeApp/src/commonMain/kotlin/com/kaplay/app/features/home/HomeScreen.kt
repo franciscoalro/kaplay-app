@@ -1273,7 +1273,7 @@ fun HomeScreen(
 }
 
 internal fun homeRewardEnabled(rewardState: AdRewardState): Boolean =
-    !rewardState.syncing && (rewardState.remainingMs <= 0L || rewardState.error != null)
+    !rewardState.syncing
 
 internal fun homeRewardLabel(
     requiresAuthentication: Boolean,
@@ -1304,6 +1304,7 @@ private fun HomeRewardButton(
         enabled = enabled,
         onClick = when {
             requiresAuthentication -> onRequestAuthentication
+            rewardState.remainingMs > 0L -> AdRewardController::showRewarded
             rewardState.error != null -> AdRewardController::refresh
             else -> AdRewardController::showRewarded
         },

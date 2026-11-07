@@ -72,7 +72,11 @@ internal object AdRewardController {
 
     @OptIn(ExperimentalUuidApi::class)
     fun showRewarded() {
-        if (AdRewardRepository.currentState().remainingMs > 0L) return
+        val currentState = AdRewardRepository.currentState()
+        if (currentState.remainingMs > 0L) {
+            KAPlayToastController.show(activeAdRewardMessage(currentState.remainingMs))
+            return
+        }
         if (AdRewardRepository.remoteUserId() == null) {
             val message = "Entre na sua conta KA Play para ganhar 1 hora sem anúncios"
             _state.value = _state.value.copy(error = message)

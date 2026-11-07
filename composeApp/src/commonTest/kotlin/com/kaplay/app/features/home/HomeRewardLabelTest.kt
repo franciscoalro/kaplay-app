@@ -14,6 +14,11 @@ class HomeRewardLabelTest {
     }
 
     @Test
+    fun `active reward remains clickable so it can explain the remaining benefit`() {
+        assertEquals(true, homeRewardEnabled(AdRewardState(remainingMs = 60_000L)))
+    }
+
+    @Test
     fun `retry remains enabled when an existing reward has a sync error`() {
         assertEquals(true, homeRewardEnabled(AdRewardState(remainingMs = 60_000L, error = "offline")))
         assertEquals(false, homeRewardEnabled(AdRewardState(syncing = true)))

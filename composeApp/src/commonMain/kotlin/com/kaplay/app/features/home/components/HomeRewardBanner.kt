@@ -62,7 +62,7 @@ internal fun homeRewardBannerContent(
             title = "1 hora sem anúncios ativa",
             subtitle = "Tempo restante: ${formatRewardRemaining(remainingMs)}",
             actionLabel = "Ativo",
-            isActionEnabled = false,
+            isActionEnabled = true,
         )
 
         else -> HomeRewardBannerContent(
@@ -108,6 +108,7 @@ internal fun HomeRewardBanner(
     val onClick = when {
         isAuthenticationLoading -> ({ })
         requiresAuthentication -> onRequestAuthentication
+        rewardState.remainingMs > 0L -> onShowRewarded
         rewardState.error != null -> onRetry
         else -> onShowRewarded
     }

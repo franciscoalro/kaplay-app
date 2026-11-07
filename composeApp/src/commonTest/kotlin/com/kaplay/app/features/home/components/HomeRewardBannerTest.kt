@@ -21,7 +21,7 @@ class HomeRewardBannerTest {
                 title = "1 hora sem anúncios ativa",
                 subtitle = "Tempo restante: 1h 5min",
                 actionLabel = "Ativo",
-                isActionEnabled = false,
+                isActionEnabled = true,
             ),
             homeRewardBannerContent(
                 requiresAuthentication = false,
