@@ -84,6 +84,9 @@ object AndroidAppUpdaterPlatform {
 
             val request = Request.Builder()
                 .url(assetUrl)
+                // GitHub's release asset API endpoint uses this media type to
+                // redirect to the APK bytes instead of returning asset metadata.
+                .header("Accept", "application/octet-stream")
                 .build()
 
             httpClient.newCall(request).execute().use { response ->

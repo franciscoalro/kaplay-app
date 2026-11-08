@@ -71,6 +71,22 @@ class AppUpdaterRepositoryTest {
         )
     }
 
+    @Test
+    fun apkDownloadPrefersGithubApiAssetEndpointOverBrowserCdnEndpoint() {
+        val response = """{
+            "tag_name": "1.1.0", "assets": [{
+                "name": "app-arm64-v8a.apk",
+                "url": "https://api.github.com/repos/example/app/releases/assets/42",
+                "browser_download_url": "https://github.com/example/app/releases/download/1.1.0/app-arm64-v8a.apk"
+            }]
+        }"""
+
+        assertEquals(
+            "https://api.github.com/repos/example/app/releases/assets/42",
+            select(response, UpdateChannel.STABLE)?.assetUrl,
+        )
+    }
+
     private fun select(response: String, channel: UpdateChannel): AppUpdate? =
         AppUpdaterRepository.selectUpdate(response, channel, listOf("arm64-v8a"))
 }

@@ -24,6 +24,8 @@ internal data class GitHubReleaseDto(
 @Serializable
 internal data class GitHubAssetDto(
     val name: String,
+    /** GitHub's API asset endpoint returns a redirect to the signed blob URL. */
+    @SerialName("url") val apiUrl: String? = null,
     @SerialName("browser_download_url") val browserDownloadUrl: String,
     val size: Long? = null,
     @SerialName("content_type") val contentType: String? = null,
@@ -80,7 +82,11 @@ internal object AppUpdaterRepository {
                 notes = release.body.orEmpty(),
                 releaseUrl = release.htmlUrl,
                 assetName = asset.name,
-                assetUrl = asset.browserDownloadUrl,
+                // The browser endpoint has an independently cached CDN path and can
+                // fail with a transient 504 even when the public API asset redirect
+                // is healthy. Keep the browser URL as a compatibility fallback for
+                // older/malformed API responses.
+                assetUrl = asset.apiUrl ?: asset.browserDownloadUrl,
                 assetSizeBytes = asset.size,
             )
         }
