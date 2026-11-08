@@ -50,7 +50,7 @@ class CatalogRepositoryTest {
                 }
             }
             val baseOrder = base.items.map { it.id }
-            val baseIdentity = base.items.map(::stableKey)
+            val baseIdentity = base.items.map { it.stableKey() }
             assertEquals(listOf("tomato:1", "tomato:2"), baseOrder)
 
             detailRelease.complete(Unit)
@@ -61,7 +61,7 @@ class CatalogRepositoryTest {
             }
 
             assertEquals(baseOrder, enriched.items.map { it.id })
-            assertEquals(baseIdentity, enriched.items.map(::stableKey))
+            assertEquals(baseIdentity, enriched.items.map { it.stableKey() })
             assertEquals(
                 listOf("https://cdn.example/1-detail.jpg", "https://cdn.example/2-detail.jpg"),
                 enriched.items.map { it.poster },
