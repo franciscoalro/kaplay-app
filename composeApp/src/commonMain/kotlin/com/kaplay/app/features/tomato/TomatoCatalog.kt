@@ -172,7 +172,7 @@ object TomatoCatalog {
         )
     }
 
-    suspend fun enrichFeedSections(
+    internal suspend fun enrichFeedSections(
         sections: List<TomatoProvider.FeedSectionPayload>,
         onUpdate: suspend (List<TomatoProvider.FeedSectionPayload>) -> Unit,
     ) {
