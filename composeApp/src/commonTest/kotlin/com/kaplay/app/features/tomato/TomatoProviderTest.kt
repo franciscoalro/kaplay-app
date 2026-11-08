@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -20,6 +21,48 @@ class TomatoProviderTest {
         val cards = TomatoProvider.feedItems(payload["data"], mutableListOf())
 
         assertEquals(listOf(6945L, 6914L), cards.mapNotNull(TomatoProvider::animeIdOf))
+    }
+
+    @Test
+    fun searchItemsAcceptsMeasuredNestedAndRootResultEnvelopes() {
+        val nested = json.parseToJsonElement(
+            """{"data":{"result":[{"anime_id":1,"anime_name":"Nested"}]}}""",
+        ).jsonObject
+        val root = json.parseToJsonElement(
+            """{"result":[{"anime_id":2,"anime_name":"Root"}]}""",
+        ).jsonObject
+
+        assertEquals(listOf(1L), TomatoProvider.searchItems(nested).mapNotNull(TomatoProvider::animeIdOf))
+        assertEquals(listOf(2L), TomatoProvider.searchItems(root).mapNotNull(TomatoProvider::animeIdOf))
+    }
+
+    @Test
+    fun repeatedSearchPageSignatureIsStableByAnimeIdentity() {
+        val first = json.parseToJsonElement(
+            """{"anime_id":1,"anime_name":"One","thumbnail":"a"}""",
+        ).jsonObject
+        val sameAnimeWithChangedImage = json.parseToJsonElement(
+            """{"anime_id":1,"anime_name":"One","thumbnail":"b"}""",
+        ).jsonObject
+
+        assertEquals(
+            TomatoProvider.searchPageSignature(listOf(first)),
+            TomatoProvider.searchPageSignature(listOf(sameAnimeWithChangedImage)),
+        )
+
+        val seenPages = mutableSetOf<String>()
+        assertFalse(TomatoProvider.shouldStopSearchPage(listOf(first), seenPages))
+        assertTrue(TomatoProvider.shouldStopSearchPage(listOf(sameAnimeWithChangedImage), seenPages))
+        assertTrue(TomatoProvider.shouldStopSearchPage(emptyList(), seenPages))
+    }
+
+    @Test
+    fun detailLookupIncludesTitlelessCardsAfterTheFormerTwentyItemCutoff() {
+        val section = json.parseToJsonElement(
+            """{"title":"Em alta","data":[${(1..25).joinToString(",") { "{\"anime_id\":$it}" }}]}""",
+        ).jsonObject
+
+        assertEquals((1L..25L).toList(), TomatoProvider.detailLookupIds(listOf(section)))
     }
 
     @Test

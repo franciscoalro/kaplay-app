@@ -17,6 +17,7 @@ import com.kaplay.app.features.collection.findCollectionCatalog
 import com.kaplay.app.features.servers.ServerCatalog
 import com.kaplay.app.features.trakt.TraktPublicListSourceResolver
 import com.kaplay.app.features.watchprogress.CurrentDateProvider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,6 +31,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.random.Random
+
+private suspend fun <T> runCatchingCancellable(block: suspend () -> T): Result<T> =
+    try {
+        Result.success(block())
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Throwable) {
+        Result.failure(error)
+    }
 
 object HomeRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -95,7 +105,7 @@ object HomeRepository {
                 if (activeRequestKey != requestKey) return@launch
                 val results = batch.map { request ->
                     async {
-                        request to runCatching {
+                        request to runCatchingCancellable {
                             request.toSection(forceRefresh = force)
                         }
                     }
@@ -294,11 +304,13 @@ object HomeRepository {
                 subtitle = addonName,
                 addonName = addonName,
                 target = target,
-                items = page.items,
+                items = page.items.take(HOME_CATALOG_PREVIEW_FETCH_LIMIT),
                 availableItemCount = page.rawItemCount,
                 hasMore = false,
             )
-        } catch (_: Throwable) {
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
             HomeCatalogSection(
                 key = key,
                 title = defaultTitle,
@@ -363,7 +375,7 @@ object HomeRepository {
             val sources = collectionHeroSources(collections)
             val sourceResults = sources.map { source ->
                 async {
-                    runCatching {
+                    runCatchingCancellable {
                         source.resolveCollectionHeroItems(
                             addons = addons,
                             forceRefresh = forceRefresh,

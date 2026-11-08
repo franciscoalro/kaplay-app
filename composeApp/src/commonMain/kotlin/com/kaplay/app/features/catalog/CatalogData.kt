@@ -113,6 +113,11 @@ private data class CatalogFetchKey(
 fun AddonCatalog.supportsPagination(): Boolean =
     extra.any { property -> property.name.equals("skip", ignoreCase = true) }
 
+fun nextCatalogSkipAfterFailure(
+    reset: Boolean,
+    previousNextSkip: Int?,
+): Int? = previousNextSkip.takeUnless { reset }
+
 fun nextCatalogPaginationState(
     supportsPagination: Boolean,
     requestedSkip: Int,

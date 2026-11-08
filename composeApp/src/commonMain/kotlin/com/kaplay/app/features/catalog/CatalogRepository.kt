@@ -31,6 +31,7 @@ object CatalogRepository {
 
     private var activeJob: Job? = null
     private var activeRequest: CatalogRequest? = null
+    private var requestGeneration = 0L
     private val scrollPositions = linkedMapOf<CatalogRequest, CatalogScrollPosition>()
 
     fun load(
@@ -65,6 +66,7 @@ object CatalogRepository {
     }
 
     fun clear() {
+        requestGeneration += 1
         activeJob?.cancel()
         activeRequest = null
         scrollPositions.clear()
@@ -91,6 +93,7 @@ object CatalogRepository {
 
     private fun observeInternalLibrary(request: CatalogRequest) {
         activeJob?.cancel()
+        val generation = ++requestGeneration
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             errorMessage = null,
@@ -103,7 +106,7 @@ object CatalogRepository {
                 LibraryRepository.uiState.libraryCatalogStates(
                     target, LibraryRepository.uiState.libraryCatalogOrders(target),
                 ).collect { state ->
-                    if (activeRequest != request) return@collect
+                    if (!isCurrent(request, generation)) return@collect
                     CustomPosterUrlRepository.ensureLoaded()
                     val posterPattern = CustomPosterUrlRepository.patternForScreen(
                         com.kaplay.app.core.poster.CustomPosterScreen.LIBRARY
@@ -115,7 +118,7 @@ object CatalogRepository {
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                if (activeRequest != request) return@launch
+                if (!isCurrent(request, generation)) return@launch
                 _uiState.value = CatalogUiState(
                     errorMessage = error.serverMessage() ?: error.message ?: getString(Res.string.catalog_load_failed),
                 )
@@ -129,6 +132,7 @@ object CatalogRepository {
         forceRefresh: Boolean,
     ) {
         activeJob?.cancel()
+        val generation = ++requestGeneration
         val current = _uiState.value
         val requestedSkip = if (reset) 0 else current.nextSkip ?: return
 
@@ -140,7 +144,7 @@ object CatalogRepository {
         )
 
         activeJob = scope.launch {
-            runCatching {
+            runCatchingCancellable {
                 when (val target = request.target) {
                     is CatalogTarget.Addon -> fetchCatalogPage(
                         manifestUrl = target.manifestUrl,
@@ -163,7 +167,7 @@ object CatalogRepository {
                 }.withUnreleasedFilter(request.hideUnreleasedContent)
             }.fold(
                 onSuccess = { page ->
-                    if (activeRequest != request) return@fold
+                    if (!isCurrent(request, generation)) return@fold
 
                     val mergedItems = if (reset) {
                         dedupeCatalogItems(page.items)
@@ -195,12 +199,12 @@ object CatalogRepository {
                     )
                 },
                 onFailure = { error ->
-                    if (activeRequest != request) return@fold
+                    if (!isCurrent(request, generation)) return@fold
 
                     _uiState.value = current.copy(
                         items = if (reset) emptyList() else current.items,
                         isLoading = false,
-                        nextSkip = null,
+                        nextSkip = nextCatalogSkipAfterFailure(reset, current.nextSkip),
                         errorMessage = error.serverMessage() ?: error.message ?: getString(Res.string.catalog_load_failed),
                     )
                 },
@@ -213,7 +217,26 @@ object CatalogRepository {
             target = target,
             hideUnreleasedContent = HomeCatalogSettingsRepository.snapshot().hideUnreleasedContent,
         )
+
+    private fun isCurrent(request: CatalogRequest, generation: Long): Boolean =
+        activeRequest == request && requestGeneration == generation
 }
+
+private suspend inline fun <T> runCatchingCancellable(
+    crossinline block: suspend () -> T,
+): Result<T> = try {
+    Result.success(block())
+} catch (error: CancellationException) {
+    throw error
+} catch (error: Throwable) {
+    Result.failure(error)
+}
+
+internal fun shouldAutoLoadMore(
+    canLoadMore: Boolean,
+    isLoading: Boolean,
+    errorMessage: String?,
+): Boolean = canLoadMore && !isLoading && errorMessage.isNullOrBlank()
 
 private fun CatalogPage.withUnreleasedFilter(hideUnreleasedContent: Boolean): CatalogPage {
     if (!hideUnreleasedContent) return this

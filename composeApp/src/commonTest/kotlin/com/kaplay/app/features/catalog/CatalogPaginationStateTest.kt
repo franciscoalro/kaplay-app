@@ -10,6 +10,24 @@ import kotlin.test.assertTrue
 
 class CatalogPaginationStateTest {
     @Test
+    fun `append failure disables automatic retry until user retries`() {
+        assertTrue(shouldAutoLoadMore(canLoadMore = true, isLoading = false, errorMessage = null))
+        assertTrue(!shouldAutoLoadMore(canLoadMore = true, isLoading = false, errorMessage = "timeout"))
+        assertTrue(!shouldAutoLoadMore(canLoadMore = true, isLoading = true, errorMessage = null))
+    }
+
+    @Test
+    fun `failed append keeps cursor so retry can request the same page`() {
+        assertEquals(40, nextCatalogSkipAfterFailure(reset = false, previousNextSkip = 40))
+        assertNull(nextCatalogSkipAfterFailure(reset = false, previousNextSkip = null))
+    }
+
+    @Test
+    fun `failed reset clears cursor`() {
+        assertNull(nextCatalogSkipAfterFailure(reset = true, previousNextSkip = 40))
+    }
+
+    @Test
     fun `pagination advances by returned raw item count`() {
         val state = nextCatalogPaginationState(
             supportsPagination = true,

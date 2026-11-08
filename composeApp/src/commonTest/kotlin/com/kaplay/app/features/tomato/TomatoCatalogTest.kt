@@ -83,6 +83,36 @@ class TomatoCatalogTest {
     }
 
     @Test
+    fun feedPageDoesNotTruncateASectionAtTwentyAndDoesNotInventPagination() {
+        val titles = (1L..25L).map { id ->
+            TomatoTitle(id = id, name = "Anime $id", image = null)
+        }
+        val page = TomatoCatalog.feedPageFromSections(
+            sectionId = "aventura",
+            sections = listOf(
+                TomatoProvider.FeedSectionPayload("aventura", "Aventura", titles),
+            ),
+        )
+
+        assertEquals(25, page.items.size)
+        assertEquals(25, page.rawItemCount)
+        assertEquals(null, page.nextSkip)
+    }
+
+    @Test
+    fun searchPageDoesNotTruncateProviderResultsAtTwenty() {
+        val titles = (1L..25L).map { id ->
+            TomatoTitle(id = id, name = "Resultado $id", image = null)
+        }
+
+        val page = TomatoCatalog.searchPageFromTitles(titles)
+
+        assertEquals(25, page.items.size)
+        assertEquals(25, page.rawItemCount)
+        assertEquals(null, page.nextSkip)
+    }
+
+    @Test
     fun unknownSectionDoesNotFallBackToTheGlobalFeed() {
         val emAlta = TomatoTitle(id = 1L, name = "Em alta", image = null)
         val aventura = TomatoTitle(id = 2L, name = "Aventura", image = null)

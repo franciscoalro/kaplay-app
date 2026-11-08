@@ -140,14 +140,20 @@ fun CatalogScreen(
             }
     }
 
-    LaunchedEffect(gridState, uiState.canLoadMore, uiState.isLoading) {
+    LaunchedEffect(gridState, uiState.canLoadMore, uiState.isLoading, uiState.errorMessage) {
         snapshotFlow { gridState.layoutInfo }
             .map { layoutInfo ->
                 val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
                 lastVisible >= layoutInfo.totalItemsCount - 6
             }
             .distinctUntilChanged()
-            .filter { it && uiState.canLoadMore && !uiState.isLoading }
+            .filter {
+                it && shouldAutoLoadMore(
+                    canLoadMore = uiState.canLoadMore,
+                    isLoading = uiState.isLoading,
+                    errorMessage = uiState.errorMessage,
+                )
+            }
             .collect {
                 CatalogRepository.loadMore()
             }
@@ -237,6 +243,15 @@ fun CatalogScreen(
                             onClick = onPosterClick?.let { { it(item) } },
                             onLongClick = onPosterLongClick?.let { { it(item) } },
                         )
+                    }
+                    if (!uiState.errorMessage.isNullOrBlank()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            CatalogEmptyState(
+                                errorMessage = uiState.errorMessage,
+                                networkCondition = networkStatusUiState.condition,
+                                onRetry = { CatalogRepository.loadMore() },
+                            )
+                        }
                     }
                     if (uiState.isLoading) {
                         item(span = { GridItemSpan(maxLineSpan) }) {

@@ -12,12 +12,15 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -48,14 +51,22 @@ object TomatoProvider {
 
     internal val maxAttemptsPerRequest = 6
     internal val retryDelayMillis = 150L
-    private const val FEED_ENRICH_LIMIT = 20
-    private const val FEED_DETAIL_LOOKUP_LIMIT = 24
+    private const val FEED_DETAIL_LOOKUP_CONCURRENCY = 4
+    // Feed cards often contain only an ID. Keep enrichment bounded so a malformed
+    // or unexpectedly large feed cannot turn Home loading into an unbounded burst.
+    internal const val FEED_DETAIL_LOOKUP_LIMIT = 100
+    // Defensive bound only; Tomato does not publish a total/page count in this response.
+    internal const val SEARCH_MAX_PAGES = 20
+    // Search may fetch several pages; retries after the first page must not make
+    // a normal search wait through six attempts per page.
+    private const val SEARCH_SUBSEQUENT_PAGE_ATTEMPTS = 2
     private val LATEST_EPISODE_SECTION_KEYS = setOf("novos-episodios", "ultimos-episodios", "latest-episodes")
 
     internal data class FeedSectionPayload(
         val key: String,
         val title: String,
         val items: List<TomatoTitle>,
+        val sourceItemCount: Int = items.size,
     )
 
     private val feedCacheMutex = Mutex()
@@ -137,6 +148,8 @@ object TomatoProvider {
                 lastError = TomatoException.RequestFailed("Tomato HTTP ${response.status.value} for $path")
             } catch (error: TomatoException.TokenMissing) {
                 throw error
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Throwable) {
                 lastError = error
             }
@@ -145,11 +158,21 @@ object TomatoProvider {
         throw (lastError ?: TomatoException.RequestFailed("Tomato request failed for $path"))
     }
 
-    private fun postBody(vararg pairs: Pair<String, JsonPrimitive>): JsonObject =
+    private fun postBody(vararg pairs: Pair<String, JsonElement>): JsonObject =
         JsonObject(playedOutBody(pairs.toList()))
 
-    private fun playedOutBody(pairs: List<Pair<String, JsonPrimitive>>): Map<String, JsonPrimitive> =
+    private fun playedOutBody(pairs: List<Pair<String, JsonElement>>): Map<String, JsonElement> =
         pairs.toMap() + mapOf("token" to JsonPrimitive(configuredToken()))
+
+    private suspend inline fun <T> runCatchingCancellable(
+        crossinline block: suspend () -> T,
+    ): Result<T> = try {
+        Result.success(block())
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Throwable) {
+        Result.failure(error)
+    }
 
     // ---------- payload helpers ----------
 
@@ -208,6 +231,7 @@ object TomatoProvider {
         val data = payload["data"]
         val candidates = buildList {
             add(data)
+            add(payload["result"])
             (data as? JsonObject)?.let {
                 add(it["result"])
                 add(it["data"])
@@ -301,6 +325,18 @@ object TomatoProvider {
 
     // ---------- catalog: feed + search ----------
 
+    internal fun detailLookupIds(rawSections: List<JsonObject>): List<Long> =
+        rawSections.flatMap { section ->
+            val title = section["title"]?.jsonPrimitive?.contentOrNull.orEmpty()
+            val key = sectionKey(title)
+            val receivedItems = runCatching {
+                section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject }
+            }.getOrDefault(emptyList())
+            feedItemsForSection(key, receivedItems)
+                .filter { displayTitleOrNull(titleOf(it)) == null }
+                .mapNotNull(::animeIdOf)
+        }.distinct()
+
     internal suspend fun feedSections(): List<FeedSectionPayload> = feedCacheMutex.withLock {
         feedCache?.let { return@withLock it }
         val payload = requestJson("/v2/animes/feed", kind = "metadata", body = null, attempts = 6)
@@ -308,36 +344,29 @@ object TomatoProvider {
             ?.mapNotNull { it as? JsonObject }
             ?.filter { it["title"]?.jsonPrimitive?.contentOrNull.orEmpty().isNotBlank() }
             ?: emptyList()
-        val allItems = rawSections.flatMap { section ->
-            val values = section["data"] ?: return@flatMap emptyList()
-            runCatching { values.jsonArray.mapNotNull { it as? JsonObject } }.getOrDefault(emptyList())
-        }
-        // The feed exposes IDs only. Resolve a bounded sample to avoid flooding Tomato
-        // with one detail request for every card across every Home row.
-        val ids = allItems.mapNotNull(::animeIdOf).distinct().take(FEED_DETAIL_LOOKUP_LIMIT)
+        val ids = detailLookupIds(rawSections).take(FEED_DETAIL_LOOKUP_LIMIT)
         val namesById = buildMap<Long, String> {
-            ids.chunked(4).forEach { batch ->
+            ids.chunked(FEED_DETAIL_LOOKUP_CONCURRENCY).forEach { batch ->
                 val resolved = coroutineScope {
                     batch.map { id ->
-                        async { id to runCatching { animeDetails(id).name }.getOrNull().orEmpty() }
+                        async { id to runCatchingCancellable { animeDetails(id).name }.getOrNull().orEmpty() }
                     }.awaitAll()
                 }
                 resolved.forEach { (id, name) -> put(id, name) }
             }
         }
-        val sections = rawSections.mapNotNull { section ->
+        val sections = rawSections.map { section ->
             val title = section["title"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
             val key = sectionKey(title)
-            val items = feedItemsForSection(
-                key,
-                runCatching { section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject } }
-                    .getOrDefault(emptyList()),
-            ).take(FEED_ENRICH_LIMIT)
-                .mapNotNull { item ->
-                    val id = animeIdOf(item) ?: return@mapNotNull null
-                    titleFromFeedItem(item, fallbackName = namesById[id])
-                }
-            FeedSectionPayload(key, title, items).takeIf { it.items.isNotEmpty() }
+            val receivedItems = runCatching {
+                section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject }
+            }.getOrDefault(emptyList())
+            val sourceItems = feedItemsForSection(key, receivedItems)
+            val items = sourceItems.mapNotNull { item ->
+                val id = animeIdOf(item) ?: return@mapNotNull null
+                titleFromFeedItem(item, fallbackName = namesById[id])
+            }
+            FeedSectionPayload(key, title, items, sourceItems.size)
         }
         return@withLock sections.also { feedCache = it }
     }
@@ -387,21 +416,52 @@ object TomatoProvider {
             .trim('-')
 
     suspend fun searchAnimes(query: String): List<TomatoTitle> {
-        val payload = requestJson(
-            path = "/v2/content/search",
-            kind = "post",
-            body = postBody(
-                "search" to JsonPrimitive(query),
-                "content_type" to JsonPrimitive("all"),
-                "page" to JsonPrimitive(0),
-            ),
-        )
-        return searchItems(payload).mapNotNull { item ->
-            val id = animeIdOf(item) ?: return@mapNotNull null
-            val name = displayTitleOrNull(titleOf(item)) ?: return@mapNotNull null
-            TomatoTitle(id = id, name = name, image = imageOf(item))
+        val normalizedQuery = query.trim()
+        if (normalizedQuery.isBlank()) return emptyList()
+        val results = linkedMapOf<Long, TomatoTitle>()
+        val seenPages = mutableSetOf<String>()
+        for (page in 0 until SEARCH_MAX_PAGES) {
+            val payload = try {
+                requestJson(
+                    path = "/v2/content/search",
+                    kind = "post",
+                    body = postBody(
+                        "search" to JsonPrimitive(normalizedQuery),
+                        "content_type" to JsonPrimitive("anime"),
+                        "page" to JsonPrimitive(page),
+                        "tags" to JsonArray(emptyList()),
+                    ),
+                    attempts = if (page == 0) maxAttemptsPerRequest else SEARCH_SUBSEQUENT_PAGE_ATTEMPTS,
+                )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (page == 0) throw error
+                // Keep pages already obtained; the API exposes no reliable total.
+                break
+            }
+            val items = searchItems(payload)
+            if (shouldStopSearchPage(items, seenPages)) break
+            items.forEach { item ->
+                val id = animeIdOf(item) ?: return@forEach
+                val name = displayTitleOrNull(titleOf(item)) ?: return@forEach
+                // Keep the first result for stable ordering without relying on a
+                // JVM-only map method in commonMain.
+                if (id !in results) {
+                    results[id] = TomatoTitle(id = id, name = name, image = imageOf(item))
+                }
+            }
         }
+        return results.values.toList()
     }
+
+    internal fun searchPageSignature(items: List<JsonObject>): String =
+        items.joinToString("\u001f") { item ->
+            animeIdOf(item)?.let { "id:$it" } ?: "raw:${item.toString()}"
+        }
+
+    internal fun shouldStopSearchPage(items: List<JsonObject>, seenPages: MutableSet<String>): Boolean =
+        items.isEmpty() || !seenPages.add(searchPageSignature(items))
 
     // ---------- details ----------
 
@@ -440,7 +500,7 @@ object TomatoProvider {
         val seenIds = mutableSetOf<Long>()
         val result = mutableListOf<TomatoEpisode>()
         for (page in 0 until 20) {
-            val payload = runCatching {
+            val payload = runCatchingCancellable {
                 requestJson(
                     path = "/season/${season.seasonId}/episodes",
                     kind = "post",
