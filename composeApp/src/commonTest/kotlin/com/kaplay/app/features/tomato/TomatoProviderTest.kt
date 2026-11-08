@@ -69,10 +69,10 @@ class TomatoProviderTest {
     }
 
     @Test
-    fun boundedFeedLookupStillUsesFallbackTitleWhenDetailIsUnavailable() {
-        val item = json.parseToJsonElement("""{"anime_id":99}""").jsonObject
+    fun cardsOutsideBoundedFeedLookupUseFallbackWhenDetailIsUnavailable() {
+        val item = json.parseToJsonElement("""{"anime_id":21}""").jsonObject
 
-        assertEquals("Anime #99", TomatoProvider.titleFromFeedItem(item, fallbackName = "Anime #99")?.name)
+        assertEquals("Anime #21", TomatoProvider.titleFromFeedItem(item, fallbackName = "Anime #21")?.name)
     }
 
     @Test

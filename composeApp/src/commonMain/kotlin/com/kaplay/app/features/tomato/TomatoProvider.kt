@@ -52,10 +52,9 @@ object TomatoProvider {
     internal val maxAttemptsPerRequest = 6
     internal val retryDelayMillis = 150L
     private const val FEED_DETAIL_LOOKUP_CONCURRENCY = 4
-    // Feed cards often contain only an ID. feedSections() is behind a mutex
-    // shared by Home and every Tomato category, so keep synchronous enrichment
-    // bounded as well as the rendered row.
-    private const val FEED_ENRICH_LIMIT = 20
+    // Feed cards often contain only an ID. Keep optional detail enrichment
+    // bounded; cards outside this lookup window still use their feed title or
+    // a stable ID fallback and must remain visible.
     internal const val FEED_DETAIL_LOOKUP_LIMIT = 20
     private const val FEED_DETAIL_LOOKUP_ATTEMPTS = 2
     // Defensive bound only; Tomato does not publish a total/page count in this response.
@@ -369,7 +368,7 @@ object TomatoProvider {
                 section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject }
             }.getOrDefault(emptyList())
             val sourceItems = feedItemsForSection(key, receivedItems)
-            val items = sourceItems.take(FEED_ENRICH_LIMIT).mapNotNull { item ->
+            val items = sourceItems.mapNotNull { item ->
                 val id = animeIdOf(item) ?: return@mapNotNull null
                 // Keep a card when a bounded lookup misses or Tomato is
                 // temporarily unavailable; otherwise a later category can

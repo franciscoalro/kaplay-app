@@ -29,8 +29,6 @@ object TomatoCatalog {
         "slice-of-life" to "Slice Of Life",
     )
 
-    private const val FEED_ROW_LIMIT = 20
-
     fun homeDefinitions(): List<HomeCatalogDefinition> = HOME_SECTIONS.map { (sectionId, title) ->
         HomeCatalogDefinition(
             key = "tomato:$sectionId",
@@ -109,7 +107,7 @@ object TomatoCatalog {
         } else {
             emptyList()
         }
-        val titles = titlesForSection(sectionId, sections, globalItems).take(FEED_ROW_LIMIT)
+        val titles = titlesForSection(sectionId, sections, globalItems)
         val latestEpisode = section?.key?.let(TomatoProvider::isLatestEpisodeSection) == true
         val sourceCount = section?.sourceItemCount ?: globalItems.size
         return CatalogPage(

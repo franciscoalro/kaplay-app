@@ -83,7 +83,7 @@ class TomatoCatalogTest {
     }
 
     @Test
-    fun feedPageBoundsCategoryRowsWithoutInventingPagination() {
+    fun feedPagePreservesCategoryRowsBeyondEnrichmentLimitAndReportsRawCount() {
         val titles = (1L..25L).map { id ->
             TomatoTitle(id = id, name = "Anime $id", image = null)
         }
@@ -94,7 +94,8 @@ class TomatoCatalogTest {
             ),
         )
 
-        assertEquals(20, page.items.size)
+        assertEquals(25, page.items.size)
+        assertEquals((1L..25L).toList(), page.items.map { it.id.removePrefix("tomato:").toLong() })
         assertEquals(25, page.rawItemCount)
         assertEquals(null, page.nextSkip)
     }
