@@ -81,6 +81,9 @@ internal fun DetailsDestination(
     MetaDetailsScreen(
         type = route.type,
         id = route.id,
+        originManifestUrl = route.originManifestUrl,
+        originAddonId = route.originAddonId,
+        originCatalogId = route.originCatalogId,
         onBack = onBack,
         onPlay = onPlay,
         onPlayManually = onPlayManually,

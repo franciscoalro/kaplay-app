@@ -2,6 +2,7 @@ package com.kaplay.app.features.home
 
 import com.kaplay.app.features.addons.AddonManifest
 import com.kaplay.app.features.addons.AddonResource
+import com.kaplay.app.features.addons.AddonCatalog
 import com.kaplay.app.features.addons.ManagedAddon
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,6 +21,28 @@ class HomeCatalogDefinitionTest {
         supportsPagination = true,
         descriptorSignature = "signature",
     )
+
+    @Test
+    fun `addon catalog definitions retain the manifest addon id`() {
+        val addon = ManagedAddon(
+            manifestUrl = "https://example.test/manifest.json",
+            manifest = AddonManifest(
+                id = "manifest-addon",
+                name = "Addon",
+                description = "",
+                version = "1.0.0",
+                resources = emptyList(),
+                types = listOf("movie"),
+                catalogs = listOf(AddonCatalog(type = "movie", id = "popular", name = "Popular")),
+                transportUrl = "https://example.test/manifest.json",
+            ),
+        )
+
+        assertEquals(
+            "manifest-addon",
+            buildHomeCatalogDefinitions(listOf(addon)).first { it.manifestUrl == addon.manifestUrl }.addonId,
+        )
+    }
 
     @Test
     fun `shows the type suffix by default`() {

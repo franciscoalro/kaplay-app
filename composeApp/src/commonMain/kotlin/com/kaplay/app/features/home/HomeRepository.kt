@@ -3,6 +3,7 @@ package com.kaplay.app.features.home
 import com.kaplay.app.features.addons.ManagedAddon
 import com.kaplay.app.features.addons.AddonRepository
 import com.kaplay.app.features.addons.enabledAddons
+import com.kaplay.app.features.addons.withGeneralCatalog
 import com.kaplay.app.features.catalog.CatalogTarget
 import com.kaplay.app.features.catalog.fetchCatalogPage
 import com.kaplay.app.core.poster.CustomPosterUrlRepository
@@ -60,7 +61,9 @@ object HomeRepository {
     private var lastErrorMessage: String? = null
 
     fun refresh(addons: List<ManagedAddon>, force: Boolean = false) {
-        val activeAddons = addons.enabledAddons()
+        // Keep the public metadata index virtual: it supplies catalog/meta only
+        // and is deliberately not persisted or passed to the stream resolver.
+        val activeAddons = addons.withGeneralCatalog().enabledAddons()
         val requests = buildHomeCatalogDefinitions(activeAddons)
         currentDefinitions = requests
         val requestCacheKeys = requests.mapTo(mutableSetOf(), HomeCatalogDefinition::cacheKey)
@@ -311,6 +314,7 @@ object HomeRepository {
             catalogId = catalogId,
             maxItems = HOME_CATALOG_PREVIEW_FETCH_LIMIT,
             forceRefresh = forceRefresh,
+            addonId = addonId,
         )
         val items = if (pattern.isNotBlank()) {
             page.items.withCustomPosterUrls(pattern)

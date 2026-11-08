@@ -3,9 +3,11 @@ package com.kaplay.app.features.details
 import co.touchlab.kermit.Logger
 import com.kaplay.app.features.addons.AddonManifest
 import com.kaplay.app.features.addons.AddonRepository
+import com.kaplay.app.features.addons.ContentOrigin
 import com.kaplay.app.features.addons.buildAddonResourceUrl
 import com.kaplay.app.features.addons.enabledAddons
 import com.kaplay.app.features.addons.fetchAddonResponseText
+import com.kaplay.app.features.addons.generalCatalogAddon
 import com.kaplay.app.core.poster.withCustomPosterUrls
 import com.kaplay.app.features.addons.supportsResource
 import com.kaplay.app.features.home.HomeCatalogSettingsRepository
@@ -41,6 +43,12 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kaplay.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 
+internal fun buildMetaDetailsRequestKey(
+    type: String,
+    id: String,
+    originManifestUrl: String? = null,
+): String = "$type:$id|origin=${originManifestUrl.orEmpty()}"
+
 object MetaDetailsRepository {
     private data class CachedMetaEntry(
         val baseMeta: MetaDetails,
@@ -55,9 +63,13 @@ object MetaDetailsRepository {
     private var activeRequestKey: String? = null
     private val cachedMetaByRequestKey = mutableMapOf<String, CachedMetaEntry>()
 
-    fun load(type: String, id: String) {
+    fun load(
+        type: String,
+        id: String,
+        originManifestUrl: String? = null,
+    ) {
         log.d { "load() called — type=$type id=$id" }
-        val requestKey = "$type:$id"
+        val requestKey = buildMetaDetailsRequestKey(type, id, originManifestUrl)
         cachedMetaByRequestKey[requestKey]?.let { cachedEntry ->
             _uiState.value = MetaDetailsUiState(meta = cachedEntry.baseMeta.withUnreleasedFilter())
             activeRequestKey = requestKey
@@ -120,7 +132,7 @@ object MetaDetailsRepository {
             return
         }
 
-        if (currentState.meta?.type == type && currentState.meta.id == id && !currentState.isLoading) {
+        if (activeRequestKey == requestKey && currentState.meta?.type == type && currentState.meta.id == id && !currentState.isLoading) {
             log.d { "Skipping reload for cached meta — type=$type id=$id" }
             activeRequestKey = requestKey
             return
@@ -136,7 +148,11 @@ object MetaDetailsRepository {
 
         scope.launch {
             val metaLookupId = resolveMetaLookupId(itemId = id, itemType = type)
-            val manifests = findReadyMetaManifests(type = type, id = metaLookupId)
+            val manifests = findReadyMetaManifests(
+                type = type,
+                id = metaLookupId,
+                preferredManifestUrl = originManifestUrl,
+            )
 
             if (manifests.isEmpty()) {
                 val tmdbMeta = tryFetchTmdbFallbackMeta(type = type, id = id)
@@ -257,9 +273,11 @@ object MetaDetailsRepository {
         }
     }
 
-    fun peek(type: String, id: String): MetaDetails? {
-        val requestKey = "$type:$id"
-        val currentMeta = _uiState.value.meta?.takeIf { it.type == type && it.id == id }
+    fun peek(type: String, id: String, originManifestUrl: String? = null): MetaDetails? {
+        val requestKey = buildMetaDetailsRequestKey(type, id, originManifestUrl)
+        val currentMeta = _uiState.value.meta?.takeIf {
+            activeRequestKey == requestKey && it.type == type && it.id == id
+        }
         if (currentMeta != null) return currentMeta
 
         val metaScreenSettingsFingerprint = buildMetaScreenSettingsFingerprint(MdbListSettingsRepository.snapshot())
@@ -277,7 +295,7 @@ object MetaDetailsRepository {
     }
 
     suspend fun fetch(type: String, id: String, cacheResult: Boolean = true): MetaDetails? {
-        val requestKey = "$type:$id"
+        val requestKey = buildMetaDetailsRequestKey(type, id)
         cachedMetaByRequestKey[requestKey]?.let { return it.baseMeta }
         ServerItemRef.parse(id)?.let { ref ->
             return runCatching { ServerCatalog.details(ref).meta }
@@ -362,7 +380,12 @@ object MetaDetailsRepository {
             log.d { "Fetching meta from: $url" }
             val payload = fetchAddonResponseText(url)
             log.d { "Raw payload length=${payload.length}, first 500 chars: ${payload.take(500)}" }
-            val result = MetaDetailsParser.parse(payload)
+            val result = MetaDetailsParser.parse(payload).copy(
+                origin = ContentOrigin(
+                    manifestUrl = manifest.transportUrl,
+                    addonId = manifest.id,
+                ),
+            )
             val tmdbEnriched = withTimeoutOrNull(TMDB_ENRICH_TIMEOUT_MS) {
                 TmdbMetadataService.enrichMeta(
                     meta = result,
@@ -395,10 +418,19 @@ object MetaDetailsRepository {
         }
     }
 
-    private suspend fun findReadyMetaManifests(type: String, id: String): List<AddonManifest> {
+    private suspend fun findReadyMetaManifests(
+        type: String,
+        id: String,
+        preferredManifestUrl: String? = null,
+    ): List<AddonManifest> {
         AddonRepository.initialize()
 
-        findMetaManifests(AddonRepository.uiState.value, type, id).takeIf { it.isNotEmpty() }?.let { return it }
+        findMetaManifests(
+            state = AddonRepository.uiState.value,
+            type = type,
+            id = id,
+            preferredManifestUrl = preferredManifestUrl,
+        ).takeIf { it.isNotEmpty() }?.let { return it }
 
         if (!AddonRepository.uiState.value.hasPendingEnabledAddonManifests()) {
             return emptyList()
@@ -406,19 +438,41 @@ object MetaDetailsRepository {
 
         val readyState = withTimeoutOrNull(METADATA_PROVIDER_READY_TIMEOUT_MS) {
             AddonRepository.uiState.first { state ->
-                findMetaManifests(state, type, id).isNotEmpty() ||
-                    !state.hasPendingEnabledAddonManifests()
+                findMetaManifests(
+                    state = state,
+                    type = type,
+                    id = id,
+                    preferredManifestUrl = preferredManifestUrl,
+                ).isNotEmpty() || !state.hasPendingEnabledAddonManifests()
             }
         } ?: AddonRepository.uiState.value
 
-        return findMetaManifests(readyState, type, id)
+        return findMetaManifests(
+            state = readyState,
+            type = type,
+            id = id,
+            preferredManifestUrl = preferredManifestUrl,
+        )
     }
 
-    private fun findMetaManifests(state: com.kaplay.app.features.addons.AddonsUiState, type: String, id: String): List<AddonManifest> =
-        state.addons
-            .enabledAddons()
-            .mapNotNull { it.manifest }
+    private fun findMetaManifests(
+        state: com.kaplay.app.features.addons.AddonsUiState,
+        type: String,
+        id: String,
+        preferredManifestUrl: String? = null,
+    ): List<AddonManifest> {
+        val manifests = (
+            state.addons
+                .enabledAddons()
+                .mapNotNull { it.manifest } + generalCatalogAddon().manifest!!
+            )
+            .distinctBy { manifest -> manifest.transportUrl }
             .filter { manifest -> manifest.supportsResource("meta", type, id) }
+
+        return manifests.sortedByDescending { manifest ->
+            preferredManifestUrl != null && manifest.transportUrl == preferredManifestUrl
+        }
+    }
 
     private fun com.kaplay.app.features.addons.AddonsUiState.hasPendingEnabledAddonManifests(): Boolean =
         addons.enabledAddons().any { addon -> addon.manifest == null && addon.isRefreshing }

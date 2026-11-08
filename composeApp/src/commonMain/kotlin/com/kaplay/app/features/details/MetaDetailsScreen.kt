@@ -175,6 +175,9 @@ private val watchedMarkerDiagnosticLog = Logger.withTag("WatchedMarkerDiag")
 fun MetaDetailsScreen(
     type: String,
     id: String,
+    originManifestUrl: String? = null,
+    originAddonId: String? = null,
+    originCatalogId: String? = null,
     onBack: () -> Unit,
     onPlay: ((type: String, videoId: String, parentMetaId: String, parentMetaType: String, title: String, logo: String?, poster: String?, background: String?, seasonNumber: Int?, episodeNumber: Int?, episodeTitle: String?, episodeThumbnail: String?, pauseDescription: String?, resumePositionMs: Long?) -> Unit)? = null,
     onPlayManually: ((type: String, videoId: String, parentMetaId: String, parentMetaType: String, title: String, logo: String?, poster: String?, background: String?, seasonNumber: Int?, episodeNumber: Int?, episodeTitle: String?, episodeThumbnail: String?, pauseDescription: String?, resumePositionMs: Long?) -> Unit)? = null,
@@ -199,8 +202,7 @@ fun MetaDetailsScreen(
         shuffleWasInactive = !active
     }
     val uiState by MetaDetailsRepository.uiState.collectAsStateWithLifecycle()
-    val displayedMeta = uiState.meta?.takeIf { it.type == type && it.id == id }
-        ?: MetaDetailsRepository.peek(type, id)
+    val displayedMeta = MetaDetailsRepository.peek(type, id, originManifestUrl)
     val metaScreenSettingsUiState by remember {
         MetaScreenSettingsRepository.ensureLoaded()
         MetaScreenSettingsRepository.uiState
@@ -397,16 +399,21 @@ fun MetaDetailsScreen(
         )
     }
 
-    LaunchedEffect(type, id, displayedMeta, uiState.isLoading, autoLoadAttempted) {
+    LaunchedEffect(type, id, originManifestUrl, displayedMeta, uiState.isLoading, autoLoadAttempted) {
         if (!autoLoadAttempted && displayedMeta == null && !uiState.isLoading) {
             autoLoadAttempted = true
-            MetaDetailsRepository.load(type, id)
+            MetaDetailsRepository.load(
+                type = type,
+                id = id,
+                originManifestUrl = originManifestUrl,
+            )
         }
     }
 
     LaunchedEffect(
         type,
         id,
+        originManifestUrl,
         displayedMeta?.id,
         uiState.isLoading,
         trackingSettingsUiState.moreLikeThisSource,
@@ -417,11 +424,15 @@ fun MetaDetailsScreen(
         mdbListSettings,
     ) {
         if (displayedMeta != null && !uiState.isLoading) {
-            MetaDetailsRepository.load(type, id)
+            MetaDetailsRepository.load(
+                type = type,
+                id = id,
+                originManifestUrl = originManifestUrl,
+            )
         }
     }
 
-    LaunchedEffect(networkStatusUiState.condition, displayedMeta, uiState.isLoading, type, id) {
+    LaunchedEffect(networkStatusUiState.condition, displayedMeta, uiState.isLoading, type, id, originManifestUrl) {
         when (networkStatusUiState.condition) {
             NetworkCondition.NoInternet,
             NetworkCondition.ServersUnreachable,
@@ -433,7 +444,11 @@ fun MetaDetailsScreen(
                 if (!observedOfflineState) return@LaunchedEffect
                 observedOfflineState = false
                 if (displayedMeta == null && !uiState.isLoading) {
-                    MetaDetailsRepository.load(type, id)
+                    MetaDetailsRepository.load(
+                        type = type,
+                        id = id,
+                        originManifestUrl = originManifestUrl,
+                    )
                 }
             }
 
@@ -493,7 +508,11 @@ fun MetaDetailsScreen(
                     Button(
                         onClick = {
                             NetworkStatusRepository.requestRefresh(force = true)
-                            MetaDetailsRepository.load(type, id)
+                            MetaDetailsRepository.load(
+                                type = type,
+                                id = id,
+                                originManifestUrl = originManifestUrl,
+                            )
                         },
                     ) {
                         Text(stringResource(Res.string.action_retry))

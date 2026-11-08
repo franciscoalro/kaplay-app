@@ -23,6 +23,7 @@ data class HomeCatalogDefinition(
     val supportsPagination: Boolean,
     val descriptorSignature: String,
     val serverConnectionId: String? = null,
+    val addonId: String? = null,
 ) {
     val cacheKey: String
         get() = "$key|$descriptorSignature"
@@ -62,6 +63,7 @@ fun buildHomeCatalogDefinitions(addons: List<ManagedAddon>): List<HomeCatalogDef
                     catalogName = catalog.name,
                     addonName = addon.displayTitle,
                     manifestUrl = addon.manifestUrl,
+                    addonId = manifest.id,
                     type = catalog.type,
                     catalogId = catalog.id,
                     supportsPagination = catalog.supportsPagination(),

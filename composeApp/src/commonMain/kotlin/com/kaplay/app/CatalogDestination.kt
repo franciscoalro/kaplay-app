@@ -40,7 +40,16 @@ internal object CatalogLaunchStore {
 internal fun KAPlayNavigator.openPreview(meta: MetaPreview) {
     val collection = ServerCatalog.collectionTarget(meta)
     if (collection == null) {
-        navigate(DetailRoute(type = meta.type, id = meta.id, title = meta.name))
+        navigate(
+            DetailRoute(
+                type = meta.type,
+                id = meta.id,
+                title = meta.name,
+                originManifestUrl = meta.origin?.manifestUrl,
+                originAddonId = meta.origin?.addonId,
+                originCatalogId = meta.origin?.catalogId,
+            ),
+        )
         return
     }
     val subtitle = ServerCatalog.sourceLabel(collection)

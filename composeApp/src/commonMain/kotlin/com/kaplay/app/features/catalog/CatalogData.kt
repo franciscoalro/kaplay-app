@@ -76,6 +76,7 @@ suspend fun fetchCatalogPage(
     skip: Int? = null,
     maxItems: Int? = null,
     forceRefresh: Boolean = false,
+    addonId: String? = null,
 ): CatalogPage {
     val url = buildCatalogUrl(
         manifestUrl = manifestUrl,
@@ -93,13 +94,23 @@ suspend fun fetchCatalogPage(
         payload = payload,
         maxItems = maxItems,
     )
+    // Preserve the catalog origin so opening a card can select the same enabled addon.
+    val sourcedItems = parsed.items.map { item ->
+        item.copy(
+            origin = com.kaplay.app.features.addons.ContentOrigin(
+                manifestUrl = manifestUrl,
+                addonId = addonId,
+                catalogId = catalogId,
+            ),
+        )
+    }
     val nextSkip = if (parsed.rawItemCount > 0) {
         (skip ?: 0) + parsed.rawItemCount
     } else {
         null
     }
     return CatalogPage(
-        items = parsed.items,
+        items = sourcedItems,
         rawItemCount = parsed.rawItemCount,
         nextSkip = nextSkip,
     )

@@ -3,6 +3,7 @@ package com.kaplay.app.features.home
 import com.kaplay.app.features.addons.ManagedAddon
 import com.kaplay.app.features.catalog.CatalogTarget
 import com.kaplay.app.features.details.MetaExternalRating
+import com.kaplay.app.features.addons.ContentOrigin
 
 data class MetaPreview(
     val id: String,
@@ -28,6 +29,8 @@ data class MetaPreview(
     val language: String? = null,
     val externalRatings: List<MetaExternalRating> = emptyList(),
     val identityKey: String? = null,
+    /** Enabled addon/catalog that supplied this card. */
+    val origin: ContentOrigin? = null,
 )
 
 fun MetaPreview.stableKey(): String = "$type:${identityKey ?: id}"

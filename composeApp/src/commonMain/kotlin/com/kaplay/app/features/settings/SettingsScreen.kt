@@ -62,6 +62,7 @@ import com.kaplay.app.core.ui.PosterCardStyleRepository
 import com.kaplay.app.core.ui.PosterCardStyleUiState
 import com.kaplay.app.features.collection.CollectionRepository
 import com.kaplay.app.features.addons.enabledAddons
+import com.kaplay.app.features.addons.withGeneralCatalog
 import com.kaplay.app.features.addons.firstEnabledManifestError
 import com.kaplay.app.features.addons.hasPendingEnabledManifests
 import com.kaplay.app.features.addons.isWaitingForFirstEnabledManifest
@@ -251,7 +252,7 @@ fun SettingsScreen(
         }.collectAsStateWithLifecycle()
 
         LaunchedEffect(homescreenCatalogRefreshKey) {
-            val enabledAddons = addonsUiState.addons.enabledAddons()
+            val enabledAddons = addonsUiState.addons.enabledAddons().withGeneralCatalog()
             if (!enabledAddons.isWaitingForFirstEnabledManifest()) {
                 HomeCatalogSettingsRepository.syncCatalogs(enabledAddons)
             }

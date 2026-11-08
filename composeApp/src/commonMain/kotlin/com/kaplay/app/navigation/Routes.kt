@@ -38,6 +38,10 @@ data class DetailRoute(
     val type: String,
     val id: String,
     override val title: String? = null,
+    /** Optional originating addon manifest; null keeps legacy/TMDB/library behavior. */
+    val originManifestUrl: String? = null,
+    val originAddonId: String? = null,
+    val originCatalogId: String? = null,
 ) : AppRoute
 
 @Serializable

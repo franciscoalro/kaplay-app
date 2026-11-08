@@ -12,6 +12,7 @@ import com.kaplay.app.core.ui.KAPlayScreen
 import com.kaplay.app.core.ui.KAPlayScreenHeader
 import com.kaplay.app.features.addons.AddonRepository
 import com.kaplay.app.features.addons.enabledAddons
+import com.kaplay.app.features.addons.withGeneralCatalog
 import com.kaplay.app.features.addons.firstEnabledManifestError
 import com.kaplay.app.features.addons.hasPendingEnabledManifests
 import com.kaplay.app.features.addons.isWaitingForFirstEnabledManifest
@@ -52,7 +53,7 @@ fun HomescreenSettingsScreen(
     }
 
     LaunchedEffect(homescreenCatalogRefreshKey) {
-        val enabledAddons = addonsUiState.addons.enabledAddons()
+        val enabledAddons = addonsUiState.addons.enabledAddons().withGeneralCatalog()
         if (!enabledAddons.isWaitingForFirstEnabledManifest()) {
             HomeCatalogSettingsRepository.syncCatalogs(enabledAddons)
         }

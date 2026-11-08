@@ -6,6 +6,7 @@ import com.kaplay.app.features.addons.AddonCatalog
 import com.kaplay.app.features.addons.AddonExtraProperty
 import com.kaplay.app.features.addons.ManagedAddon
 import com.kaplay.app.features.addons.enabledAddons
+import com.kaplay.app.features.addons.withGeneralCatalog
 import com.kaplay.app.features.addons.firstEnabledManifestError
 import com.kaplay.app.features.addons.hasPendingEnabledManifests
 import com.kaplay.app.features.servers.ServerCatalog
@@ -86,7 +87,7 @@ object SearchRepository {
             return
         }
 
-        val enabledAddons = addons.enabledAddons()
+        val enabledAddons = addons.withGeneralCatalog().enabledAddons()
         val hasPendingAddonManifests = enabledAddons.hasPendingEnabledManifests()
         val activeAddons = enabledAddons.filter { it.manifest != null }
         val serverSearches = ServerCatalog.searchTargets()
@@ -229,7 +230,7 @@ object SearchRepository {
         addons: List<ManagedAddon>,
         forceRefresh: Boolean = false,
     ) {
-        val enabledAddons = addons.enabledAddons()
+        val enabledAddons = addons.withGeneralCatalog().enabledAddons()
         val hasPendingAddonManifests = enabledAddons.hasPendingEnabledManifests()
         val addonManifestErrorMessage = enabledAddons.firstEnabledManifestError()
         val activeAddons = enabledAddons.filter { it.manifest != null }
@@ -480,6 +481,7 @@ object SearchRepository {
             catalogId = catalogId,
             search = query,
             forceRefresh = forceRefresh,
+            addonId = manifest.id,
         ).withUnreleasedFilter()
         val posterPattern = com.kaplay.app.core.poster.CustomPosterUrlRepository.let {
             it.ensureLoaded()

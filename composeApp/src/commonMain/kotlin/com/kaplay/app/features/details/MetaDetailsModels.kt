@@ -1,6 +1,7 @@
 package com.kaplay.app.features.details
 
 import com.kaplay.app.features.home.MetaPreview
+import com.kaplay.app.features.addons.ContentOrigin
 import com.kaplay.app.features.streams.StreamItem
 
 data class MetaDetails(
@@ -40,6 +41,8 @@ data class MetaDetails(
     val links: List<MetaLink> = emptyList(),
     val seasonPosters: Map<Int, String> = emptyMap(),
     val videos: List<MetaVideo> = emptyList(),
+    /** Provider selected from the originating catalog, when known. */
+    val origin: ContentOrigin? = null,
 )
 
 enum class MoreLikeThisSource {
