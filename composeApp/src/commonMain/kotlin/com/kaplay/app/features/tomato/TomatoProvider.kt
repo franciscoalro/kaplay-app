@@ -52,9 +52,12 @@ object TomatoProvider {
     internal val maxAttemptsPerRequest = 6
     internal val retryDelayMillis = 150L
     private const val FEED_DETAIL_LOOKUP_CONCURRENCY = 4
-    // Feed cards often contain only an ID. Keep enrichment bounded so a malformed
-    // or unexpectedly large feed cannot turn Home loading into an unbounded burst.
-    internal const val FEED_DETAIL_LOOKUP_LIMIT = 100
+    // Feed cards often contain only an ID. feedSections() is behind a mutex
+    // shared by Home and every Tomato category, so keep synchronous enrichment
+    // bounded as well as the rendered row.
+    private const val FEED_ENRICH_LIMIT = 20
+    internal const val FEED_DETAIL_LOOKUP_LIMIT = 20
+    private const val FEED_DETAIL_LOOKUP_ATTEMPTS = 2
     // Defensive bound only; Tomato does not publish a total/page count in this response.
     internal const val SEARCH_MAX_PAGES = 20
     // Search may fetch several pages; retries after the first page must not make
@@ -335,7 +338,7 @@ object TomatoProvider {
             feedItemsForSection(key, receivedItems)
                 .filter { displayTitleOrNull(titleOf(it)) == null }
                 .mapNotNull(::animeIdOf)
-        }.distinct()
+        }.distinct().take(FEED_DETAIL_LOOKUP_LIMIT)
 
     internal suspend fun feedSections(): List<FeedSectionPayload> = feedCacheMutex.withLock {
         feedCache?.let { return@withLock it }
@@ -349,7 +352,11 @@ object TomatoProvider {
             ids.chunked(FEED_DETAIL_LOOKUP_CONCURRENCY).forEach { batch ->
                 val resolved = coroutineScope {
                     batch.map { id ->
-                        async { id to runCatchingCancellable { animeDetails(id).name }.getOrNull().orEmpty() }
+                        async {
+                            id to runCatchingCancellable {
+                                animeDetails(id, attempts = FEED_DETAIL_LOOKUP_ATTEMPTS).name
+                            }.getOrNull().orEmpty()
+                        }
                     }.awaitAll()
                 }
                 resolved.forEach { (id, name) -> put(id, name) }
@@ -362,9 +369,12 @@ object TomatoProvider {
                 section["data"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject }
             }.getOrDefault(emptyList())
             val sourceItems = feedItemsForSection(key, receivedItems)
-            val items = sourceItems.mapNotNull { item ->
+            val items = sourceItems.take(FEED_ENRICH_LIMIT).mapNotNull { item ->
                 val id = animeIdOf(item) ?: return@mapNotNull null
-                titleFromFeedItem(item, fallbackName = namesById[id])
+                // Keep a card when a bounded lookup misses or Tomato is
+                // temporarily unavailable; otherwise a later category can
+                // appear empty even though the feed returned valid IDs.
+                titleFromFeedItem(item, fallbackName = namesById[id].orEmpty().ifBlank { "Anime #$id" })
             }
             FeedSectionPayload(key, title, items, sourceItems.size)
         }
@@ -465,8 +475,11 @@ object TomatoProvider {
 
     // ---------- details ----------
 
-    suspend fun animeDetails(animeId: Long): TomatoDetails {
-        val payload = requestJson("/v2/anime/$animeId", kind = "metadata", body = null, attempts = 6)
+    suspend fun animeDetails(animeId: Long): TomatoDetails =
+        animeDetails(animeId, attempts = maxAttemptsPerRequest)
+
+    private suspend fun animeDetails(animeId: Long, attempts: Int): TomatoDetails {
+        val payload = requestJson("/v2/anime/$animeId", kind = "metadata", body = null, attempts = attempts)
         val data = payloadData(payload)
         val details = detailObject(payload)
         val seasons = (payload["anime_seasons"] ?: data["anime_seasons"] ?: data["seasons"])

@@ -57,12 +57,22 @@ class TomatoProviderTest {
     }
 
     @Test
-    fun detailLookupIncludesTitlelessCardsAfterTheFormerTwentyItemCutoff() {
+    fun detailLookupRemainsBoundedAfterTheFormerTwentyItemRegression() {
         val section = json.parseToJsonElement(
-            """{"title":"Em alta","data":[${(1..25).joinToString(",") { "{\"anime_id\":$it}" }}]}""",
+            """{"title":"Em alta","data":[${(1..100).joinToString(",") { "{\"anime_id\":$it}" }}]}""",
         ).jsonObject
 
-        assertEquals((1L..25L).toList(), TomatoProvider.detailLookupIds(listOf(section)))
+        assertEquals(
+            (1L..TomatoProvider.FEED_DETAIL_LOOKUP_LIMIT.toLong()).toList(),
+            TomatoProvider.detailLookupIds(listOf(section)),
+        )
+    }
+
+    @Test
+    fun boundedFeedLookupStillUsesFallbackTitleWhenDetailIsUnavailable() {
+        val item = json.parseToJsonElement("""{"anime_id":99}""").jsonObject
+
+        assertEquals("Anime #99", TomatoProvider.titleFromFeedItem(item, fallbackName = "Anime #99")?.name)
     }
 
     @Test

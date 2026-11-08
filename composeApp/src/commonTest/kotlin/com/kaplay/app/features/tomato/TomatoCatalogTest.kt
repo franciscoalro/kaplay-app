@@ -83,7 +83,7 @@ class TomatoCatalogTest {
     }
 
     @Test
-    fun feedPageDoesNotTruncateASectionAtTwentyAndDoesNotInventPagination() {
+    fun feedPageBoundsCategoryRowsWithoutInventingPagination() {
         val titles = (1L..25L).map { id ->
             TomatoTitle(id = id, name = "Anime $id", image = null)
         }
@@ -94,7 +94,7 @@ class TomatoCatalogTest {
             ),
         )
 
-        assertEquals(25, page.items.size)
+        assertEquals(20, page.items.size)
         assertEquals(25, page.rawItemCount)
         assertEquals(null, page.nextSkip)
     }
