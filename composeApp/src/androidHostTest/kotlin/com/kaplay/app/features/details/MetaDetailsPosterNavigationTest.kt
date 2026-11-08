@@ -133,6 +133,6 @@ class MetaDetailsPosterNavigationTest {
         val cache = repositoryClass.getDeclaredField("cachedMetaByRequestKey")
             .apply { isAccessible = true }
             .get(MetaDetailsRepository) as MutableMap<String, Any>
-        cache["${meta.type}:${meta.id}"] = entry
+        cache[buildMetaDetailsRequestKey(meta.type, meta.id)] = entry
     }
 }
