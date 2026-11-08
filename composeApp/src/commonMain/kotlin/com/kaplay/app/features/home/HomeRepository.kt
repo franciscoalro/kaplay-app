@@ -54,6 +54,8 @@ object HomeRepository {
     private var cachedCollectionHeroItems: List<MetaPreview> = emptyList()
     private var collectionHeroJob: Job? = null
     private var collectionHeroRequestKey: String? = null
+    private var tomatoEnrichmentJob: Job? = null
+    private var tomatoEnrichmentRequestKey: String? = null
     private var lastPublishedCatalogHeroEmpty: Boolean = true
     private var lastErrorMessage: String? = null
 
@@ -64,13 +66,18 @@ object HomeRepository {
         val requestCacheKeys = requests.mapTo(mutableSetOf(), HomeCatalogDefinition::cacheKey)
         cachedSections = cachedSections.filterKeys(requestCacheKeys::contains)
         val requestKey = requests.joinToString(separator = "|", transform = HomeCatalogDefinition::cacheKey)
+        val previousRequestKey = currentRequestKey
         currentRequestKey = requestKey
 
         if (!force && activeRequestKey == requestKey && _uiState.value.isLoading) return
+        if (!force && previousRequestKey == requestKey && !_uiState.value.isLoading) return
         activeRequestKey = requestKey
 
         if (requests.isEmpty()) {
             activeJob?.cancel()
+            tomatoEnrichmentJob?.cancel()
+            tomatoEnrichmentJob = null
+            tomatoEnrichmentRequestKey = null
             activeJob = null
             activeRequestKey = null
             cachedSections = emptyMap()
@@ -89,6 +96,9 @@ object HomeRepository {
         }
 
         activeJob?.cancel()
+        tomatoEnrichmentJob?.cancel()
+        tomatoEnrichmentJob = null
+        tomatoEnrichmentRequestKey = null
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         activeJob = scope.launch {
             val prioritizedRequests = prioritizeDefinitions(
@@ -143,12 +153,57 @@ object HomeRepository {
                 isLoading = false,
                 requestKey = requestKey,
             )
+            startTomatoEnrichment(requestKey)
             ensureCollectionHeroFallback(
                 addons = activeAddons,
                 forceRefresh = force,
                 refreshSources = true,
                 requestKey = requestKey,
             )
+        }
+    }
+
+    private fun startTomatoEnrichment(requestKey: String) {
+        tomatoEnrichmentJob?.cancel()
+        tomatoEnrichmentRequestKey = requestKey
+        val hasTomatoSections = cachedSections.values.any { section ->
+            section.target is CatalogTarget.Tomato
+        }
+        if (!hasTomatoSections) {
+            tomatoEnrichmentRequestKey = null
+            tomatoEnrichmentJob = null
+            return
+        }
+        tomatoEnrichmentJob = scope.launch {
+            val feedSections = runCatchingCancellable {
+                com.kaplay.app.features.tomato.TomatoProvider.feedSections()
+            }.getOrNull() ?: return@launch
+            com.kaplay.app.features.tomato.TomatoCatalog.enrichFeedSections(feedSections) { updates ->
+                if (currentRequestKey == requestKey && tomatoEnrichmentRequestKey == requestKey) {
+                    val updatesByKey = updates.associateBy { section -> section.key }
+                    cachedSections = cachedSections.mapValues { (_, current) ->
+                        val target = current.target as? CatalogTarget.Tomato
+                        val feed = target?.sectionId?.let(updatesByKey::get)
+                        if (target == null || feed == null) {
+                            current
+                        } else {
+                            val latestEpisode = com.kaplay.app.features.tomato.TomatoProvider
+                                .isLatestEpisodeSection(feed.key)
+                            current.copy(
+                                items = feed.items.map { title ->
+                                    com.kaplay.app.features.tomato.TomatoCatalog.metaPreview(
+                                        title,
+                                        latestEpisode = latestEpisode,
+                                    )
+                                },
+                                availableItemCount = feed.sourceItemCount.coerceAtLeast(feed.items.size),
+                                hasMore = false,
+                            )
+                        }
+                    }
+                    publishCurrentState(isLoading = false, requestKey = requestKey)
+                }
+            }
         }
     }
 
@@ -176,6 +231,9 @@ object HomeRepository {
         collectionHeroJob?.cancel()
         collectionHeroJob = null
         collectionHeroRequestKey = null
+        tomatoEnrichmentJob?.cancel()
+        tomatoEnrichmentJob = null
+        tomatoEnrichmentRequestKey = null
         lastPublishedCatalogHeroEmpty = true
         lastErrorMessage = null
         _uiState.value = HomeUiState()
@@ -304,7 +362,7 @@ object HomeRepository {
                 subtitle = addonName,
                 addonName = addonName,
                 target = target,
-                items = page.items.take(HOME_CATALOG_PREVIEW_FETCH_LIMIT),
+                items = page.items,
                 availableItemCount = page.rawItemCount,
                 hasMore = false,
             )

@@ -57,13 +57,13 @@ class TomatoProviderTest {
     }
 
     @Test
-    fun detailLookupRemainsBoundedAfterTheFormerTwentyItemRegression() {
+    fun detailLookupPreservesEveryCardBeyondTheFormerTwentyItemRegression() {
         val section = json.parseToJsonElement(
             """{"title":"Em alta","data":[${(1..100).joinToString(",") { "{\"anime_id\":$it}" }}]}""",
         ).jsonObject
 
         assertEquals(
-            (1L..TomatoProvider.FEED_DETAIL_LOOKUP_LIMIT.toLong()).toList(),
+            (1L..100L).toList(),
             TomatoProvider.detailLookupIds(listOf(section)),
         )
     }

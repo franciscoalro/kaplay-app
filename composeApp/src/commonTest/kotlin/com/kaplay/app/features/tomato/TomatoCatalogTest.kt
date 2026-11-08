@@ -6,6 +6,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 
 class TomatoCatalogTest {
     @Test
@@ -147,5 +151,85 @@ class TomatoCatalogTest {
             TomatoCatalog.titlesForSection("tomato:em-alta", sections, globalItems),
         )
         assertEquals(globalItems, TomatoCatalog.titlesForSection(null, sections, globalItems))
+    }
+
+    @Test
+    fun progressiveEnrichmentPublishesAllCardsInOriginalOrderWithStableIdentity() = runTest {
+        val base = (1L..25L).map { id ->
+            TomatoTitle(id = id, name = "Anime #$id", image = null)
+        }
+        val sections = listOf(TomatoProvider.FeedSectionPayload("em-alta", "Em alta", base))
+        val updates = mutableListOf<List<TomatoProvider.FeedSectionPayload>>()
+        var inFlight = 0
+        var maxInFlight = 0
+        val enricher = TomatoProgressiveEnricher(maxConcurrency = 3) { id ->
+            inFlight++
+            maxInFlight = maxOf(maxInFlight, inFlight)
+            delay(1)
+            inFlight--
+            TomatoDetails(
+                animeId = id,
+                name = "Detalhe $id",
+                description = null,
+                poster = "https://cdn.example/$id.jpg",
+                banner = null,
+                tags = emptyList(),
+                seasons = emptyList(),
+            )
+        }
+
+        enricher.enrich(sections) { updates += it }
+
+        assertEquals(3, maxInFlight)
+        assertEquals(25, updates.size)
+        val finalTitles = updates.last().single().items
+        assertEquals((1L..25L).toList(), finalTitles.map { it.id })
+        assertEquals((1L..25L).map { "Detalhe $it" }, finalTitles.map { it.name })
+        assertEquals("https://cdn.example/25.jpg", finalTitles.last().image)
+        assertEquals(
+            (1L..25L).map { "tv:tomato:$it" },
+            finalTitles.map { TomatoCatalog.metaPreview(it).stableKey() },
+        )
+    }
+
+    @Test
+    fun progressiveEnrichmentIsolatesOneDetailFailureAndKeepsOtherCards() = runTest {
+        val sections = listOf(
+            TomatoProvider.FeedSectionPayload(
+                "em-alta",
+                "Em alta",
+                (1L..5L).map { TomatoTitle(it, "Anime #$it", null) },
+            ),
+        )
+        val enricher = TomatoProgressiveEnricher(maxConcurrency = 2) { id ->
+            if (id == 3L) error("detail unavailable")
+            TomatoDetails(id, "Detalhe $id", null, "poster:$id", null, emptyList(), emptyList())
+        }
+        var last: List<TomatoProvider.FeedSectionPayload> = sections
+
+        enricher.enrich(sections) { last = it }
+
+        assertEquals((1L..5L).toList(), last.single().items.map { it.id })
+        assertEquals("Anime #3", last.single().items[2].name)
+        assertEquals("poster:5", last.single().items[4].image)
+    }
+
+    @Test
+    fun progressiveEnrichmentStopsWhenTheRequestIsCancelled() = runTest {
+        val sections = listOf(
+            TomatoProvider.FeedSectionPayload("em-alta", "Em alta", listOf(TomatoTitle(1L, "Anime #1", null))),
+        )
+        val enricher = TomatoProgressiveEnricher(maxConcurrency = 1) {
+            delay(10_000)
+            null
+        }
+        var updates = 0
+        val job = launch {
+            enricher.enrich(sections) { updates++ }
+        }
+
+        job.cancelAndJoin()
+
+        assertEquals(0, updates)
     }
 }

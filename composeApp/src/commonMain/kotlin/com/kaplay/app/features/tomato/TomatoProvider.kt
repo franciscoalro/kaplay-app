@@ -13,11 +13,18 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
+import kotlin.coroutines.coroutineContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -52,10 +59,6 @@ object TomatoProvider {
     internal val maxAttemptsPerRequest = 6
     internal val retryDelayMillis = 150L
     private const val FEED_DETAIL_LOOKUP_CONCURRENCY = 4
-    // Feed cards often contain only an ID. Keep optional detail enrichment
-    // bounded; cards outside this lookup window still use their feed title or
-    // a stable ID fallback and must remain visible.
-    internal const val FEED_DETAIL_LOOKUP_LIMIT = 20
     private const val FEED_DETAIL_LOOKUP_ATTEMPTS = 2
     // Defensive bound only; Tomato does not publish a total/page count in this response.
     internal const val SEARCH_MAX_PAGES = 20
@@ -73,6 +76,11 @@ object TomatoProvider {
 
     private val feedCacheMutex = Mutex()
     private var feedCache: List<FeedSectionPayload>? = null
+    private val detailCacheMutex = Mutex()
+    private val detailCache = mutableMapOf<Long, TomatoDetails>()
+    private val detailJobs = mutableMapOf<Long, Deferred<Result<TomatoDetails>>>()
+    private val detailScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val detailSemaphore = Semaphore(FEED_DETAIL_LOOKUP_CONCURRENCY)
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -107,6 +115,7 @@ object TomatoProvider {
                 mapOf(SETTINGS_TOKEN_KEY to normalized),
             ),
         )
+        detailScope.launch { clearDetailCache() }
     }
 
     // ---------- transport ----------
@@ -337,7 +346,7 @@ object TomatoProvider {
             feedItemsForSection(key, receivedItems)
                 .filter { displayTitleOrNull(titleOf(it)) == null }
                 .mapNotNull(::animeIdOf)
-        }.distinct().take(FEED_DETAIL_LOOKUP_LIMIT)
+        }.distinct()
 
     internal suspend fun feedSections(): List<FeedSectionPayload> = feedCacheMutex.withLock {
         feedCache?.let { return@withLock it }
@@ -346,21 +355,6 @@ object TomatoProvider {
             ?.mapNotNull { it as? JsonObject }
             ?.filter { it["title"]?.jsonPrimitive?.contentOrNull.orEmpty().isNotBlank() }
             ?: emptyList()
-        val ids = detailLookupIds(rawSections).take(FEED_DETAIL_LOOKUP_LIMIT)
-        val namesById = buildMap<Long, String> {
-            ids.chunked(FEED_DETAIL_LOOKUP_CONCURRENCY).forEach { batch ->
-                val resolved = coroutineScope {
-                    batch.map { id ->
-                        async {
-                            id to runCatchingCancellable {
-                                animeDetails(id, attempts = FEED_DETAIL_LOOKUP_ATTEMPTS).name
-                            }.getOrNull().orEmpty()
-                        }
-                    }.awaitAll()
-                }
-                resolved.forEach { (id, name) -> put(id, name) }
-            }
-        }
         val sections = rawSections.map { section ->
             val title = section["title"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
             val key = sectionKey(title)
@@ -370,10 +364,10 @@ object TomatoProvider {
             val sourceItems = feedItemsForSection(key, receivedItems)
             val items = sourceItems.mapNotNull { item ->
                 val id = animeIdOf(item) ?: return@mapNotNull null
-                // Keep a card when a bounded lookup misses or Tomato is
-                // temporarily unavailable; otherwise a later category can
-                // appear empty even though the feed returned valid IDs.
-                titleFromFeedItem(item, fallbackName = namesById[id].orEmpty().ifBlank { "Anime #$id" })
+                // Keep a card when optional metadata is absent or Tomato is
+                // temporarily unavailable; otherwise a category can appear
+                // empty even though the feed returned valid IDs.
+                titleFromFeedItem(item, fallbackName = "Anime #$id")
             }
             FeedSectionPayload(key, title, items, sourceItems.size)
         }
@@ -384,7 +378,52 @@ object TomatoProvider {
         feedSections().flatMap { it.items }.distinctBy { it.id }
 
     fun clearFeedCache() {
-        feedCache = null
+        if (feedCacheMutex.tryLock()) {
+            try {
+                feedCache = null
+            } finally {
+                feedCacheMutex.unlock()
+            }
+        } else {
+            detailScope.launch {
+                feedCacheMutex.withLock { feedCache = null }
+            }
+        }
+    }
+
+    /**
+     * Loads optional metadata for one feed card without making the feed request
+     * wait for it. Successful results are cached by anime ID and concurrent
+     * callers share the same in-flight request. Failures are isolated and are
+     * intentionally not cached.
+     */
+    internal suspend fun cachedFeedDetails(animeId: Long): TomatoDetails? {
+        val lookup = detailCacheMutex.withLock {
+            detailCache[animeId]?.let { return@withLock null to it }
+            detailJobs[animeId]?.let { return@withLock it to null }
+            detailScope.async {
+                val result = detailSemaphore.withPermit {
+                    runCatchingCancellable {
+                        animeDetails(animeId, attempts = FEED_DETAIL_LOOKUP_ATTEMPTS)
+                    }
+                }
+                detailCacheMutex.withLock {
+                    if (detailJobs[animeId] === coroutineContext[Job]) {
+                        detailJobs.remove(animeId)
+                        result.getOrNull()?.let { detailCache[animeId] = it }
+                    }
+                }
+                result
+            }.also { detailJobs[animeId] = it } to null
+        }
+        lookup.second?.let { return it }
+        return lookup.first?.await()?.getOrNull()
+    }
+
+    private suspend fun clearDetailCache() {
+        detailCacheMutex.withLock {
+            detailCache.clear()
+        }
     }
 
     internal fun isLatestEpisodeSection(sectionKey: String): Boolean =

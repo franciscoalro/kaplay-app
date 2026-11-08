@@ -5,9 +5,64 @@ import com.kaplay.app.features.catalog.CatalogTarget
 import com.kaplay.app.features.home.HomeCatalogDefinition
 import com.kaplay.app.features.home.MetaPreview
 import com.kaplay.app.features.streams.StreamItem
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
+
+/**
+ * Enriches every feed card after the base payload has been published. The
+ * callback receives a complete, order-preserving snapshot after each success;
+ * a failed card simply remains in its base form.
+ */
+internal class TomatoProgressiveEnricher(
+    private val maxConcurrency: Int = 4,
+    private val loadDetails: suspend (Long) -> TomatoDetails?,
+) {
+    suspend fun enrich(
+        sections: List<TomatoProvider.FeedSectionPayload>,
+        onUpdate: suspend (List<TomatoProvider.FeedSectionPayload>) -> Unit,
+    ) = supervisorScope {
+        val semaphore = Semaphore(maxConcurrency.coerceAtLeast(1))
+        val updatesMutex = Mutex()
+        var enrichedSections = sections
+        val ids = sections.flatMap { section -> section.items.map(TomatoTitle::id) }.distinct()
+        val jobs = ids.map { id ->
+            launch {
+                val details = try {
+                    semaphore.withPermit { loadDetails(id) }
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Throwable) {
+                    null
+                } ?: return@launch
+                updatesMutex.withLock {
+                    enrichedSections = enrichedSections.map { section ->
+                        section.copy(items = section.items.map { item ->
+                            if (item.id == id) item.withDetails(details) else item
+                        })
+                    }
+                    onUpdate(enrichedSections)
+                }
+            }
+        }
+        jobs.joinAll()
+    }
+
+    private fun TomatoTitle.withDetails(details: TomatoDetails): TomatoTitle {
+        val resolvedName = TomatoProvider.displayTitleOrNull(details.name) ?: name
+        val resolvedImage = if (episodeId != null && episodeThumbnail != null) {
+            image
+        } else {
+            details.poster ?: image
+        }
+        return copy(name = resolvedName, image = resolvedImage)
+    }
+}
 
 /**
  * Builtin Tomato catalog surfaces (home row, catalog grid, search) built on
@@ -115,6 +170,14 @@ object TomatoCatalog {
             rawItemCount = sourceCount.coerceAtLeast(titles.size),
             nextSkip = null,
         )
+    }
+
+    suspend fun enrichFeedSections(
+        sections: List<TomatoProvider.FeedSectionPayload>,
+        onUpdate: suspend (List<TomatoProvider.FeedSectionPayload>) -> Unit,
+    ) {
+        TomatoProgressiveEnricher(loadDetails = TomatoProvider::cachedFeedDetails)
+            .enrich(sections, onUpdate)
     }
 
     suspend fun searchPage(query: String): CatalogPage {
