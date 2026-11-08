@@ -84,6 +84,13 @@ object TomatoCatalog {
         "slice-of-life" to "Slice Of Life",
     )
 
+    // Kept internal so the real CatalogRepository consumer can be exercised
+    // without a live Tomato endpoint in common tests.
+    internal var feedSectionsLoaderForTests: (suspend () -> List<TomatoProvider.FeedSectionPayload>)? = null
+
+    private suspend fun loadFeedSections(): List<TomatoProvider.FeedSectionPayload> =
+        feedSectionsLoaderForTests?.invoke() ?: TomatoProvider.feedSections()
+
     fun homeDefinitions(): List<HomeCatalogDefinition> = HOME_SECTIONS.map { (sectionId, title) ->
         HomeCatalogDefinition(
             key = "tomato:$sectionId",
@@ -145,7 +152,7 @@ object TomatoCatalog {
     }
 
     suspend fun feedPage(sectionId: String? = null): CatalogPage {
-        val sections = TomatoProvider.feedSections()
+        val sections = loadFeedSections()
         return feedPageFromSections(sectionId, sections)
     }
 
@@ -178,6 +185,21 @@ object TomatoCatalog {
     ) {
         TomatoProgressiveEnricher(loadDetails = TomatoProvider::cachedFeedDetails)
             .enrich(sections, onUpdate)
+    }
+
+    /**
+     * Runs the optional detail pass after [page] has already published its
+     * base cards. Every callback is a complete page in the original order.
+     */
+    internal suspend fun enrichPage(
+        target: CatalogTarget.Tomato,
+        onUpdate: suspend (CatalogPage) -> Unit,
+    ) {
+        if (!target.query.isNullOrBlank()) return
+        val sections = loadFeedSections()
+        enrichFeedSections(sections) { enrichedSections ->
+            onUpdate(feedPageFromSections(target.sectionId, enrichedSections))
+        }
     }
 
     suspend fun searchPage(query: String): CatalogPage {

@@ -5,6 +5,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -247,7 +252,48 @@ class TomatoProviderTest {
         assertNull(TomatoProvider.parseEpisodeId("tomato:6945:0"))
     }
 
-    // ---------- episode feed metadata ----------
+    @Test
+    fun saveTokenCancelsInFlightLookupAndDoesNotShareOldGeneration() = runBlocking {
+        val previousToken = TomatoProvider.configuredToken()
+        val firstLookupStarted = CompletableDeferred<Unit>()
+        val releaseFirstLookup = CompletableDeferred<Unit>()
+        var calls = 0
+        TomatoProvider.resetDetailStateForTests()
+        TomatoProvider.setDetailLookupForTests {
+            calls += 1
+            if (calls == 1) {
+                firstLookupStarted.complete(Unit)
+                releaseFirstLookup.await()
+                TomatoDetails(7L, "old credential", null, "old-poster", null, emptyList(), emptyList())
+            } else {
+                TomatoDetails(7L, "new credential", null, "new-poster", null, emptyList(), emptyList())
+            }
+        }
+
+        try {
+            val oldLookup = async { TomatoProvider.cachedFeedDetails(7L) }
+            withTimeout(2_000) { firstLookupStarted.await() }
+
+            TomatoProvider.saveToken("new-token")
+
+            val newDetails = withTimeout(2_000) {
+                TomatoProvider.cachedFeedDetails(7L)
+            }
+            assertEquals("new credential", newDetails?.name)
+            assertEquals(2, calls)
+
+            val oldResult = runCatching { oldLookup.await() }
+            assertTrue(oldResult.exceptionOrNull() is CancellationException)
+            releaseFirstLookup.complete(Unit)
+
+            assertEquals("new credential", TomatoProvider.cachedFeedDetails(7L)?.name)
+        } finally {
+            releaseFirstLookup.complete(Unit)
+            TomatoProvider.resetDetailStateForTests()
+            TomatoProvider.saveToken(previousToken)
+        }
+    }
+
 
     @Test
     fun feedCardPreservesEpisodeMetadataWithSnakeCaseKeys() {

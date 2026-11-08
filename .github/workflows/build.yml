@@ -95,6 +95,7 @@ jobs:
             --tests 'com.kaplay.app.features.tomato.TomatoProviderTest' \
             --tests 'com.kaplay.app.features.tomato.TomatoCatalogTest' \
             --tests 'com.kaplay.app.features.catalog.CatalogPaginationStateTest' \
+            --tests 'com.kaplay.app.features.catalog.CatalogRepositoryTest' \
             --tests 'com.kaplay.app.features.auth.AuthValidationTest' \
             --tests 'com.kaplay.app.features.auth.AuthScreenTest' \
             --tests 'com.kaplay.app.core.network.NetworkStatusRepositoryTest' \

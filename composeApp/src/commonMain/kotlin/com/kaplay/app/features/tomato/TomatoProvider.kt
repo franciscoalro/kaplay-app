@@ -12,6 +12,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -76,11 +77,27 @@ object TomatoProvider {
 
     private val feedCacheMutex = Mutex()
     private var feedCache: List<FeedSectionPayload>? = null
-    private val detailCacheMutex = Mutex()
-    private val detailCache = mutableMapOf<Long, TomatoDetails>()
-    private val detailJobs = mutableMapOf<Long, Deferred<Result<TomatoDetails>>>()
+    private data class DetailLookup(
+        val generation: Long,
+        val deferred: Deferred<Result<TomatoDetails?>>,
+    )
+
+    private data class DetailState(
+        val generation: Long = 0L,
+        val cache: Map<Long, TomatoDetails> = emptyMap(),
+        val jobs: Map<Long, DetailLookup> = emptyMap(),
+    )
+
+    /**
+     * Cache, in-flight jobs and credential generation are one atomic state.
+     * This is deliberately not split across a Mutex and an async clear: a
+     * token change must be visible synchronously and an old job must never be
+     * able to insert its result after the new credential has been saved.
+     */
+    private val detailState = atomic(DetailState())
     private val detailScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val detailSemaphore = Semaphore(FEED_DETAIL_LOOKUP_CONCURRENCY)
+    private var detailLookupOverrideForTests: (suspend (Long) -> TomatoDetails?)? = null
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -115,7 +132,7 @@ object TomatoProvider {
                 mapOf(SETTINGS_TOKEN_KEY to normalized),
             ),
         )
-        detailScope.launch { clearDetailCache() }
+        invalidateDetailState().forEach { job -> job.cancel() }
     }
 
     // ---------- transport ----------
@@ -398,32 +415,91 @@ object TomatoProvider {
      * intentionally not cached.
      */
     internal suspend fun cachedFeedDetails(animeId: Long): TomatoDetails? {
-        val lookup = detailCacheMutex.withLock {
-            detailCache[animeId]?.let { return@withLock null to it }
-            detailJobs[animeId]?.let { return@withLock it to null }
-            detailScope.async {
+        while (true) {
+            val state = detailState.value
+            state.cache[animeId]?.let { return it }
+
+            val existing = state.jobs[animeId]
+            if (existing != null) {
+                if (existing.generation == state.generation) {
+                    return existing.deferred.await().getOrNull()
+                }
+                val withoutStaleJob = state.copy(jobs = state.jobs - animeId)
+                if (!detailState.compareAndSet(state, withoutStaleJob)) continue
+            }
+
+            val generation = state.generation
+            val lookupOverride = detailLookupOverrideForTests
+            val deferred = detailScope.async {
                 val result = detailSemaphore.withPermit {
                     runCatchingCancellable {
-                        animeDetails(animeId, attempts = FEED_DETAIL_LOOKUP_ATTEMPTS)
+                        lookupOverride?.invoke(animeId)
+                            ?: animeDetails(animeId, attempts = FEED_DETAIL_LOOKUP_ATTEMPTS)
                     }
                 }
-                detailCacheMutex.withLock {
-                    if (detailJobs[animeId] === coroutineContext[Job]) {
-                        detailJobs.remove(animeId)
-                        result.getOrNull()?.let { detailCache[animeId] = it }
-                    }
-                }
+                completeDetailLookup(
+                    animeId = animeId,
+                    generation = generation,
+                    job = coroutineContext[Job],
+                    result = result,
+                )
                 result
-            }.also { detailJobs[animeId] = it } to null
+            }
+            val withNewJob = state.copy(
+                jobs = state.jobs + (animeId to DetailLookup(generation, deferred)),
+            )
+            if (detailState.compareAndSet(state, withNewJob)) {
+                return deferred.await().getOrNull()
+            }
+            deferred.cancel()
         }
-        lookup.second?.let { return it }
-        return lookup.first?.await()?.getOrNull()
     }
 
-    private suspend fun clearDetailCache() {
-        detailCacheMutex.withLock {
-            detailCache.clear()
+    private fun invalidateDetailState(): List<Deferred<Result<TomatoDetails?>>> {
+        while (true) {
+            val current = detailState.value
+            val invalidated = current.copy(
+                generation = current.generation + 1,
+                cache = emptyMap(),
+                jobs = emptyMap(),
+            )
+            if (detailState.compareAndSet(current, invalidated)) {
+                return current.jobs.values.map(DetailLookup::deferred)
+            }
         }
+    }
+
+    private fun completeDetailLookup(
+        animeId: Long,
+        generation: Long,
+        job: Job?,
+        result: Result<TomatoDetails?>,
+    ) {
+        while (true) {
+            val current = detailState.value
+            val lookup = current.jobs[animeId]
+            if (lookup == null || lookup.deferred !== job) return
+            val details = result.getOrNull()
+            val next = current.copy(
+                cache = if (current.generation == generation && details != null) {
+                    current.cache + (animeId to details)
+                } else {
+                    current.cache
+                },
+                jobs = current.jobs - animeId,
+            )
+            if (detailState.compareAndSet(current, next)) return
+        }
+    }
+
+    /** Test-only transport seam; production always uses [animeDetails]. */
+    internal fun setDetailLookupForTests(lookup: (suspend (Long) -> TomatoDetails?)?) {
+        detailLookupOverrideForTests = lookup
+    }
+
+    internal fun resetDetailStateForTests() {
+        invalidateDetailState().forEach { job -> job.cancel() }
+        detailLookupOverrideForTests = null
     }
 
     internal fun isLatestEpisodeSection(sectionKey: String): Boolean =

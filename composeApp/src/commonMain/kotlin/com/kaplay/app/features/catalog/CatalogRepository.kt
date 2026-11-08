@@ -9,7 +9,10 @@ import com.kaplay.app.features.library.LibraryRepository
 import com.kaplay.app.features.servers.ServerCatalog
 import com.kaplay.app.features.servers.serverMessage
 import com.kaplay.app.features.home.HomeCatalogSettingsRepository
+import com.kaplay.app.features.home.MetaPreview
 import com.kaplay.app.features.home.filterReleasedItems
+import com.kaplay.app.features.home.stableKey
+import com.kaplay.app.features.tomato.TomatoCatalog
 import com.kaplay.app.features.trakt.TraktPublicListSourceResolver
 import com.kaplay.app.features.watchprogress.CurrentDateProvider
 import kotlinx.coroutines.CancellationException
@@ -160,7 +163,7 @@ object CatalogRepository {
                         page = requestedSkip.takeIf { it > 0 } ?: 1,
                     )
 
-                    is CatalogTarget.Tomato -> com.kaplay.app.features.tomato.TomatoCatalog.page(target)
+                    is CatalogTarget.Tomato -> TomatoCatalog.page(target)
                     is CatalogTarget.Server -> ServerCatalog.page(target, skip = requestedSkip)
 
                     is CatalogTarget.Library -> error(getString(Res.string.catalog_load_failed))
@@ -197,6 +200,25 @@ object CatalogRepository {
                         consecutiveDuplicatePages = paginationState.consecutiveDuplicatePages,
                         errorMessage = null,
                     )
+
+                    val tomatoTarget = request.target as? CatalogTarget.Tomato
+                    if (tomatoTarget != null && tomatoTarget.query.isNullOrBlank()) {
+                        TomatoCatalog.enrichPage(
+                            target = tomatoTarget,
+                        ) { enrichedPage ->
+                            if (isCurrent(request, generation)) {
+                                val enrichedItems = mergeTomatoEnrichment(
+                                    existing = _uiState.value.items,
+                                    incoming = enrichedPage
+                                        .withUnreleasedFilter(request.hideUnreleasedContent)
+                                        .items,
+                                )
+                                _uiState.value = _uiState.value.copy(
+                                    items = enrichedItems.withCustomPosterUrls(posterPattern),
+                                )
+                            }
+                        }
+                    }
                 },
                 onFailure = { error ->
                     if (!isCurrent(request, generation)) return@fold
@@ -242,6 +264,29 @@ private fun CatalogPage.withUnreleasedFilter(hideUnreleasedContent: Boolean): Ca
     if (!hideUnreleasedContent) return this
     val filteredItems = items.filterReleasedItems(CurrentDateProvider.todayIsoDate())
     return if (filteredItems.size == items.size) this else copy(items = filteredItems)
+}
+
+/**
+ * Applies a Tomato detail snapshot to the cards already shown by the grid.
+ * The base order is authoritative and stable keys are retained, so a late
+ * detail response can update metadata without removing, moving, or replacing
+ * a card identity. Any card unexpectedly absent from the snapshot is kept.
+ */
+private fun mergeTomatoEnrichment(
+    existing: List<MetaPreview>,
+    incoming: List<MetaPreview>,
+): List<MetaPreview> {
+    if (existing.isEmpty()) return dedupeCatalogItems(incoming)
+    val incomingByKey = dedupeCatalogItems(incoming).associateBy { it.stableKey() }
+    val existingKeys = existing.mapTo(mutableSetOf()) { it.stableKey() }
+    return buildList(existing.size + incoming.size) {
+        existing.forEach { item ->
+            add(incomingByKey[item.stableKey()] ?: item)
+        }
+        incoming.forEach { item ->
+            if (item.stableKey() !in existingKeys) add(item)
+        }
+    }
 }
 
 private suspend fun fetchCollectionSourcePage(
