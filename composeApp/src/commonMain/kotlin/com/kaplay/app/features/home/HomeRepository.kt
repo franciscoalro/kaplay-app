@@ -41,6 +41,18 @@ private suspend fun <T> runCatchingCancellable(block: suspend () -> T): Result<T
         Result.failure(error)
     }
 
+internal fun shouldRetryEmptyBuiltInCatalogs(
+    definitions: List<HomeCatalogDefinition>,
+    cachedSections: Map<String, HomeCatalogSection>,
+): Boolean {
+    val builtInDefinitions = definitions.filter {
+        it.manifestUrl == com.kaplay.app.features.tomato.TomatoCatalog.MANIFEST_URL
+    }
+    return builtInDefinitions.isNotEmpty() && builtInDefinitions.any {
+        cachedSections[it.cacheKey]?.items.isNullOrEmpty()
+    }
+}
+
 object HomeRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -70,7 +82,12 @@ object HomeRepository {
         currentRequestKey = requestKey
 
         if (!force && activeRequestKey == requestKey && _uiState.value.isLoading) return
-        if (!force && previousRequestKey == requestKey && !_uiState.value.isLoading) return
+        if (
+            !force &&
+            previousRequestKey == requestKey &&
+            !_uiState.value.isLoading &&
+            !shouldRetryEmptyBuiltInCatalogs(requests, cachedSections)
+        ) return
         activeRequestKey = requestKey
 
         if (requests.isEmpty()) {

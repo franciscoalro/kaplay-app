@@ -3,6 +3,7 @@ package com.kaplay.app.features.home
 import com.kaplay.app.features.addons.AddonManifest
 import com.kaplay.app.features.addons.AddonResource
 import com.kaplay.app.features.addons.ManagedAddon
+import com.kaplay.app.features.tomato.TomatoCatalog
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -29,6 +30,14 @@ class HomeCatalogDefinitionTest {
     @Test
     fun `omits the type suffix when disabled`() {
         assertEquals("Popular", definition.titleFor(showCatalogType = false))
+    }
+
+    @Test
+    fun `built in Tomato catalogs remain available with no synced addons`() {
+        val definitions = buildHomeCatalogDefinitions(emptyList())
+
+        assertTrue(definitions.any { it.manifestUrl == TomatoCatalog.MANIFEST_URL })
+        assertTrue(shouldRetryEmptyBuiltInCatalogs(definitions, emptyMap()))
     }
 
     @Test
