@@ -1,6 +1,9 @@
 package com.kaplay.app.features.watching.sync
 
 import com.kaplay.app.features.watched.WatchedItem
+import com.kaplay.app.features.watched.WatchedRepository.watchedItemsDeltaPageSize
+import com.kaplay.app.features.watched.WatchedRepository.watchedItemsPageSize
+import com.kaplay.app.features.watchprogress.WATCH_PROGRESS_DELTA_PAGE_SIZE
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -12,6 +15,13 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class SupabaseSyncPagingTest {
+    @Test
+    fun `watched and progress sync requests stay within the 500 row limit`() {
+        assertEquals(500, watchedItemsPageSize)
+        assertEquals(500, watchedItemsDeltaPageSize)
+        assertEquals(500, WATCH_PROGRESS_DELTA_PAGE_SIZE)
+    }
+
     @Test
     fun `keyset paging collects more than one thousand entries without gaps`() = runTest {
         val source = (1..1_201).toList()

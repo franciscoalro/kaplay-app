@@ -119,8 +119,8 @@ object WatchedRepository {
         val sourceOperation: WatchedSourceOperation,
     )
 
-    private const val watchedItemsPageSize = 900
-    private const val watchedItemsDeltaPageSize = 900
+    internal const val watchedItemsPageSize = 500
+    internal const val watchedItemsDeltaPageSize = 500
     private const val watchedDeltaOperationUpsert = "upsert"
     private const val watchedDeltaOperationDelete = "delete"
     private const val watchedDiagnosticSampleLimit = 10
