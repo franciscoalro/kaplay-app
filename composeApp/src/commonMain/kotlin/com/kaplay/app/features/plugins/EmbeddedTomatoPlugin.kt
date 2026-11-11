@@ -430,6 +430,14 @@ async function fetchTmdbTitles(tmdbId, mediaType) {
 
 const API_URL = "https://api.animefire.one";
 
+// Keep this parser local: QuickJS does not guarantee a global URL constructor.
+function isHttpUrl(value) {
+  if (typeof value !== "string") return false;
+  const candidate = value.trim();
+  const match = /^https?:\/\/(\[[^\]\s\/?#]+\]|[^\/?#\s:]+)(?::\d+)?(?:[\/?#]|$)/i.exec(candidate);
+  return Boolean(match && match[1]);
+}
+
 async function getStreams(tmdbId, mediaType, season, episode) {
   const titles = await fetchTmdbTitles(tmdbId, mediaType);
   if (!titles.length) return [];
@@ -450,7 +458,10 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         const items = body && body.data ? body.data : [];
         let best = null, bestScore = 0;
         for (const item of items) {
-          const names = [item.titles && item.titles.br, item.titles && item.titles.us, item.titles && item.titles.jp].filter(Boolean);
+          const names = Object.entries(item.titles || {})
+            .filter(([key]) => ["br", "us", "jp"].includes(String(key).toLowerCase()))
+            .map(([, value]) => value)
+            .filter(Boolean);
           for (const name of names) {
             const sc = titleScore(title, name);
             if (sc > bestScore) { bestScore = sc; best = item; }
@@ -474,12 +485,13 @@ async function getStreams(tmdbId, mediaType, season, episode) {
 
     const targetEpNum = Number(episode || 1);
     const targetSeason = Number(season || 1);
+    const hasRequestedSeason = season !== undefined && season !== null;
 
     const ep = episodes.find(e => {
       const epNum = Number(e.number);
       const epSeason = Number(e.season || 1);
-      return epNum === targetEpNum && (season ? epSeason === targetSeason : true);
-    }) || episodes.find(e => Number(e.number) === targetEpNum);
+      return epNum === targetEpNum && (!hasRequestedSeason || epSeason === targetSeason);
+    });
 
     if (!ep || !ep.id) return [];
 
@@ -489,20 +501,28 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     const streams = (epData.data && epData.data.streams) || [];
 
     const results = [];
+    const seenStreams = new Set();
     streams.forEach(st => {
-      if (!st.url) return;
-      const audio = st.audio === "dub" ? "Dublado" : "Legendado";
-      const qualities = Array.isArray(st.qualities) ? st.qualities : ["720p"];
+      if (!st || !isHttpUrl(st.url)) return;
+      const url = st.url.trim();
+      const audioValue = String(st.audio || "").toLowerCase();
+      const audio = audioValue === "dub" || audioValue === "dublado" ? "Dublado" : "Legendado";
+      const qualities = Array.isArray(st.qualities) && st.qualities.length ? st.qualities : ["HD"];
+      const type = /\.mp4(?:$|[?#])/i.test(url) ? "file" : "hls";
       qualities.forEach(q => {
+        const quality = String(q || "HD");
+        const streamKey = audio + "\u0000" + quality + "\u0000" + url;
+        if (seenStreams.has(streamKey)) return;
+        seenStreams.add(streamKey);
         results.push({
-          title: "AnimeFire • " + audio + " • " + q,
+          title: "AnimeFire • " + audio + " • " + quality,
           name: "AnimeFire " + audio,
           provider: "AnimeFire",
-          quality: q,
+          quality,
           language: "Português",
-          type: st.url.includes(".m3u8") ? "hls" : "file",
-          headers: { "Referer": "https://animefire.one/" },
-          url: st.url
+          type,
+          headers,
+          url
         });
       });
     });
