@@ -111,6 +111,7 @@ jobs:
             --tests 'com.kaplay.app.features.home.HomeRewardLabelTest' \
             --tests 'com.kaplay.app.features.home.components.HomeRewardBannerTest' \
             --tests 'com.kaplay.app.features.home.HomeCategoryFiltersTest' \
+            --tests 'com.kaplay.app.features.profiles.AvatarAccessTest' \
             --tests 'com.kaplay.app.features.profiles.ProfileSyncStatusPresenterTest' \
             --tests 'com.kaplay.app.core.sync.ProfileSyncContractTest' \
             --no-daemon --no-parallel --max-workers=2 --stacktrace
