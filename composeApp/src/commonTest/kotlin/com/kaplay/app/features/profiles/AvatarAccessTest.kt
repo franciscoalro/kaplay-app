@@ -37,4 +37,28 @@ class AvatarAccessTest {
         assertEquals("file:///cache/supporter-gold.png", avatarImageUrl(supporter))
         assertNull(avatarImageUrl(supporter.copy(localImageUrl = null)))
     }
+
+    @Test
+    fun missingRpcIsUnavailable() {
+        assertEquals(
+            AvatarCatalogLoadStatus.Unavailable,
+            classifyAvatarCatalogFailure("PGRST202", "function is missing from schema cache"),
+        )
+    }
+
+    @Test
+    fun networkFailureIsOffline() {
+        assertEquals(
+            AvatarCatalogLoadStatus.Offline,
+            classifyAvatarCatalogFailure(null, "Unable to resolve host build-only.invalid"),
+        )
+    }
+
+    @Test
+    fun unknownFailureIsUnavailable() {
+        assertEquals(
+            AvatarCatalogLoadStatus.Unavailable,
+            classifyAvatarCatalogFailure("PGRST500", "backend rejected request"),
+        )
+    }
 }

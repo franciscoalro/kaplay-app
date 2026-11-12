@@ -34,6 +34,30 @@ import kotlin.time.TimeSource
 private const val MemberAvatarBucket = "membership-profile-avatars"
 private val AvatarCatalogRefreshInterval = 15.minutes
 
+internal enum class AvatarCatalogLoadStatus {
+    Idle,
+    Loading,
+    Ready,
+    Unavailable,
+    Offline,
+}
+
+internal fun classifyAvatarCatalogFailure(code: String?, message: String?): AvatarCatalogLoadStatus {
+    if (code.equals("PGRST202", ignoreCase = true)) return AvatarCatalogLoadStatus.Unavailable
+    val normalizedMessage = message.orEmpty().lowercase()
+    return if (
+        "unable to resolve host" in normalizedMessage ||
+            "timeout" in normalizedMessage ||
+            "timed out" in normalizedMessage ||
+            "connection refused" in normalizedMessage ||
+            "failed to connect" in normalizedMessage
+    ) {
+        AvatarCatalogLoadStatus.Offline
+    } else {
+        AvatarCatalogLoadStatus.Unavailable
+    }
+}
+
 @Serializable
 private data class StoredAvatarCatalogPayload(
     val items: List<AvatarCatalogItem> = emptyList(),
