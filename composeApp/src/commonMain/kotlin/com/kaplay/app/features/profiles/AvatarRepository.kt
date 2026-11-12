@@ -107,7 +107,7 @@ object AvatarRepository {
     val avatars: StateFlow<List<AvatarCatalogItem>> = _avatars.asStateFlow()
 
     private val _catalogStatus = MutableStateFlow(AvatarCatalogLoadStatus.Idle)
-    val catalogStatus: StateFlow<AvatarCatalogLoadStatus> = _catalogStatus.asStateFlow()
+    internal val catalogStatus: StateFlow<AvatarCatalogLoadStatus> = _catalogStatus.asStateFlow()
 
     private var standardCatalog = emptyList<AvatarCatalogItem>()
     private var memberCatalog = emptyList<AvatarCatalogItem>()
