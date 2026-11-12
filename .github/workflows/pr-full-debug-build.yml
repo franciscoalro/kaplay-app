@@ -5,6 +5,15 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [cmp-rewrite]
   workflow_dispatch:
+    inputs:
+      backend:
+        description: Backend for this manual fullDebug build (production is never selected by pull_request)
+        required: true
+        type: choice
+        options:
+          - isolated
+          - production
+        default: isolated
 
 permissions:
   contents: read
@@ -17,6 +26,12 @@ jobs:
   full-debug-build:
     name: Build fullDebug APK
     runs-on: ubuntu-latest
+    env:
+      # A pull request can only use the isolated backend. Production is available
+      # only through an explicit workflow_dispatch input.
+      BUILD_BACKEND: ${{ github.event_name == 'workflow_dispatch' && inputs.backend || 'isolated' }}
+      KAPLAY_SUPABASE_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.backend == 'production' && 'https://iibureqvpurmbgqupnvl.supabase.co' || vars.KAPLAY_ISOLATED_BASE_URL }}
+      KAPLAY_SUPABASE_ANON_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.backend == 'production' && 'sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp' || secrets.KAPLAY_ISOLATED_ANON_KEY }}
 
     steps:
       - name: Checkout
@@ -34,21 +49,150 @@ jobs:
       - name: Prepare runtime properties
         env:
           LOCAL_PROPERTIES_BASE64: ${{ secrets.KAPLAY_LOCAL_PROPERTIES_BASE64 }}
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.KAPLAY_RELEASE_KEYSTORE_B64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.KAPLAY_RELEASE_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
           if [ -n "$LOCAL_PROPERTIES_BASE64" ]; then
             printf '%s' "$LOCAL_PROPERTIES_BASE64" | base64 --decode > local.properties
-            sed -i -E '/^[[:space:]]*(sdk\.dir|KAPLAY_RELEASE_STORE_FILE)[[:space:]]*=/d' local.properties
+            sed -i -E '/^[[:space:]]*(sdk\.dir|KAPLAY_RELEASE_STORE_FILE|KAPLAY_SUPABASE_URL|KAPLAY_SUPABASE_ANON_KEY|KAPLAY_SUPABASE_FALLBACK_URL)[[:space:]]*=/d' local.properties
           else
             touch local.properties
           fi
 
+          if [[ "$BUILD_BACKEND" == "production" ]]; then
+            for required in RELEASE_KEYSTORE_BASE64 RELEASE_STORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
+              test -n "${!required:-}" || { echo "${required} is required for the production fullDebug build." >&2; exit 1; }
+            done
+            keystore_path="${RUNNER_TEMP}/kaplay-release.jks"
+            printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+            test -s "$keystore_path"
+            {
+              printf 'KAPLAY_RELEASE_STORE_FILE=%s\n' "$keystore_path"
+              printf 'KAPLAY_RELEASE_STORE_PASSWORD=%s\n' "$RELEASE_STORE_PASSWORD"
+              printf 'KAPLAY_RELEASE_KEY_ALIAS=%s\n' "$RELEASE_KEY_ALIAS"
+              printf 'KAPLAY_RELEASE_KEY_PASSWORD=%s\n' "$RELEASE_KEY_PASSWORD"
+            } >> local.properties
+          fi
+
+      - name: Validate selected backend configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$KAPLAY_SUPABASE_URL"
+          test -n "$KAPLAY_SUPABASE_ANON_KEY"
+          case "$KAPLAY_SUPABASE_URL" in
+            https://*) ;;
+            *) echo "Full-debug builds require an HTTPS backend" >&2; exit 1 ;;
+          esac
+          if [[ "$BUILD_BACKEND" == "production" ]]; then
+            test "$GITHUB_EVENT_NAME" = workflow_dispatch
+            test "$KAPLAY_SUPABASE_URL" = "https://iibureqvpurmbgqupnvl.supabase.co"
+            echo "Manual production backend selected; no database write is performed by this workflow."
+          else
+            case "$KAPLAY_SUPABASE_URL" in
+              *localhost*|*127.0.0.1*|*0.0.0.0*|*\[::1\]*)
+                echo "Loopback backend is not reachable from the GitHub runner" >&2
+                exit 1
+                ;;
+              *iibureqvpurmbgqupnvl.supabase.co*)
+                echo "Production Supabase URL is forbidden for pull_request/isolated full-debug artifacts" >&2
+                exit 1
+                ;;
+            esac
+          fi
+
+      - name: Verify production signing certificate (read-only)
+        if: ${{ env.BUILD_BACKEND == 'production' }}
+        env:
+          RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          certificate_sha256="$(
+            keytool -list -v \
+              -keystore "${RUNNER_TEMP}/kaplay-release.jks" \
+              -storepass "${RELEASE_STORE_PASSWORD}" \
+              -alias "${RELEASE_KEY_ALIAS}" 2>/dev/null \
+              | awk -F': ' '/SHA256:/{print $2; exit}' \
+              | tr -d ':' \
+              | tr '[:upper:]' '[:lower:]'
+          )"
+          test -n "$certificate_sha256"
+          echo "certificate_sha256=$certificate_sha256"
+          test "$certificate_sha256" = "97807c6f56415754cffb6d2ffb6cdff642b30bffc3f892dd9bbf513f839e99a8" || {
+            echo "The configured release keystore does not match the approved production APK certificate." >&2
+            exit 1
+          }
+
       - name: Build fullDebug APK
         run: ./gradlew :androidApp:assembleFullDebug -Pkaplay.android.distribution=full -Pkaplay.ios.distribution=appstore --stacktrace
+
+      - name: Verify APK configuration, hash, and certificate
+        id: apk-verification
+        if: ${{ env.BUILD_BACKEND == 'production' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk
+          test -s "$apk"
+          apksigner="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$apksigner"
+          "$apksigner" verify --verbose "$apk"
+          cert_output="$("$apksigner" verify --print-certs "$apk" 2>&1)"
+          printf '%s\n' "$cert_output"
+          apk_certificate_sha256="$(
+            printf '%s\n' "$cert_output" \
+              | sed -nE 's/.*certificate SHA-256 digest:[[:space:]]*//p' \
+              | head -n 1 \
+              | tr -d ':' \
+              | tr '[:upper:]' '[:lower:]'
+          )"
+          echo "apk_certificate_sha256=$apk_certificate_sha256"
+          test "$apk_certificate_sha256" = "97807c6f56415754cffb6d2ffb6cdff642b30bffc3f892dd9bbf513f839e99a8"
+          apk_strings="$(mktemp)"
+          trap 'rm -f "$apk_strings"' EXIT
+          while IFS= read -r entry; do
+            case "$entry" in
+              */) continue ;;
+            esac
+            unzip -p "$apk" "$entry" 2>/dev/null | strings -a >> "$apk_strings"
+          done < <(unzip -Z1 "$apk")
+          grep -Fq "$KAPLAY_SUPABASE_URL" "$apk_strings"
+          ! grep -Eiq 'localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0|::1' "$apk_strings"
+          mkdir -p build-artifacts
+          sha256sum "$apk" | tee build-artifacts/SHA256SUMS
+          apk_sha256="$(sha256sum "$apk" | cut -d' ' -f1)"
+          apk_size="$(stat -c '%s' "$apk")"
+          {
+            echo "variant=fullDebug"
+            echo "backend=production"
+            echo "package=com.kaplay.app.debug"
+            echo "supabase_url=$KAPLAY_SUPABASE_URL"
+            echo "path=$apk"
+            echo "size_bytes=$apk_size"
+            echo "sha256=$apk_sha256"
+            echo "certificate_sha256=$apk_certificate_sha256"
+            echo "functional_homologation=NOT_PERFORMED"
+          } > build-artifacts/BUILD_METADATA.txt
+          cat build-artifacts/BUILD_METADATA.txt
 
       - name: Upload fullDebug APK
         uses: actions/upload-artifact@v7
         with:
           path: androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk
           archive: false
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload fullDebug verification metadata
+        if: ${{ env.BUILD_BACKEND == 'production' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: kaplay-full-debug-production-verification
+          path: build-artifacts/
           if-no-files-found: error
           retention-days: 7

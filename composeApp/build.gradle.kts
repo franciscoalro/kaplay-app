@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
 import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+import java.net.URI
 import java.util.Properties
 
 abstract class GenerateRuntimeConfigsTask : DefaultTask() {
@@ -316,6 +317,22 @@ fun runtimeConfigBoolean(key: String, default: Boolean): Boolean =
     }
 
 val debugBuild = requestedGradleTasks.any { it.contains("debug", ignoreCase = true) }
+val packagedDebugBuild = requestedGradleTasks.any {
+    it.contains("assemble", ignoreCase = true) && it.contains("debug", ignoreCase = true)
+}
+val configuredSupabaseUrl = runtimeConfigValue("KAPLAY_SUPABASE_URL")
+val configuredSupabaseAnonKey = runtimeConfigValue("KAPLAY_SUPABASE_ANON_KEY")
+
+if (packagedDebugBuild) {
+    require(configuredSupabaseUrl.isNotBlank() && configuredSupabaseAnonKey.isNotBlank()) {
+        "Packaged debug builds require KAPLAY_SUPABASE_URL and KAPLAY_SUPABASE_ANON_KEY. " +
+            "Refusing an APK that would resolve Supabase to localhost."
+    }
+    val backendHost = runCatching { URI(configuredSupabaseUrl).host?.lowercase() }.getOrNull()
+    require(backendHost != null && backendHost !in setOf("localhost", "127.0.0.1", "0.0.0.0", "::1")) {
+        "Packaged debug builds must use a configured non-loopback Supabase host."
+    }
+}
 
 val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generateRuntimeConfigs") {
     outputDir.set(generatedRuntimeConfigDir)
@@ -323,16 +340,14 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     appVersionName.set(releaseAppVersionName)
     appVersionCode.set(releaseAppVersionCode)
     supabaseUrl.set(
-        runtimeConfigValue(
-            "KAPLAY_SUPABASE_URL",
-            fallback = if (debugBuild) "" else "https://iibureqvpurmbgqupnvl.supabase.co",
-        ),
+        configuredSupabaseUrl.ifBlank {
+            if (debugBuild) "" else "https://iibureqvpurmbgqupnvl.supabase.co"
+        },
     )
     supabaseAnonKey.set(
-        runtimeConfigValue(
-            "KAPLAY_SUPABASE_ANON_KEY",
-            fallback = if (debugBuild) "" else "sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp",
-        ),
+        configuredSupabaseAnonKey.ifBlank {
+            if (debugBuild) "" else "sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp"
+        },
     )
     supabaseFallbackUrl.set(runtimeConfigValue("KAPLAY_SUPABASE_FALLBACK_URL"))
     sentryDsn.set(runtimeConfigValue("SENTRY_DSN"))
