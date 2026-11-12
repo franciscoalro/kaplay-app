@@ -6,6 +6,7 @@ import com.kaplay.app.core.network.SupabaseProvider
 import com.kaplay.app.features.membership.CosmeticEntitlement
 import com.kaplay.app.features.membership.MemberAccessRepository
 import com.kaplay.app.features.membership.MemberAssetStorage
+import io.github.jan.supabase.postgrest.exception.PostgrestRestException
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.storage.storage
@@ -26,6 +27,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import io.ktor.utils.io.errors.IOException
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.TimeMark
@@ -40,6 +42,18 @@ internal enum class AvatarCatalogLoadStatus {
     Ready,
     Unavailable,
     Offline,
+}
+
+internal fun classifyAvatarCatalogFailure(error: Throwable): AvatarCatalogLoadStatus {
+    val postgrestError = error as? PostgrestRestException
+    val code = postgrestError?.code ?: Regex("\\bPGRST\\d{3}\\b", RegexOption.IGNORE_CASE)
+        .find(error.message.orEmpty())
+        ?.value
+    return when {
+        code.equals("PGRST202", ignoreCase = true) -> AvatarCatalogLoadStatus.Unavailable
+        error is IOException -> AvatarCatalogLoadStatus.Offline
+        else -> classifyAvatarCatalogFailure(code, error.message)
+    }
 }
 
 internal fun classifyAvatarCatalogFailure(code: String?, message: String?): AvatarCatalogLoadStatus {
@@ -68,11 +82,12 @@ enum class AvatarCatalogUiState {
 internal fun avatarCatalogUiState(
     status: AvatarCatalogLoadStatus,
     hasAvatars: Boolean,
-): AvatarCatalogUiState = when {
-    hasAvatars -> AvatarCatalogUiState.Ready
-    status == AvatarCatalogLoadStatus.Offline -> AvatarCatalogUiState.Offline
-    status == AvatarCatalogLoadStatus.Unavailable -> AvatarCatalogUiState.Unavailable
-    else -> AvatarCatalogUiState.Loading
+): AvatarCatalogUiState = when (status) {
+    AvatarCatalogLoadStatus.Offline -> AvatarCatalogUiState.Offline
+    AvatarCatalogLoadStatus.Unavailable -> AvatarCatalogUiState.Unavailable
+    AvatarCatalogLoadStatus.Ready -> AvatarCatalogUiState.Ready
+    AvatarCatalogLoadStatus.Loading -> if (hasAvatars) AvatarCatalogUiState.Ready else AvatarCatalogUiState.Loading
+    AvatarCatalogLoadStatus.Idle -> if (hasAvatars) AvatarCatalogUiState.Ready else AvatarCatalogUiState.Loading
 }
 
 @Serializable
@@ -224,10 +239,7 @@ object AvatarRepository {
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
-            val code = Regex("\\bPGRST\\d{3}\\b", RegexOption.IGNORE_CASE)
-                .find(error.message.orEmpty())
-                ?.value
-            _catalogStatus.value = classifyAvatarCatalogFailure(code, error.message)
+            _catalogStatus.value = classifyAvatarCatalogFailure(error)
             log.w(error) { "Avatar catalog unavailable (${_catalogStatus.value})" }
         } finally {
             standardFetchInFlight = false

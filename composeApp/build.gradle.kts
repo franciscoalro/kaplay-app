@@ -343,6 +343,13 @@ if (debugBuild) {
     ) {
         "Privileged or JWT-like key material is not allowed in a debug build."
     }
+    require(
+        buildOnly ||
+            (configuredBackendUrl != "https://build-only.invalid" &&
+                configuredBackendKey != "build-only-placeholder"),
+    ) {
+        "Build-only placeholder is valid only when KAPLAY_BUILD_ONLY=true."
+    }
     if (buildOnly) {
         require(configuredBackendUrl == "https://build-only.invalid") {
             "Build-only debug artifacts must use https://build-only.invalid."

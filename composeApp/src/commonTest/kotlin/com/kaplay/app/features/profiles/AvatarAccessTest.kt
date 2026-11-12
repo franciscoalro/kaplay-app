@@ -63,9 +63,9 @@ class AvatarAccessTest {
     }
 
     @Test
-    fun unavailableCatalogWithCacheRemainsReadyForEditing() {
+    fun unavailableCatalogWithCacheRemainsVisibleButMarkedUnavailable() {
         assertEquals(
-            AvatarCatalogUiState.Ready,
+            AvatarCatalogUiState.Unavailable,
             avatarCatalogUiState(AvatarCatalogLoadStatus.Unavailable, hasAvatars = true),
         )
     }

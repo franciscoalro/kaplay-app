@@ -15,6 +15,7 @@ expect_pass() {
 }
 
 expect_fail env KAPLAY_SUPABASE_URL=https://localhost KAPLAY_SUPABASE_ANON_KEY=key "$VALIDATOR"
+expect_fail env KAPLAY_SUPABASE_URL=https://build-only.invalid KAPLAY_SUPABASE_ANON_KEY=build-only-placeholder "$VALIDATOR"
 expect_fail env KAPLAY_SUPABASE_URL= KAPLAY_SUPABASE_ANON_KEY=key "$VALIDATOR"
 expect_pass env KAPLAY_SUPABASE_URL=https://dev.example.supabase.co KAPLAY_SUPABASE_ANON_KEY=key "$VALIDATOR"
 expect_pass env KAPLAY_BUILD_ONLY=true KAPLAY_SUPABASE_URL=https://build-only.invalid KAPLAY_SUPABASE_ANON_KEY=build-only-placeholder "$VALIDATOR"

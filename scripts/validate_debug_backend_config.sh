@@ -35,6 +35,11 @@ if [[ "$build_only" == 'true' ]]; then
   exit 0
 fi
 
+if [[ "$url" == 'https://build-only.invalid' || "$key" == 'build-only-placeholder' ]]; then
+  echo 'build-only placeholder is valid only when KAPLAY_BUILD_ONLY=true' >&2
+  exit 2
+fi
+
 is_loopback=false
 case "$host" in
   localhost|*.local|127.*|10.*|192.168.*|172.16.*|172.17.*|172.18.*|172.19.*|172.2[0-9].*|172.3[0-1].*|0.0.0.0|::1)

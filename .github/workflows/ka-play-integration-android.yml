@@ -50,7 +50,10 @@ jobs:
           KAPLAY_ALLOWED_BACKEND_HOSTS: ${{ vars.KAPLAY_ALLOWED_BACKEND_HOSTS }}
 
       - name: Validate avatar RPC contract
-        run: python3 scripts/validate_avatar_backend_contract.py
+        run: |
+          KAPLAY_ISOLATED_BASE_URL="$KAPLAY_SUPABASE_URL" \
+          KAPLAY_ISOLATED_ANON_KEY="$KAPLAY_SUPABASE_ANON_KEY" \
+          python3 scripts/validate_avatar_backend_contract.py
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
