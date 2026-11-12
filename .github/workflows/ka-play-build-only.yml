@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      # Debug preview is explicitly authorized to use the public Supabase endpoint.
-      # This is the publishable/anon key only; no service-role credential is used.
-      KAPLAY_SUPABASE_URL: https://iibureqvpurmbgqupnvl.supabase.co
-      KAPLAY_SUPABASE_ANON_KEY: sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp
+      # Build-only artifacts must never authenticate against a real backend.
+      KAPLAY_BUILD_ONLY: 'true'
+      KAPLAY_SUPABASE_URL: https://build-only.invalid
+      KAPLAY_SUPABASE_ANON_KEY: build-only-placeholder
       KAPLAY_RELEASE_KEYSTORE_B64: ${{ secrets.KAPLAY_RELEASE_KEYSTORE_B64 }}
       KAPLAY_RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
       KAPLAY_RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
@@ -61,6 +61,9 @@ jobs:
             echo "KAPLAY_RELEASE_KEY_PASSWORD=$KAPLAY_RELEASE_KEY_PASSWORD"
           } > local.properties
 
+      - name: Validate debug backend configuration
+        run: ./scripts/validate_debug_backend_config.sh
+
       - name: Build Full Debug APK
         run: ./gradlew :androidApp:assembleFullDebug --no-daemon
 
@@ -87,6 +90,8 @@ jobs:
           pattern='service[_-]?role|sb_secret_|-----BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY-----'
           config=$(find composeApp/build/generated -type f -name 'SupabaseConfig.kt' -print -quit)
           test -n "$config"
+          grep -Fq 'https://build-only.invalid' "$config"
+          ! grep -Eiq 'localhost|iibureqvpurmbgqupnvl\\.supabase\\.co' "$config"
           if grep -Eiq "$pattern" "$config"; then
             echo 'Privileged credential material found in generated SupabaseConfig.kt' >&2
             exit 1
