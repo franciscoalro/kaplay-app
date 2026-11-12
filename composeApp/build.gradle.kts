@@ -334,6 +334,14 @@ if (debugBuild) {
     require(configuredBackendKey.isNotBlank()) {
         "KAPLAY_SUPABASE_ANON_KEY is required for a debug build."
     }
+    val normalizedBackendKey = configuredBackendKey.lowercase()
+    require(
+        !normalizedBackendKey.contains("service_role") &&
+            !normalizedBackendKey.contains("sb_secret_") &&
+            !normalizedBackendKey.startsWith("eyj"),
+    ) {
+        "Privileged or JWT-like key material is not allowed in a debug build."
+    }
     if (buildOnly) {
         require(configuredBackendUrl == "https://build-only.invalid") {
             "Build-only debug artifacts must use https://build-only.invalid."
@@ -341,20 +349,30 @@ if (debugBuild) {
         require(configuredBackendKey == "build-only-placeholder") {
             "Build-only debug artifacts must use the placeholder publishable key."
         }
-    } else if (!allowLoopbackBackend) {
-        val host = runCatching { java.net.URI(configuredBackendUrl).host.orEmpty().lowercase() }.getOrDefault("")
-        require(
-            host != "localhost" &&
-                host != "::1" &&
-                !host.startsWith("127.") &&
-                !host.startsWith("10.") &&
-                !host.startsWith("192.168.") &&
-                !(host.startsWith("172.") && host.substringAfter("172.").substringBefore('.').toIntOrNull() in 16..31),
-        ) {
-            "Loopback/private debug backend requires KAPLAY_ALLOW_LOOPBACK_BACKEND=true."
+    } else {
+        val backendUri = runCatching { java.net.URI(configuredBackendUrl) }.getOrNull()
+        val host = backendUri?.host.orEmpty().lowercase()
+        require(host.isNotBlank() && backendUri?.scheme in setOf("http", "https")) {
+            "KAPLAY_SUPABASE_URL must be an absolute HTTP(S) URL."
         }
-        require(configuredBackendUrl.startsWith("https://")) {
-            "Non-loopback debug backends must use HTTPS."
+        val privateHost = host == "localhost" ||
+            host == "::1" ||
+            host == "0.0.0.0" ||
+            host.startsWith("127.") ||
+            host.startsWith("10.") ||
+            host.startsWith("192.168.") ||
+            (host.startsWith("172.") && host.substringAfter("172.").substringBefore('.').toIntOrNull()?.let { it in 16..31 } == true)
+        if (privateHost) {
+            require(allowLoopbackBackend) {
+                "Loopback/private debug backend requires KAPLAY_ALLOW_LOOPBACK_BACKEND=true."
+            }
+        } else {
+            require(!allowLoopbackBackend) {
+                "KAPLAY_ALLOW_LOOPBACK_BACKEND=true is only valid for loopback/private hosts."
+            }
+            require(configuredBackendUrl.startsWith("https://")) {
+                "Non-loopback debug backends must use HTTPS."
+            }
         }
     }
 }
