@@ -316,24 +316,56 @@ fun runtimeConfigBoolean(key: String, default: Boolean): Boolean =
     }
 
 val debugBuild = requestedGradleTasks.any { it.contains("debug", ignoreCase = true) }
+val buildOnly = runtimeConfigBoolean("KAPLAY_BUILD_ONLY", default = false)
+val allowLoopbackBackend = runtimeConfigBoolean("KAPLAY_ALLOW_LOOPBACK_BACKEND", default = false)
+val configuredBackendUrl = runtimeConfigValue(
+    "KAPLAY_SUPABASE_URL",
+    fallback = if (debugBuild) "" else "https://iibureqvpurmbgqupnvl.supabase.co",
+)
+val configuredBackendKey = runtimeConfigValue(
+    "KAPLAY_SUPABASE_ANON_KEY",
+    fallback = if (debugBuild) "" else "sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp",
+)
+
+if (debugBuild) {
+    require(configuredBackendUrl.isNotBlank()) {
+        "KAPLAY_SUPABASE_URL is required for a debug build; refusing an unusable endpoint."
+    }
+    require(configuredBackendKey.isNotBlank()) {
+        "KAPLAY_SUPABASE_ANON_KEY is required for a debug build."
+    }
+    if (buildOnly) {
+        require(configuredBackendUrl == "https://build-only.invalid") {
+            "Build-only debug artifacts must use https://build-only.invalid."
+        }
+        require(configuredBackendKey == "build-only-placeholder") {
+            "Build-only debug artifacts must use the placeholder publishable key."
+        }
+    } else if (!allowLoopbackBackend) {
+        val host = runCatching { java.net.URI(configuredBackendUrl).host.orEmpty().lowercase() }.getOrDefault("")
+        require(
+            host != "localhost" &&
+                host != "::1" &&
+                !host.startsWith("127.") &&
+                !host.startsWith("10.") &&
+                !host.startsWith("192.168.") &&
+                !(host.startsWith("172.") && host.substringAfter("172.").substringBefore('.').toIntOrNull() in 16..31),
+        ) {
+            "Loopback/private debug backend requires KAPLAY_ALLOW_LOOPBACK_BACKEND=true."
+        }
+        require(configuredBackendUrl.startsWith("https://")) {
+            "Non-loopback debug backends must use HTTPS."
+        }
+    }
+}
 
 val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generateRuntimeConfigs") {
     outputDir.set(generatedRuntimeConfigDir)
     localPropertiesFile.set(rootProject.layout.projectDirectory.file("local.properties"))
     appVersionName.set(releaseAppVersionName)
     appVersionCode.set(releaseAppVersionCode)
-    supabaseUrl.set(
-        runtimeConfigValue(
-            "KAPLAY_SUPABASE_URL",
-            fallback = if (debugBuild) "" else "https://iibureqvpurmbgqupnvl.supabase.co",
-        ),
-    )
-    supabaseAnonKey.set(
-        runtimeConfigValue(
-            "KAPLAY_SUPABASE_ANON_KEY",
-            fallback = if (debugBuild) "" else "sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp",
-        ),
-    )
+    supabaseUrl.set(configuredBackendUrl)
+    supabaseAnonKey.set(configuredBackendKey)
     supabaseFallbackUrl.set(runtimeConfigValue("KAPLAY_SUPABASE_FALLBACK_URL"))
     sentryDsn.set(runtimeConfigValue("SENTRY_DSN"))
     tmdbApiKey.set(runtimeConfigValue("TMDB_API_KEY"))
