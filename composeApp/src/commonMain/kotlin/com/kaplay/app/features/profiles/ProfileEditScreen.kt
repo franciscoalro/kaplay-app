@@ -92,6 +92,8 @@ fun ProfileEditScreen(
     val canChooseBackground = !isNew && memberAccess.entitlements.includes(CosmeticEntitlement.PROFILE_BACKGROUNDS)
 
     val avatars by AvatarRepository.avatars.collectAsStateWithLifecycle()
+    val avatarCatalogStatus by AvatarRepository.catalogStatus.collectAsStateWithLifecycle()
+    val avatarCatalogUi = avatarCatalogUiState(avatarCatalogStatus, avatars.isNotEmpty())
     LaunchedEffect(Unit) {
         AvatarRepository.refreshAvatars()
     }
@@ -215,10 +217,11 @@ fun ProfileEditScreen(
                     )
                     Text(
                         text = selectedAvatarItem?.displayName
-                            ?: if (avatars.isEmpty()) {
-                                stringResource(Res.string.profile_loading_avatars)
-                            } else {
-                                stringResource(Res.string.profile_select_avatar)
+                            ?: when (avatarCatalogUi) {
+                                AvatarCatalogUiState.Loading -> stringResource(Res.string.profile_loading_avatars)
+                                AvatarCatalogUiState.Ready -> stringResource(Res.string.profile_select_avatar)
+                                AvatarCatalogUiState.Unavailable -> stringResource(Res.string.profile_avatar_catalog_unavailable)
+                                AvatarCatalogUiState.Offline -> stringResource(Res.string.profile_avatar_catalog_offline)
                             },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

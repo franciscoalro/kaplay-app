@@ -58,6 +58,23 @@ internal fun classifyAvatarCatalogFailure(code: String?, message: String?): Avat
     }
 }
 
+enum class AvatarCatalogUiState {
+    Loading,
+    Ready,
+    Unavailable,
+    Offline,
+}
+
+internal fun avatarCatalogUiState(
+    status: AvatarCatalogLoadStatus,
+    hasAvatars: Boolean,
+): AvatarCatalogUiState = when {
+    hasAvatars -> AvatarCatalogUiState.Ready
+    status == AvatarCatalogLoadStatus.Offline -> AvatarCatalogUiState.Offline
+    status == AvatarCatalogLoadStatus.Unavailable -> AvatarCatalogUiState.Unavailable
+    else -> AvatarCatalogUiState.Loading
+}
+
 @Serializable
 private data class StoredAvatarCatalogPayload(
     val items: List<AvatarCatalogItem> = emptyList(),
@@ -88,6 +105,9 @@ object AvatarRepository {
 
     private val _avatars = MutableStateFlow<List<AvatarCatalogItem>>(emptyList())
     val avatars: StateFlow<List<AvatarCatalogItem>> = _avatars.asStateFlow()
+
+    private val _catalogStatus = MutableStateFlow(AvatarCatalogLoadStatus.Idle)
+    val catalogStatus: StateFlow<AvatarCatalogLoadStatus> = _catalogStatus.asStateFlow()
 
     private var standardCatalog = emptyList<AvatarCatalogItem>()
     private var memberCatalog = emptyList<AvatarCatalogItem>()
@@ -159,6 +179,7 @@ object AvatarRepository {
             .mapNotNull(::loadCachedMemberAvatar)
             .sortedWith(compareBy({ it.category }, { it.sortOrder }))
         standardLoaded = standardCatalog.isNotEmpty()
+        if (standardCatalog.isNotEmpty()) _catalogStatus.value = AvatarCatalogLoadStatus.Ready
         publishCatalog()
     }
 
@@ -188,6 +209,7 @@ object AvatarRepository {
         if (!com.kaplay.app.core.network.ServerConfigurationRepository.active.value.isConfigured) return
         if (standardFetchInFlight) return
         standardFetchInFlight = true
+        _catalogStatus.value = AvatarCatalogLoadStatus.Loading
         try {
             val result = SupabaseProvider.client.postgrest.rpc("get_avatar_catalog")
             val items = result.decodeList<AvatarCatalogItem>()
@@ -196,12 +218,17 @@ object AvatarRepository {
             )
             standardLoaded = true
             lastStandardRefresh = TimeSource.Monotonic.markNow()
+            _catalogStatus.value = AvatarCatalogLoadStatus.Ready
             publishCatalog()
             saveCachedCatalog()
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
-            log.e(error) { "Failed to fetch avatar catalog" }
+            val code = Regex("\\bPGRST\\d{3}\\b", RegexOption.IGNORE_CASE)
+                .find(error.message.orEmpty())
+                ?.value
+            _catalogStatus.value = classifyAvatarCatalogFailure(code, error.message)
+            log.w(error) { "Avatar catalog unavailable (${_catalogStatus.value})" }
         } finally {
             standardFetchInFlight = false
         }

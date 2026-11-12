@@ -61,4 +61,28 @@ class AvatarAccessTest {
             classifyAvatarCatalogFailure("PGRST500", "backend rejected request"),
         )
     }
+
+    @Test
+    fun unavailableCatalogWithCacheRemainsReadyForEditing() {
+        assertEquals(
+            AvatarCatalogUiState.Ready,
+            avatarCatalogUiState(AvatarCatalogLoadStatus.Unavailable, hasAvatars = true),
+        )
+    }
+
+    @Test
+    fun unavailableCatalogWithoutCacheIsShownAsUnavailable() {
+        assertEquals(
+            AvatarCatalogUiState.Unavailable,
+            avatarCatalogUiState(AvatarCatalogLoadStatus.Unavailable, hasAvatars = false),
+        )
+    }
+
+    @Test
+    fun offlineCatalogWithoutCacheIsShownAsOffline() {
+        assertEquals(
+            AvatarCatalogUiState.Offline,
+            avatarCatalogUiState(AvatarCatalogLoadStatus.Offline, hasAvatars = false),
+        )
+    }
 }
