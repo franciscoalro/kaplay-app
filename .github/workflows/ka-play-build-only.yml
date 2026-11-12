@@ -2,6 +2,12 @@ name: KA Play Android build only
 
 on:
   workflow_dispatch:
+    inputs:
+      production_auth_debug:
+        description: 'Use production Supabase for an authorized auth reachability test'
+        required: false
+        default: false
+        type: boolean
   push:
     branches:
       - kaplay-rebrand
@@ -15,10 +21,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      # Build-only artifacts must never authenticate against a real backend.
-      KAPLAY_BUILD_ONLY: 'true'
-      KAPLAY_SUPABASE_URL: https://build-only.invalid
-      KAPLAY_SUPABASE_ANON_KEY: build-only-placeholder
+      # Default remains non-routable. Production mode is manual and explicitly authorized.
+      KAPLAY_BUILD_ONLY: ${{ inputs.production_auth_debug == true && 'false' || 'true' }}
+      KAPLAY_SUPABASE_URL: ${{ inputs.production_auth_debug == true && 'https://iibureqvpurmbgqupnvl.supabase.co' || 'https://build-only.invalid' }}
+      KAPLAY_SUPABASE_ANON_KEY: ${{ inputs.production_auth_debug == true && 'sb_publishable_cZimpG5X5AHudRZYYPK4iA_NoowxYlp' || 'build-only-placeholder' }}
       KAPLAY_RELEASE_KEYSTORE_B64: ${{ secrets.KAPLAY_RELEASE_KEYSTORE_B64 }}
       KAPLAY_RELEASE_STORE_PASSWORD: ${{ secrets.KAPLAY_RELEASE_STORE_PASSWORD }}
       KAPLAY_RELEASE_KEY_ALIAS: ${{ secrets.KAPLAY_RELEASE_KEY_ALIAS }}
@@ -90,8 +96,13 @@ jobs:
           pattern='service[_-]?role|sb_secret_|-----BEGIN (RSA|OPENSSH|EC|PRIVATE) KEY-----'
           config=$(find composeApp/build/generated -type f -name 'SupabaseConfig.kt' -print -quit)
           test -n "$config"
-          grep -Fq 'https://build-only.invalid' "$config"
-          ! grep -Eiq 'localhost|iibureqvpurmbgqupnvl\\.supabase\\.co' "$config"
+          if [[ "$KAPLAY_BUILD_ONLY" == 'true' ]]; then
+            grep -Fq 'https://build-only.invalid' "$config"
+            ! grep -Eiq 'localhost|iibureqvpurmbgqupnvl\\.supabase\\.co' "$config"
+          else
+            grep -Fq 'https://iibureqvpurmbgqupnvl.supabase.co' "$config"
+            ! grep -Fq 'build-only.invalid' "$config"
+          fi
           if grep -Eiq "$pattern" "$config"; then
             echo 'Privileged credential material found in generated SupabaseConfig.kt' >&2
             exit 1
