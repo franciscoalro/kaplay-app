@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
 import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+import java.net.URI
 import java.util.Properties
 
 abstract class GenerateRuntimeConfigsTask : DefaultTask() {
@@ -350,7 +351,7 @@ if (debugBuild) {
             "Build-only debug artifacts must use the placeholder publishable key."
         }
     } else {
-        val backendUri = runCatching { java.net.URI(configuredBackendUrl) }.getOrNull()
+        val backendUri = runCatching { URI(configuredBackendUrl) }.getOrNull()
         val host = backendUri?.host.orEmpty().lowercase()
         require(host.isNotBlank() && backendUri?.scheme in setOf("http", "https")) {
             "KAPLAY_SUPABASE_URL must be an absolute HTTP(S) URL."
